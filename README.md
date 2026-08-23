@@ -28,7 +28,6 @@
   - [System Architecture](#-system-architecture)
   - [Project & Monorepo Structure](#-project--monorepo-structure)
   - [Getting Started & Local Development](#-getting-started--local-development)
-  - [Environment Variables](#-environment-variables)
   - [Available Scripts](#-available-scripts)
   - [Security & Privacy](#-security--privacy)
   - [Acknowledgements & References](#-acknowledgements--references)
@@ -40,7 +39,6 @@
   - [Kiến Trúc Hệ Thống](#-ki%E1%BA%BFn-tr%C3%BAc-h%E1%BB%87-th%E1%BB%91ng)
   - [Cấu Trúc Dự Án Monorepo](#-c%E1%BA%A5u-tr%C3%BAc-d%E1%BB%B1-%C3%A1n-monorepo)
   - [Hướng Dẫn Cài Đặt & Chạy Cục Bộ](#-h%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-c%C3%A0i-%C4%91%E1%BA%B7t--ch%E1%BA%A1y-c%E1%BB%A5c-b%E1%BB%99)
-  - [Biến Môi Trường](#-bi%E1%BA%BFn-m%C3%B4i-tr%C6%B0%E1%BB%9Dng)
   - [Danh Sách Lệnh Thực Thi](#-danh-s%C3%A1ch-l%E1%BB%87nh-th%E1%BB%B1c-thi)
   - [Bảo Mật & Quyền Riêng Tư](#-b%E1%BA%A3o-m%E1%BA%ADt--quy%E1%BB%81n-ri%C3%AAng-t%C6%B0)
   - [Lời Cảm Ơn & Tham Chiếu](#-l%E1%BB%9Di-c%E1%BA%A3m-%C6%A1n--tham-chi%E1%BA%BFu)
@@ -197,16 +195,6 @@ pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to launch the Flowculus workspace.
-
----
-
-## 🔑 Environment Variables
-
-| Variable                       | Default Value                                                                             | Description                                                          |
-| :----------------------------- | :---------------------------------------------------------------------------------------- | :------------------------------------------------------------------- |
-| `NEXT_PUBLIC_DRAWIO_EMBED_URL` | `https://embed.diagrams.net/?embed=1&proto=json&libraries=0&noExitBtn=1&exportProtocol=1` | Draw.io embed endpoint. Can be overridden for self-hosted instances. |
-
-See `.env.example`, `.env.dev`, and `.env.pro` for details.
 
 ---
 
@@ -425,16 +413,6 @@ pnpm dev
 ```
 
 Truy cập [http://localhost:3000](http://localhost:3000) trên trình duyệt để bắt đầu sử dụng Flowculus.
-
----
-
-## 🔑 Biến Môi Trường
-
-| Tên biến                       | Giá trị mặc định                                                                          | Ý nghĩa & Mô tả                                                             |
-| :----------------------------- | :---------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_DRAWIO_EMBED_URL` | `https://embed.diagrams.net/?embed=1&proto=json&libraries=0&noExitBtn=1&exportProtocol=1` | Đường dẫn máy chủ nhúng Draw.io. Có thể thay đổi nếu tự host Draw.io riêng. |
-
-Xem thêm chi tiết tại `.env.example`, `.env.dev` và `.env.pro`.
 
 ---
 
