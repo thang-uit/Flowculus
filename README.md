@@ -31,6 +31,7 @@
   - [Environment Variables](#-environment-variables)
   - [Available Scripts](#-available-scripts)
   - [Security & Privacy](#-security--privacy)
+  - [Acknowledgements & References](#-acknowledgements--references)
   - [License](#-license)
 - [Tài Liệu Tiếng Việt (Vietnamese Documentation)](#-t%C3%A0i-li%E1%BB%87u-ti%E1%BA%BFng-vi%E1%BB%87t)
   - [Giới Thiệu Tổng Quan](#-gi%E1%BB%9Bi-thi%E1%BB%87u-t%E1%BB%95ng-quan)
@@ -42,6 +43,7 @@
   - [Biến Môi Trường](#-bi%E1%BA%BFn-m%C3%B4i-tr%C6%B0%E1%BB%9Dng)
   - [Danh Sách Lệnh Thực Thi](#-danh-s%C3%A1ch-l%E1%BB%87nh-th%E1%BB%B1c-thi)
   - [Bảo Mật & Quyền Riêng Tư](#-b%E1%BA%A3o-m%E1%BA%ADt--quy%E1%BB%81n-ri%C3%AAng-t%C6%B0)
+  - [Lời Cảm Ơn & Tham Chiếu](#-l%E1%BB%9Di-c%E1%BA%A3m-%C6%A1n--tham-chi%E1%BA%BFu)
   - [Bản Quyền](#-b%E1%BA%A3n-quy%E1%BB%81n)
 
 ---
@@ -254,6 +256,17 @@ pnpm start:pro
 - **Zero Remote Telemetry**: Flowculus does not collect or transmit user process models, business data, or calculation results to external servers.
 - **Strict Origin Validation**: All cross-origin `postMessage` communications with embedded draw.io are strictly verified against the configured `DRAWIO_ORIGIN`.
 - **Local Persistence**: Drafts are stored locally in the user's browser using `IndexedDB`.
+
+---
+
+## 🙏 Acknowledgements & References
+
+Flowculus is built upon and integrates with **draw.io** (diagrams.net), the world-class open-source diagramming suite created and maintained by **JGraph**:
+
+- **draw.io Open Source Project**: [https://github.com/jgraph/drawio](https://github.com/jgraph/drawio)
+- **draw.io Official Website**: [https://www.drawio.com/](https://www.drawio.com/)
+
+We express our deepest gratitude to the JGraph team and the open-source community for developing the powerful diagramming canvas, XML serialization standards, and responsive embed protocol that make visual process modeling in Flowculus possible.
 
 ---
 
@@ -471,6 +484,17 @@ pnpm start:pro
 - **Không Thu Thập Dữ Liệu Từ Xa**: Flowculus không gửi bất kỳ dữ liệu sơ đồ quy trình hay kết quả tính toán nào của người dùng về máy chủ bên ngoài.
 - **Kiểm Soát Nguồn Iframe Nghiêm Ngặt**: Mọi tin nhắn giao tiếp qua `postMessage` với Draw.io đều được đối chiếu và xác thực theo `DRAWIO_ORIGIN`.
 - **Lưu Trữ Cục Bộ Trực Tiếp**: Bản nháp và lịch sử chỉnh sửa được lưu an toàn trực tiếp trên trình duyệt của người dùng thông qua `IndexedDB`.
+
+---
+
+## 🙏 Lời Cảm Ơn & Tham Chiếu
+
+Flowculus được xây dựng và tích hợp trên nền tảng **draw.io** (diagrams.net) – bộ công cụ vẽ sơ đồ mã nguồn mở hàng đầu thế giới được sáng lập và phát triển bởi **JGraph**:
+
+- **Dự án mã nguồn mở draw.io**: [https://github.com/jgraph/drawio](https://github.com/jgraph/drawio)
+- **Trang chủ chính thức draw.io**: [https://www.drawio.com/](https://www.drawio.com/)
+
+Chúng tôi xin gửi lời cảm ơn và tri ân sâu sắc nhất đến đội ngũ tác giả JGraph cùng cộng đồng mã nguồn mở đã kiến tạo nên trình vẽ sơ đồ đồ họa mạnh mẽ, chuẩn lưu trữ XML linh hoạt và giao thức nhúng tuyệt vời làm nền tảng cốt lõi cho trải nghiệm mô hình hóa trực quan trong Flowculus.
 
 ---
 
