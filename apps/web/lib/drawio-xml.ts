@@ -95,7 +95,8 @@ interface SemanticShapeDefinition {
 const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinition> = {
   start: {
     kind: 'start',
-    style: 'ellipse;whiteSpace=wrap;html=1;fillColor=#d09a14;strokeColor=#a87300;',
+    style:
+      'ellipse;whiteSpace=wrap;html=1;fillColor=#d09a14;strokeColor=#a87300;verticalAlign=top;verticalLabelPosition=bottom;',
     width: 56,
     height: 56,
     shapeName: 'start-event',
@@ -111,7 +112,7 @@ const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinit
     kind: 'gateway',
     gatewayKind: 'xor',
     style:
-      'shape=mxgraph.bpmn.gateway2;gwType=exclusive;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;',
+      'shape=mxgraph.bpmn.gateway2;gwType=exclusive;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;verticalAlign=bottom;verticalLabelPosition=top;',
     width: 90,
     height: 90,
     shapeName: 'exclusive-gateway',
@@ -120,7 +121,7 @@ const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinit
     kind: 'gateway',
     gatewayKind: 'and',
     style:
-      'shape=mxgraph.bpmn.gateway2;gwType=parallel;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;',
+      'shape=mxgraph.bpmn.gateway2;gwType=parallel;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;verticalAlign=bottom;verticalLabelPosition=top;',
     width: 90,
     height: 90,
     shapeName: 'parallel-gateway',
@@ -128,9 +129,8 @@ const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinit
   or: {
     kind: 'gateway',
     gatewayKind: 'or',
-    // draw.io's native BPMN gateway stencil has no inclusive-OR variant;
-    // retain a clean rhombus and the explicit Flowculus gateway metadata.
-    style: 'rhombus;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;',
+    style:
+      'shape=mxgraph.bpmn.gateway2;gwType=inclusive;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;verticalAlign=bottom;verticalLabelPosition=top;',
     width: 90,
     height: 90,
     shapeName: 'inclusive-gateway',
@@ -139,7 +139,7 @@ const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinit
     kind: 'gateway',
     gatewayKind: 'eventBased',
     style:
-      'shape=mxgraph.bpmn.gateway2;gwType=event;outline=catching;symbol=multiple;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;',
+      'shape=mxgraph.bpmn.gateway2;gwType=event;outline=catching;symbol=multiple;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;verticalAlign=bottom;verticalLabelPosition=top;',
     width: 90,
     height: 90,
     shapeName: 'event-based-gateway',
@@ -148,7 +148,7 @@ const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinit
     kind: 'gateway',
     gatewayKind: 'complex',
     style:
-      'shape=mxgraph.bpmn.gateway2;gwType=complex;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;',
+      'shape=mxgraph.bpmn.gateway2;gwType=complex;outline=none;whiteSpace=wrap;html=1;fillColor=#fff3c7;strokeColor=#a87300;verticalAlign=bottom;verticalLabelPosition=top;',
     width: 90,
     height: 90,
     shapeName: 'complex-gateway',
@@ -156,7 +156,7 @@ const SEMANTIC_SHAPE_DEFINITIONS: Record<SemanticShapeTool, SemanticShapeDefinit
   end: {
     kind: 'end',
     style:
-      'ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a87300;',
+      'ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a87300;verticalAlign=top;verticalLabelPosition=bottom;',
     width: 64,
     height: 64,
     shapeName: 'end-event',

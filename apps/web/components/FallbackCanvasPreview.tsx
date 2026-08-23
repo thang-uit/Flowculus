@@ -208,7 +208,13 @@ function PreviewNode({
       ) : null}
       <text
         x={center.x}
-        y={isCircle ? position.y + position.height + 20 : titleY}
+        y={
+          isGateway
+            ? position.y - 10 - (lines.length - 1) * 14
+            : isCircle
+              ? position.y + position.height + 20
+              : titleY
+        }
         textAnchor="middle"
         className="fill-[var(--text)] text-[12px] font-medium"
       >

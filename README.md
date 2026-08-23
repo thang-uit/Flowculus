@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/public/logo.svg" alt="Flowculus Logo" width="100" />
+</p>
+
 # ⚡ Flowculus
 
 <p align="center">
