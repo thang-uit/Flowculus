@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 128" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 128" role="img" aria-labelledby="title desc">
   <title id="title">Flowculus</title>
-  <desc id="desc">A friendly process gateway. Draw the flow, let the math do the sweating.</desc>
+  <desc id="desc">Flowculus Process Modeling Workspace</desc>
   <rect x="8" y="8" width="112" height="112" rx="34" fill="#d09a14"/>
   <rect x="9.5" y="9.5" width="109" height="109" rx="32.5" fill="none" stroke="#a87300" stroke-opacity=".58" stroke-width="3"/>
   <g fill="none" stroke="#211b0a" stroke-linecap="round" stroke-linejoin="round">
@@ -20,6 +20,5 @@
     <circle cx="25" cy="93" r="4.7"/>
     <circle cx="58" cy="60.8" r="2.45"/>
   </g>
-  <text x="152" y="68" fill="#17202a" font-family="Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="48" font-weight="750" letter-spacing="-2.6">Flowculus</text>
-  <text x="155" y="98" fill="#65717d" font-family="Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700" letter-spacing="1.6">DRAW THE FLOW. LET THE MATH SWEAT.</text>
+  <text x="144" y="78" fill="#d09a14" font-family="Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="52" font-weight="800" letter-spacing="-2.2">Flowculus</text>
 </svg>

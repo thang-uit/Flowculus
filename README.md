@@ -1,12 +1,7 @@
 # ⚡ Flowculus
 
 <p align="center">
-  <img src="apps/web/public/logo.svg" alt="Flowculus Logo" width="280" />
-</p>
-
-<p align="center">
-  <strong>Interactive Business Process Modeling & Quantitative Cycle-Time Analysis Workspace</strong><br>
-  <em>Draw the flow. Let the math do the sweating.</em>
+  <strong>Interactive Business Process Modeling & Quantitative Cycle-Time Analysis Workspace</strong>
 </p>
 
 <p align="center">
@@ -151,7 +146,7 @@ Flowculus/
 │       ├── app/                 # Layout, metadata, global styles (globals.css)
 │       ├── components/          # React components (AnalysisDock, Header, Inspector, etc.)
 │       ├── lib/                 # State store, i18n, drawio-model parser, worker hooks
-│       ├── public/              # Static branding logos (logo.svg, logo-vi.svg, favicon)
+│       ├── public/              # Static branding assets (logo.svg, favicon.svg)
 │       └── workers/             # Dedicated analysis Web Worker
 ├── packages/
 │   ├── analysis-engine/         # Core graph reduction, cycle time & cost algorithms
@@ -368,7 +363,7 @@ Flowculus/
 │       ├── app/                 # Bố cục giao diện, metadata, global styles (globals.css)
 │       ├── components/          # Các thành phần React (AnalysisDock, Header, Inspector, v.v.)
 │       ├── lib/                 # Store trạng thái, i18n, bộ phân tích drawio-model, worker hooks
-│       ├── public/              # Logo nhận diện thương hiệu (logo.svg, logo-vi.svg, favicon)
+│       ├── public/              # Logo nhận diện và biểu tượng (logo.svg, favicon.svg)
 │       └── workers/             # Web Worker chạy thuật toán phân tích ngầm
 ├── packages/
 │   ├── analysis-engine/         # Thuật toán cốt lõi tính toán thời gian chu trình, chi phí & rút gọn luồng
