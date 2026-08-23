@@ -1,0 +1,15 @@
+node_modules/
+.next/
+apps/web/next-env.d.ts
+out/
+dist/
+coverage/
+.vercel/
+.turbo/
+*.tsbuildinfo
+.DS_Store
+*.local
+.env
+.env.*
+!.env.example
+.tmp/

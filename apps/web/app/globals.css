@@ -1,0 +1,557 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: light;
+  --canvas: #f3f5f7;
+  --surface: #ffffff;
+  --surface-raised: #fbfcfd;
+  --surface-soft: #edf1f4;
+  --surface-strong: #e3e8ed;
+  --border: #d8dee5;
+  --border-strong: #c0c9d2;
+  --text: #17202a;
+  --muted: #65717d;
+  --muted-strong: #46525e;
+  --accent: #d09a14;
+  --accent-strong: #a87300;
+  --accent-soft: #fff3c7;
+  --accent-ink: #211b0a;
+  --success: #287a55;
+  --danger: #b54545;
+  --grid-line: rgb(33 45 58 / 0.065);
+  --shadow-soft: 0 8px 24px rgb(25 35 45 / 0.06);
+  --shadow-panel: 0 18px 50px rgb(25 35 45 / 0.1);
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: #15181b;
+  --surface: #1b2024;
+  --surface-raised: #20262b;
+  --surface-soft: #252c32;
+  --surface-strong: #2d353d;
+  --border: #343d46;
+  --border-strong: #4b5864;
+  --text: #edf1f4;
+  --muted: #a4afb9;
+  --muted-strong: #d2d9df;
+  --accent: #e5b52f;
+  --accent-strong: #f2c94c;
+  --accent-soft: #46391a;
+  --accent-ink: #211a07;
+  --success: #62c291;
+  --danger: #ee8585;
+  --grid-line: rgb(220 230 240 / 0.07);
+  --shadow-soft: 0 8px 24px rgb(0 0 0 / 0.18);
+  --shadow-panel: 0 18px 50px rgb(0 0 0 / 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-geist-sans), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a[href],
+summary,
+[role='button'],
+label[for] {
+  cursor: pointer;
+}
+
+select {
+  cursor: pointer;
+}
+
+input,
+textarea {
+  cursor: text;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Next 16 mounts its development issues badge in a shadow host even when
+   `devIndicators` is disabled. It is tooling, not part of the product UI;
+   hide the host during local review so it cannot cover the shape palette. */
+nextjs-portal {
+  display: none !important;
+}
+
+.theme-transition-surface {
+  /* Theme changes are a token swap, not a layout animation. Keeping the shell
+     geometry static prevents the command bar from appearing to jump. */
+  transition: none;
+}
+
+html[data-theme-switching='true'] .theme-transition-surface,
+html[data-theme-switching='true'] .theme-transition-surface * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* ── Toolbar flat primitives ──────────────────────────────────────── */
+
+/* Thin 1px divider between toolbar groups */
+.tb-divider {
+  display: block;
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin-inline: 2px;
+  background: var(--border);
+  opacity: 0.7;
+  border-radius: 999px;
+}
+
+/* Individual toolbar button — no border by default, just icon + hover bg */
+.tb-btn {
+  display: inline-flex;
+  flex: none;
+  min-width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.tb-btn:active {
+  transform: scale(0.93);
+}
+
+/* Idle state: subtle muted color, hover shows soft background */
+.tb-btn--idle {
+  color: var(--muted);
+}
+
+.tb-btn--idle:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+/* Active/pressed state */
+.tb-btn--active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.tb-btn--active:hover {
+  filter: brightness(1.04);
+}
+
+/* Legacy aliases kept for WorkspaceHeader action buttons */
+.toolbar-control {
+  display: inline-flex !important;
+  flex: none;
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+  color: var(--muted);
+}
+
+.toolbar-control:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.toolbar-control--wide {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.toolbar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    filter 140ms ease,
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.toolbar-action--accent {
+  border: 1px solid var(--accent-strong);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--accent-strong) 65%, transparent);
+}
+
+.toolbar-action--accent:hover {
+  filter: brightness(1.03);
+}
+
+.toolbar-action--accent:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.workspace-header {
+  height: 48px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tooltip-out {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes analysis-value-update {
+  0% {
+    opacity: 0.35;
+    transform: translateY(3px);
+  }
+
+  55% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .analysis-value-update {
+    display: inline-block;
+    animation: analysis-value-update 560ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+  }
+}
+
+/* Keep disclosure content mounted so closing can animate as smoothly as opening.
+   `inert` on the closed state removes it from keyboard and screen-reader flow. */
+.collapsible-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.collapsible-content[data-state='open'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* The result dock is part of the editor's flex layout, so opening it never
+   overlaps the canvas or the status row. Resize frames change only this local
+   custom property; React receives the final height when the pointer is up. */
+.analysis-dock-shell {
+  height: 2.75rem;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.analysis-dock-shell[data-state='open'] {
+  height: calc(var(--analysis-dock-height) + 2.75rem);
+}
+
+.analysis-dock-panel {
+  display: flex;
+  height: 0;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.analysis-dock-panel[data-state='open'] {
+  height: var(--analysis-dock-height);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.analysis-dock-toggle {
+  position: relative;
+  z-index: 1;
+}
+
+.analysis-dock-metric {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.analysis-dock-panel[data-state='open'] + .analysis-dock-toggle {
+  border-top: 1px solid var(--border);
+}
+
+.analysis-dock-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.analysis-dock-resize-handle {
+  flex: none;
+}
+
+.analysis-dock-grip {
+  display: block;
+  width: 2.75rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: var(--border-strong);
+  transition:
+    background-color 140ms ease,
+    width 140ms ease;
+}
+
+.analysis-dock-resize-handle:hover .analysis-dock-grip,
+.analysis-dock-resize-handle:focus-visible .analysis-dock-grip {
+  width: 3.5rem;
+  background: var(--accent-strong);
+}
+
+.analysis-dock-shell[data-resizing='true'] .analysis-dock-panel,
+.analysis-dock-shell[data-resizing='true'] .analysis-dock-resize-handle {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible-content,
+  .analysis-dock-panel {
+    transition: none;
+    transform: none;
+  }
+
+  .analysis-dock-grip {
+    transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .analysis-dock-metric {
+    max-width: 7rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .analysis-dock-metric {
+    max-width: 5.5rem;
+  }
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.focus-ring {
+  outline: none;
+}
+
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  outline: 1px solid var(--accent-strong);
+  outline-offset: 1px;
+}
+
+.canvas-grid {
+  background-color: var(--surface-raised);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.canvas-grid::before {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 48% 30%,
+    color-mix(in srgb, var(--accent) 8%, transparent),
+    transparent 34%
+  );
+  content: '';
+  pointer-events: none;
+}
+
+.canvas-diagram {
+  width: min(1060px, calc(100% - 2rem));
+  min-width: 760px;
+}
+
+.mobile-shape-palette {
+  overflow-y: hidden;
+  transition:
+    max-height 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease,
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-shape-palette {
+    transition: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobile-shape-palette {
+    display: flex;
+  }
+
+  .canvas-diagram {
+    width: 900px;
+  }
+}
+
+.scrollbar-thin {
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.formula-math {
+  display: block;
+  flex: none;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.formula-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+}
+
+.formula-operator,
+.formula-function {
+  color: var(--muted-strong);
+}
+
+.formula-function {
+  font-style: italic;
+}
+
+.formula-fraction {
+  display: inline-flex;
+  min-width: 3.2rem;
+  flex-direction: column;
+  align-items: stretch;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.formula-fraction-part {
+  display: block;
+  padding-inline: 0.25rem;
+}
+
+.formula-fraction-part + .formula-fraction-part {
+  border-top: 1px solid currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  html[data-theme-switching='true'] *,
+  html[data-theme-switching='true'] *::before,
+  html[data-theme-switching='true'] *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .focus-ring:focus-visible {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
+  }
+}

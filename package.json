@@ -1,0 +1,35 @@
+{
+  "name": "flowculus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A fast cycle-time workspace for process models.",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@flowculus/web",
+    "dev:dev": "dotenv -e .env.dev -- turbo run dev --filter=@flowculus/web",
+    "dev:pro": "dotenv -e .env.pro -- turbo run dev --filter=@flowculus/web",
+    "build": "turbo run build --filter=@flowculus/web",
+    "build:dev": "dotenv -e .env.dev -- turbo run build --filter=@flowculus/web",
+    "build:pro": "dotenv -e .env.pro -- turbo run build --filter=@flowculus/web",
+    "start": "pnpm --filter @flowculus/web start",
+    "start:dev": "dotenv -e .env.dev -- pnpm --filter @flowculus/web start",
+    "start:pro": "dotenv -e .env.pro -- pnpm --filter @flowculus/web start",
+    "lint": "turbo run lint --filter=@flowculus/web",
+    "typecheck": "turbo run typecheck",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "pnpm run test && pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build",
+    "dev:web": "pnpm --filter @flowculus/web dev"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "prettier": "^3.6.2",
+    "turbo": "^2.10.11",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}
