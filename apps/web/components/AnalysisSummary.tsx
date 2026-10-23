@@ -6,36 +6,20 @@ import {
   CurrencyDollar,
   GitFork,
   Info,
+  Path,
   Pulse,
 } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 
 import { Tooltip } from '@/components/ui/Tooltip';
+import {
+  formatCost,
+  formatCycleMinutes,
+  formatPercent,
+  getModelCurrency,
+} from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
-
-const formatMinutes = (value: number | null, unit: string, emptyValue: string) =>
-  value == null ? emptyValue : `${Number(value.toFixed(2))} ${unit}`;
-const formatPercent = (value: number | null) =>
-  value == null ? null : `${Number((value * 100).toFixed(1))}%`;
-const formatCost = (
-  value: number | null,
-  currency: string | undefined,
-  locale: string,
-) => {
-  if (value == null) return null;
-  const safeCurrency = currency?.trim().toUpperCase();
-  if (!safeCurrency) return Number(value.toFixed(2)).toString();
-  try {
-    return new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
-      style: 'currency',
-      currency: safeCurrency,
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `${safeCurrency} ${Number(value.toFixed(2))}`;
-  }
-};
 
 export function AnalysisSummary() {
   const locale = useWorkspaceStore((state) => state.locale);
@@ -46,12 +30,9 @@ export function AnalysisSummary() {
   const gatewayCount = Object.values(model.nodes).filter(
     (node) => node.kind === 'gateway',
   ).length;
-  const currencies = new Set(
-    Object.values(model.nodes)
-      .map((node) => node.cost?.currency?.trim().toUpperCase())
-      .filter((currency): currency is string => Boolean(currency)),
-  );
-  const currency = currencies.size === 1 ? [...currencies][0] : undefined;
+  const currency = getModelCurrency(Object.values(model.nodes));
+  const chain =
+    report.criticalChain?.status === 'ready' ? report.criticalChain : undefined;
   const statusLabel =
     report.quality === 'exact'
       ? copy.exact
@@ -73,14 +54,14 @@ export function AnalysisSummary() {
     {
       label: copy.cycleTime,
       sublabel: copy.cycleTimeFormulaDesc,
-      value: formatMinutes(report.cycleTimeMinutes, copy.minutes, copy.emptyValue),
+      value: formatCycleMinutes(report.cycleTimeMinutes, copy.minutes, copy.emptyValue),
       icon: Clock,
       accent: true,
     },
     {
       label: copy.theoreticalTime,
       sublabel: copy.theoreticalTimeFormulaDesc,
-      value: formatMinutes(
+      value: formatCycleMinutes(
         report.theoreticalCycleTimeMinutes,
         copy.minutes,
         copy.emptyValue,
@@ -193,6 +174,30 @@ export function AnalysisSummary() {
           </Tooltip>
         </div>
       </div>
+
+      {chain && chain.taskLabels.length > 0 ? (
+        <div className="flex w-full min-w-0 items-center gap-2 border-t border-[var(--border)] px-4 py-2 text-xs sm:px-6">
+          <Path
+            size={15}
+            className="shrink-0 text-[var(--accent-strong)]"
+            aria-hidden="true"
+          />
+          <span className="shrink-0 font-semibold text-[var(--text)]">
+            {copy.criticalPath}
+          </span>
+          <span
+            className="min-w-0 truncate text-[var(--muted-strong)]"
+            title={chain.taskLabels.join(' → ')}
+          >
+            {chain.taskLabels.join(' → ')}
+          </span>
+          <span className="ml-auto shrink-0 rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--muted)]">
+            {chain.quality === 'exact'
+              ? copy.criticalChainExact
+              : copy.criticalChainDominant}
+          </span>
+        </div>
+      ) : null}
 
       <span className="sr-only" role="status" aria-live="polite">
         {isUpdated ? copy.analysisUpdated : ''}

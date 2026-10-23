@@ -15,16 +15,16 @@ import {
   PlayCircle,
   Square,
   Stack,
-  Shapes,
   X,
 } from '@phosphor-icons/react';
 import type { IconProps } from '@phosphor-icons/react';
 
 import { Tooltip } from '@/components/ui/Tooltip';
-import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
-import type { SemanticShapeTool } from '@/lib/shape-tools';
 import { cn } from '@/lib/cn';
+import { getWorkspaceCopy } from '@/lib/i18n';
+import { SHAPE_DRAG_MIME, type SemanticShapeTool } from '@/lib/shape-tools';
+import { useCanvasCommands } from '@/lib/use-canvas-commands';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 
 type PaletteIcon = ComponentType<IconProps>;
 interface PaletteItem {
@@ -36,22 +36,16 @@ interface PaletteItem {
 
 function ShapePaletteButton({
   item,
-  active,
   compact = false,
   collapsed = false,
   onSelect,
   addShapeLabel,
-  onDragStart,
-  onDragEnd,
 }: Readonly<{
   item: PaletteItem;
-  active: boolean;
   compact?: boolean;
   collapsed?: boolean;
   onSelect: () => void;
   addShapeLabel: string;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
 }>) {
   const Icon = item.icon;
   return (
@@ -61,11 +55,9 @@ function ShapePaletteButton({
         onClick={onSelect}
         draggable
         onDragStart={(event) => {
-          event.dataTransfer.setData('text/plain', item.id);
-          onDragStart?.();
+          event.dataTransfer.setData(SHAPE_DRAG_MIME, item.id);
+          event.dataTransfer.effectAllowed = 'copy';
         }}
-        onDragEnd={onDragEnd}
-        aria-pressed={active}
         aria-label={`${addShapeLabel}: ${item.label}`}
         title={`${addShapeLabel}: ${item.label}`}
         className={cn(
@@ -75,25 +67,17 @@ function ShapePaletteButton({
             : compact
               ? 'flex min-w-[76px] shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-center'
               : 'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left',
-          active
-            ? 'border-[color-mix(in_srgb,var(--accent)_60%,var(--border))] bg-[var(--accent-soft)] shadow-[var(--shadow-soft)]'
-            : 'border-transparent hover:border-[var(--border)] hover:bg-[var(--surface-raised)]',
+          'cursor-grab border-transparent hover:border-[var(--border)] hover:bg-[var(--surface-raised)] active:cursor-grabbing',
         )}
       >
         <span
           className={cn(
             'flex shrink-0 items-center justify-center rounded-lg border',
             collapsed ? 'size-8' : compact ? 'size-7' : 'size-8',
-            active
-              ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-ink)]'
-              : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted-strong)] group-hover:text-[var(--text)]',
+            'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted-strong)] group-hover:border-[var(--accent)] group-hover:text-[var(--accent-strong)]',
           )}
         >
-          <Icon
-            size={collapsed || compact ? 15 : 17}
-            weight={active ? 'bold' : 'regular'}
-            aria-hidden="true"
-          />
+          <Icon size={collapsed || compact ? 15 : 17} aria-hidden="true" />
         </span>
         {!collapsed ? (
           <span className={cn('min-w-0', compact && 'w-full')}>
@@ -117,23 +101,12 @@ function ShapePaletteButton({
   );
 }
 
-export function WorkspaceRail({
-  onInsertShape,
-  onDragShapeStart,
-  onDragShapeEnd,
-  onOpenNativeLibrary,
-}: Readonly<{
-  onInsertShape?: (tool: SemanticShapeTool, label: string) => void;
-  onDragShapeStart?: (tool: SemanticShapeTool, label: string) => void;
-  onDragShapeEnd?: () => void;
-  onOpenNativeLibrary?: () => void;
-}>) {
+export function WorkspaceRail() {
   const locale = useWorkspaceStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const activeTool = useWorkspaceStore((state) => state.activeTool);
-  const setActiveTool = useWorkspaceStore((state) => state.setActiveTool);
   const paletteOpen = useWorkspaceStore((state) => state.paletteOpen);
   const togglePalette = useWorkspaceStore((state) => state.togglePalette);
+  const { insertShapeAtCentre } = useCanvasCommands();
   const items: PaletteItem[] = [
     { id: 'start', label: copy.entryPoint, hint: copy.startEventHint, icon: PlayCircle },
     { id: 'task', label: copy.workActivity, hint: copy.taskActivityHint, icon: Square },
@@ -170,10 +143,8 @@ export function WorkspaceRail({
     },
   ];
 
-  const handleSelect = (item: PaletteItem) => {
-    setActiveTool(item.id);
-    onInsertShape?.(item.id, item.label);
-  };
+  const handleSelect = (item: PaletteItem) =>
+    insertShapeAtCentre(item.id, copy.defaultNodeLabels[item.id]);
 
   return (
     <>
@@ -233,37 +204,17 @@ export function WorkspaceRail({
             <ShapePaletteButton
               key={item.id}
               item={item}
-              active={activeTool === item.id}
               collapsed={!paletteOpen}
               onSelect={() => handleSelect(item)}
               addShapeLabel={copy.addShape}
-              onDragStart={() => onDragShapeStart?.(item.id, item.label)}
-              onDragEnd={onDragShapeEnd}
             />
           ))}
         </nav>
-        <div
-          className={cn(
-            'border-t border-[var(--border)]',
-            paletteOpen ? 'px-3 py-3' : 'p-2',
-          )}
-        >
-          <Tooltip content={copy.shapeLibrary}>
-            <button
-              type="button"
-              onClick={onOpenNativeLibrary}
-              title={copy.shapeLibrary}
-              aria-label={copy.shapeLibrary}
-              className={cn(
-                'focus-ring flex w-full cursor-pointer items-center rounded-lg py-1.5 text-[11px] text-[var(--muted)] transition-colors hover:bg-[var(--surface-soft)] hover:text-[var(--text)]',
-                paletteOpen ? 'gap-2 px-2 text-left' : 'justify-center px-0',
-              )}
-            >
-              <Shapes size={15} aria-hidden="true" />
-              {paletteOpen ? <span>{copy.canvasLibraryReady}</span> : null}
-            </button>
-          </Tooltip>
-        </div>
+        {paletteOpen ? (
+          <p className="border-t border-[var(--border)] px-4 py-3 text-[10.5px] leading-4 text-[var(--muted)]">
+            {copy.paletteDragHint}
+          </p>
+        ) : null}
       </aside>
       <nav
         aria-label={copy.processShapes}
@@ -281,11 +232,8 @@ export function WorkspaceRail({
             key={item.id}
             item={item}
             compact
-            active={activeTool === item.id}
             onSelect={() => handleSelect(item)}
             addShapeLabel={copy.addShape}
-            onDragStart={() => onDragShapeStart?.(item.id, item.label)}
-            onDragEnd={onDragShapeEnd}
           />
         ))}
       </nav>

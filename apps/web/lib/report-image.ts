@@ -1,6 +1,7 @@
 import type { AnalysisReport } from '@flowculus/analysis-engine';
 
 import type { Locale, WorkspaceCopy } from '@/lib/i18n';
+import { describeCriticalPath } from '@/lib/describe-critical-path';
 import { localizeAnalysisMessage } from '@/lib/localize-analysis';
 import { downloadDataUriFile } from '@/lib/browser-file-actions';
 
@@ -144,13 +145,11 @@ export async function downloadAnalysisReportImage({
       `${copy.averageSystem}: ${formatNumber(report.queue.averageSystemHours, ' h', copy.emptyValue)}`,
     );
   }
-  if (report.criticalPath) {
-    formulaLines.push(
-      report.criticalPath.status === 'ready'
-        ? `${copy.criticalPath}: ${report.criticalPath.taskLabels.join(' → ') || copy.noActivities} (${report.criticalPath.formula} ${copy.minutes})`
-        : `${copy.criticalPath}: ${report.criticalPath.reason === 'missing-processing-time' ? copy.criticalPathNeedsProcessing : copy.criticalPathUnavailable}`,
-    );
+  const pathText = describeCriticalPath(report, copy);
+  if (pathText) {
+    formulaLines.push(`${copy.criticalPath}: ${pathText.replace('\n', ' · ')}`);
   }
+
   const assumptions = report.assumptions
     .slice(0, 4)
     .map((item) => localizeAnalysisMessage(item, locale));

@@ -9,8 +9,15 @@ import type {
 import { isSequenceFlowEdge } from '@flowculus/process-model';
 import { validateProcessModel } from '@flowculus/validation';
 
+import { analyzeCriticalChain, type CriticalChainReport } from './critical-chain';
 import { analyzeCriticalPath, type CriticalPathReport } from './critical-path';
 import { countProcessPaths, type PathCountReport } from './path-count';
+
+export {
+  analyzeCriticalChain,
+  type CriticalChainBasis,
+  type CriticalChainReport,
+} from './critical-chain';
 
 export {
   analyzeCriticalPath,
@@ -85,6 +92,11 @@ export interface CapacityReport {
   capacityPerDay: number | null;
   utilization: number | null;
   isBottleneck: boolean;
+  /**
+   * M/M/c view of the pool when an arrival rate is known: the pool's expected
+   * work per case is treated as one exponential service with μ = 60 / unit load.
+   */
+  queue?: QueueAnalysisReport;
 }
 
 export interface AnalysisReport {
@@ -111,7 +123,14 @@ export interface AnalysisReport {
     workInProcess: number;
     cycleTimeHours: number;
   };
+  /** Little's Law forecast from the model: WIP = λ × CT. */
+  littleLawForecast?: {
+    arrivalRatePerHour: number;
+    cycleTimeHours: number;
+    workInProcess: number;
+  };
   queue?: QueueAnalysisReport;
+  criticalChain?: CriticalChainReport;
 }
 
 type Metric = 'cycle' | 'theoretical' | 'cost' | 'unitLoad';
@@ -591,10 +610,19 @@ const collectTaskWarnings = (
         `Semantic type for ${node.label} was inferred from its draw.io shape and should be confirmed.`,
       );
     }
-    if (node.metadata?.['flowculus-inferred-gateway-kind'] === true) {
+    if (
+      node.metadata?.['flowculus-inferred-gateway-kind'] === true &&
+      node.metadata?.source !== 'process-mining'
+    ) {
       pushUnique(
         assumptions,
         `Gateway type for ${node.label} was inferred from its draw.io shape and should be confirmed.`,
+      );
+    }
+    if (node.metadata?.['flowculus-inferred-rework'] === true) {
+      pushUnique(
+        assumptions,
+        `Rework probability for ${node.label} was inferred from repeated events in the log.`,
       );
     }
     if (node.kind !== 'task' && node.kind !== 'subprocess') continue;
@@ -714,6 +742,20 @@ const buildCapacity = (
         `Resource pool ${resourcePoolId} is at or above theoretical capacity.`,
       );
     }
+    const queue =
+      arrivalRate != null && arrivalRate > 0 && unitLoadMinutes > 0
+        ? analyzeQueue({
+            arrivalRatePerHour: arrivalRate,
+            serviceRatePerServerPerHour: 60 / unitLoadMinutes,
+            servers: resourceCount,
+          })
+        : undefined;
+    if (queue) {
+      pushUnique(
+        assumptions,
+        `Queue for ${resourcePoolId} treats its expected work per case as one M/M/c service.`,
+      );
+    }
     return {
       resourcePoolId,
       unitLoadMinutes,
@@ -721,6 +763,7 @@ const buildCapacity = (
       capacityPerDay,
       utilization,
       isBottleneck: false,
+      queue,
     };
   });
 
@@ -853,7 +896,8 @@ export const analyzeProcess = (
   const inferredSemanticNodes = Object.values(model.nodes).filter(
     (node) =>
       node.metadata?.['flowculus-inferred-kind'] === true ||
-      node.metadata?.['flowculus-inferred-gateway-kind'] === true,
+      node.metadata?.['flowculus-inferred-gateway-kind'] === true ||
+      node.metadata?.['flowculus-inferred-rework'] === true,
   );
   const cycleSolution = solveMetric(model, 'cycle', warnings, structure);
   const theoreticalSolution = solveMetric(model, 'theoretical', warnings, structure);
@@ -885,7 +929,26 @@ export const analyzeProcess = (
       'The graph did not converge under the finite expected-value model. Use simulation for a dependable estimate.',
     );
   }
-  if (inferredSemanticNodes.length > 0) {
+  const minedGatewayCount = inferredSemanticNodes.filter(
+    (node) =>
+      node.kind === 'gateway' &&
+      node.metadata?.['flowculus-inferred-gateway-kind'] === true &&
+      node.metadata?.source === 'process-mining',
+  ).length;
+  if (minedGatewayCount > 0) {
+    pushUnique(
+      assumptions,
+      `${minedGatewayCount} gateway(s) were mined from the event log; confirm their type and branch probabilities.`,
+    );
+  }
+  if (
+    inferredSemanticNodes.some(
+      (node) =>
+        node.metadata?.['flowculus-inferred-kind'] === true ||
+        (node.metadata?.['flowculus-inferred-gateway-kind'] === true &&
+          node.metadata?.source !== 'process-mining'),
+    )
+  ) {
     pushUnique(
       assumptions,
       'Some semantic types were inferred from native draw.io shapes; confirm them in Inspector before sharing an exact result.',
@@ -943,6 +1006,28 @@ export const analyzeProcess = (
       "Little's Law needs an arrival rate greater than zero before WIP can be converted to cycle time.",
     );
   }
+  const littleLawForecast =
+    options.arrivalRatePerHour != null &&
+    options.arrivalRatePerHour > 0 &&
+    cycleTimeMinutes != null &&
+    Number.isFinite(cycleTimeMinutes)
+      ? {
+          arrivalRatePerHour: options.arrivalRatePerHour,
+          cycleTimeHours: cycleTimeMinutes / 60,
+          workInProcess: options.arrivalRatePerHour * (cycleTimeMinutes / 60),
+        }
+      : undefined;
+  const criticalChain = analyzeCriticalChain({
+    model,
+    startNodeId: startNode.id,
+    remainingMinutes: cycleSolution.values,
+    elapsedMinutes: (node) => {
+      const reward = getNodeReward(node, 'cycle');
+      const rework = node.reworkProbability ?? 0;
+      return rework > 0 && rework < 1 ? reward / (1 - rework) : reward;
+    },
+    edgeProbability: getEdgeProbability,
+  });
   const queue =
     options.arrivalRatePerHour != null && options.serviceRatePerHour != null
       ? analyzeQueue({
@@ -988,7 +1073,9 @@ export const analyzeProcess = (
     ),
     pathCount,
     criticalPath: analyzeCriticalPath(model),
+    criticalChain,
     littleLaw,
+    littleLawForecast,
     queue,
   };
 };

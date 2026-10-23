@@ -1,16 +1,20 @@
 import type { ProcessModel } from '@flowculus/process-model';
 
 /**
- * The small teaching example shipped with the workspace. It mirrors the
- * starter draw.io XML and gives the analysis panel a useful first result even
- * while the remote draw.io iframe is still loading.
+ * The small teaching example shipped with the workspace, with canvas geometry
+ * so the first paint shows a laid-out diagram and a meaningful analysis.
  */
 export const INITIAL_PROCESS_MODEL: ProcessModel = {
   schemaVersion: 1,
   id: 'request-flow',
   name: 'Request handling flow',
   nodes: {
-    start: { id: 'start', label: 'Request received', kind: 'start' },
+    start: {
+      id: 'start',
+      label: 'Request received',
+      kind: 'start',
+      bounds: { x: 60, y: 228, width: 44, height: 44 },
+    },
     triage: {
       id: 'triage',
       label: 'Triage request',
@@ -19,12 +23,14 @@ export const INITIAL_PROCESS_MODEL: ProcessModel = {
       processingMinutes: 6,
       waitingMinutes: 12,
       cost: { resourceRatePerHour: 60, resourcePoolId: 'support', currency: 'USD' },
+      bounds: { x: 164, y: 208, width: 176, height: 84 },
     },
     review: {
       id: 'review',
       label: 'Review required?',
       kind: 'gateway',
       gatewayKind: 'xor',
+      bounds: { x: 404, y: 222, width: 56, height: 56 },
     },
     approve: {
       id: 'approve',
@@ -34,6 +40,7 @@ export const INITIAL_PROCESS_MODEL: ProcessModel = {
       processingMinutes: 8,
       waitingMinutes: 16,
       cost: { resourceRatePerHour: 72, resourcePoolId: 'approval', currency: 'USD' },
+      bounds: { x: 540, y: 112, width: 176, height: 84 },
     },
     auto: {
       id: 'auto',
@@ -43,8 +50,14 @@ export const INITIAL_PROCESS_MODEL: ProcessModel = {
       processingMinutes: 5,
       waitingMinutes: 2,
       cost: { resourceRatePerHour: 48, resourcePoolId: 'automation', currency: 'USD' },
+      bounds: { x: 540, y: 304, width: 176, height: 84 },
     },
-    finish: { id: 'finish', label: 'Request completed', kind: 'end' },
+    finish: {
+      id: 'finish',
+      label: 'Request completed',
+      kind: 'end',
+      bounds: { x: 800, y: 228, width: 44, height: 44 },
+    },
   },
   edges: {
     'edge-start-triage': { id: 'edge-start-triage', source: 'start', target: 'triage' },

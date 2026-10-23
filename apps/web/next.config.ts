@@ -13,8 +13,11 @@ const nextConfig: NextConfig = {
     '@flowculus/drawio-adapter',
     '@flowculus/file-formats',
     '@flowculus/formula-renderer',
+    '@flowculus/graph-layout',
+    '@flowculus/process-mining',
     '@flowculus/process-model',
     '@flowculus/validation',
+    '@flowculus/xml-tree',
   ],
 };
 

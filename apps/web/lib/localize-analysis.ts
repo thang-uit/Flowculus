@@ -130,6 +130,35 @@ export const localizeAnalysisMessage = (message: string, locale: Locale): string
       () =>
         'Một số loại ngữ nghĩa được suy ra từ hình draw.io; hãy xác nhận trong Thuộc tính trước khi chia sẻ kết quả chính xác.',
     ],
+    [
+      /^Queue for (.+) treats its expected work per case as one M\/M\/c service\.$/,
+      (match) =>
+        `Hàng đợi của nhóm ${match[1]} coi khối lượng công việc kỳ vọng mỗi trường hợp là một dịch vụ M/M/c.`,
+    ],
+    [
+      /^(\d+) gateway\(s\) were mined from the event log; confirm their type and branch probabilities\.$/,
+      (match) =>
+        `${match[1]} gateway được khai phá từ nhật ký sự kiện; hãy xác nhận loại gateway và xác suất nhánh.`,
+    ],
+    [
+      /^Rework probability for (.+) was inferred from repeated events in the log\.$/,
+      (match) =>
+        `Xác suất làm lại của ${match[1]} được suy ra từ các sự kiện lặp trong nhật ký.`,
+    ],
+    [
+      /^Activities (.+) and (.+) occur in both orders; they may run in parallel \(AND\) rather than loop\.$/,
+      (match) =>
+        `Hoạt động ${match[1]} và ${match[2]} xuất hiện theo cả hai thứ tự; có thể chúng chạy song song (AND) thay vì lặp.`,
+    ],
+    [
+      /^The log has no start timestamps, so task times are elapsed time between completions and processing time is unknown\.$/,
+      () =>
+        'Nhật ký không có thời điểm bắt đầu nên thời gian hoạt động là khoảng cách giữa các lần hoàn thành; chưa biết thời gian xử lý thực.',
+    ],
+    [
+      /^The event log has no complete case to start from\.$/,
+      () => 'Nhật ký sự kiện không có trường hợp hoàn chỉnh để bắt đầu.',
+    ],
   ];
 
   for (const [pattern, translate] of translations) {

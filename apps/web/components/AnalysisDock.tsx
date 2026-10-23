@@ -22,6 +22,7 @@ import { PathQueryPanel } from '@/components/PathQueryPanel';
 import { ScenarioSettings } from '@/components/ScenarioSettings';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
+import { formatKpiMinutes, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
@@ -39,15 +40,6 @@ const clampDockHeight = (value: number): number => {
   );
   return Math.round(Math.min(viewportLimit, Math.max(MIN_DOCK_HEIGHT, value)));
 };
-
-const formatCompactCycleTime = (
-  value: number | null,
-  minutes: string,
-  emptyValue: string,
-) => (value == null ? emptyValue : `${Number(value.toFixed(2))} ${minutes}`);
-
-const formatCompactPercent = (value: number | null) =>
-  value == null ? null : `${Number((value * 100).toFixed(1))}%`;
 
 interface ResizeState {
   pointerId: number;
@@ -245,12 +237,7 @@ export function AnalysisDock() {
               >
                 <Clock size={13} aria-hidden="true" />
                 <span>
-                  CT{' '}
-                  {formatCompactCycleTime(
-                    report.cycleTimeMinutes,
-                    copy.minutes,
-                    copy.emptyValue,
-                  )}
+                  CT {formatKpiMinutes(report.cycleTimeMinutes, copy.emptyValue)}
                 </span>
               </span>
 
@@ -260,9 +247,8 @@ export function AnalysisDock() {
                   <Pulse size={13} aria-hidden="true" />
                   <span>
                     TCT{' '}
-                    {formatCompactCycleTime(
+                    {formatKpiMinutes(
                       report.theoreticalCycleTimeMinutes,
-                      copy.minutes,
                       copy.emptyValue,
                     )}
                   </span>
@@ -272,7 +258,7 @@ export function AnalysisDock() {
               {/* CTE badge */}
               {report.cycleTimeEfficiency != null ? (
                 <span className="hidden items-center gap-1 rounded-md bg-[var(--surface-soft)] px-2 py-0.5 font-mono text-[11px] font-medium text-[var(--muted-strong)] lg:inline-flex">
-                  <span>CTE {formatCompactPercent(report.cycleTimeEfficiency)}</span>
+                  <span>CTE {formatPercent(report.cycleTimeEfficiency)}</span>
                 </span>
               ) : null}
 

@@ -34,7 +34,7 @@ export function LanguageToggle() {
         onClick={() => setLocale(locale === 'en' ? 'vi' : 'en')}
         className="focus-ring tb-btn h-8 gap-1.5 px-2.5 text-xs text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--text)] active:scale-[0.96]"
       >
-        <GoogleTranslateIcon className="shrink-0" />
+        <GoogleTranslateIcon className="hidden shrink-0 sm:block" />
         <span className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-[var(--muted-strong)]">
           {locale === 'en' ? 'en' : 'vi'}
         </span>

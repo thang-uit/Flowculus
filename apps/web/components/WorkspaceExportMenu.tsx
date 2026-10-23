@@ -4,21 +4,15 @@ import { CaretDown, FileArrowDown } from '@phosphor-icons/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import type { WorkspaceCopy } from '@/lib/i18n';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
-
-export type WorkspaceExportFormat =
-  'xml' | 'png' | 'svg' | 'jpg' | 'jpeg' | 'pdf' | 'json';
+import type { WorkspaceCopy } from '@/lib/i18n';
+import type { WorkspaceExportFormat } from '@/lib/workspace-exports';
 
 interface WorkspaceExportMenuProps {
   copy: WorkspaceCopy;
   onOpenFile: () => void;
-  onSaveFile: () => void;
-  onExportCanvas: (format: WorkspaceExportFormat) => void;
-  onExportAnalysisImage: (format: 'png' | 'jpeg') => void;
-  onDownloadFlowculus: () => void;
-  onDownloadCsv: () => void;
+  onExport: (format: WorkspaceExportFormat) => void;
   className?: string;
   compact?: boolean;
 }
@@ -34,11 +28,7 @@ interface WorkspaceExportMenuProps {
 export function WorkspaceExportMenu({
   copy,
   onOpenFile,
-  onSaveFile,
-  onExportCanvas,
-  onExportAnalysisImage,
-  onDownloadFlowculus,
-  onDownloadCsv,
+  onExport,
   className,
   compact = false,
 }: Readonly<WorkspaceExportMenuProps>) {
@@ -93,14 +83,34 @@ export function WorkspaceExportMenu({
     setOpen(false);
   };
 
-  const canvasExports: Array<[string, WorkspaceExportFormat]> = [
-    [copy.exportDrawio, 'xml'],
-    [copy.exportPng, 'png'],
-    [copy.exportSvg, 'svg'],
-    [copy.exportJpg, 'jpg'],
-    [copy.exportJpeg, 'jpeg'],
-    [copy.exportPdf, 'pdf'],
-    [copy.exportJson, 'json'],
+  const sections: Array<{
+    label: string;
+    items: Array<[string, WorkspaceExportFormat]>;
+  }> = [
+    {
+      label: copy.exportSectionDiagram,
+      items: [
+        [copy.exportDrawio, 'drawio'],
+        [copy.exportSvg, 'svg'],
+        [copy.exportPng, 'png'],
+        [copy.exportJpeg, 'jpeg'],
+      ],
+    },
+    {
+      label: copy.exportSectionReport,
+      items: [
+        [copy.exportPdf, 'pdf'],
+        [copy.exportPngReport, 'report-png'],
+        [copy.exportJpegReport, 'report-jpeg'],
+      ],
+    },
+    {
+      label: copy.exportSectionData,
+      items: [
+        [copy.exportFlowculus, 'flowculus'],
+        [copy.exportCsv, 'csv'],
+      ],
+    },
   ];
 
   const menuItemClass =
@@ -123,87 +133,34 @@ export function WorkspaceExportMenu({
       }}
       className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-[var(--shadow-panel)]"
     >
-      {/* Open / Save — mobile only */}
       <button
         role="menuitem"
         type="button"
         title={copy.openFile}
         onClick={() => invoke(onOpenFile)}
-        className={cn(menuItemClass, 'md:hidden')}
+        className={cn(menuItemClass, 'lg:hidden')}
       >
         {copy.openFile}
       </button>
-      <button
-        role="menuitem"
-        type="button"
-        title={copy.saveFile}
-        onClick={() => invoke(onSaveFile)}
-        className={cn(menuItemClass, 'md:hidden')}
-      >
-        {copy.saveFile}
-      </button>
-      <div className="my-1 border-t border-[var(--border)] md:hidden" />
-
-      {/* Canvas exports */}
-      <p className={sectionLabelClass}>Canvas</p>
-      {canvasExports.map(([label, format]) => (
-        <button
-          role="menuitem"
-          key={format}
-          type="button"
-          title={label}
-          onClick={() => invoke(() => onExportCanvas(format))}
-          className={menuItemClass}
-        >
-          {label}
-        </button>
+      <div className="my-1 border-t border-[var(--border)] lg:hidden" />
+      {sections.map((section, index) => (
+        <div key={section.label}>
+          {index > 0 ? <div className="my-1 border-t border-[var(--border)]" /> : null}
+          <p className={sectionLabelClass}>{section.label}</p>
+          {section.items.map(([label, format]) => (
+            <button
+              role="menuitem"
+              key={format}
+              type="button"
+              title={label}
+              onClick={() => invoke(() => onExport(format))}
+              className={menuItemClass}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       ))}
-
-      <div className="my-1 border-t border-[var(--border)]" />
-
-      {/* Analysis report images */}
-      <p className={sectionLabelClass}>Report</p>
-      <button
-        role="menuitem"
-        type="button"
-        title={copy.exportPngReport}
-        onClick={() => invoke(() => onExportAnalysisImage('png'))}
-        className={menuItemClass}
-      >
-        {copy.exportPngReport}
-      </button>
-      <button
-        role="menuitem"
-        type="button"
-        title={copy.exportJpegReport}
-        onClick={() => invoke(() => onExportAnalysisImage('jpeg'))}
-        className={menuItemClass}
-      >
-        {copy.exportJpegReport}
-      </button>
-
-      <div className="my-1 border-t border-[var(--border)]" />
-
-      {/* Flowculus data */}
-      <p className={sectionLabelClass}>Data</p>
-      <button
-        role="menuitem"
-        type="button"
-        title={copy.exportFlowculus}
-        onClick={() => invoke(onDownloadFlowculus)}
-        className={menuItemClass}
-      >
-        {copy.exportFlowculus}
-      </button>
-      <button
-        role="menuitem"
-        type="button"
-        title={copy.exportCsv}
-        onClick={() => invoke(onDownloadCsv)}
-        className={menuItemClass}
-      >
-        {copy.exportCsv}
-      </button>
     </div>
   ) : null;
 

@@ -10,6 +10,7 @@
     }
   },
   "dependencies": {
+    "@flowculus/graph-layout": "workspace:*",
     "@flowculus/process-model": "workspace:*"
   },
   "devDependencies": {

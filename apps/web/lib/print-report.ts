@@ -1,6 +1,7 @@
 import type { AnalysisReport } from '@flowculus/analysis-engine';
 
 import type { Locale, WorkspaceCopy } from '@/lib/i18n';
+import { describeCriticalPath } from '@/lib/describe-critical-path';
 import { localizeAnalysisMessage } from '@/lib/localize-analysis';
 
 interface PrintAnalysisReportOptions {
@@ -167,18 +168,14 @@ export function printAnalysisReport({
   formulaSection.append(formulaHeading, formula);
   main.append(formulaSection);
 
-  if (report.criticalPath) {
+  const pathText = describeCriticalPath(report, copy);
+  if (pathText) {
     const criticalPathSection = printDocument.createElement('section');
     const criticalPathHeading = printDocument.createElement('h2');
     criticalPathHeading.textContent = copy.criticalPath;
     const criticalPath = printDocument.createElement('p');
     criticalPath.className = 'formula';
-    criticalPath.textContent =
-      report.criticalPath.status === 'ready'
-        ? `${report.criticalPath.taskLabels.join(' → ') || copy.noActivities}\n${report.criticalPath.formula} ${copy.minutes}`
-        : report.criticalPath.reason === 'missing-processing-time'
-          ? copy.criticalPathNeedsProcessing
-          : copy.criticalPathUnavailable;
+    criticalPath.textContent = pathText;
     criticalPathSection.append(criticalPathHeading, criticalPath);
     main.append(criticalPathSection);
   }

@@ -1,6 +1,6 @@
 # ADR 0001: Keep the canvas behind an adapter boundary
 
-Status: accepted
+Status: superseded by [ADR 0002](0002-native-canvas.md)
 
 ## Context
 

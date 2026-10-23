@@ -1,19 +1,52 @@
 'use client';
 
-import { CheckCircle, Code, Lightning, WarningCircle } from '@phosphor-icons/react';
+import {
+  CheckCircle,
+  Code,
+  Lightning,
+  Stack,
+  WarningCircle,
+} from '@phosphor-icons/react';
+import { useId } from 'react';
+
+import { exportDrawioXml, importDrawioXml } from '@flowculus/drawio-adapter';
+import { withAutoLayout } from '@flowculus/file-formats';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
+/** Switching page first writes the current edits back into the source file. */
+const switchDrawioPage = async (pageIndex: number) => {
+  const state = useWorkspaceStore.getState();
+  const source = state.drawioSource;
+  if (!source || source.pageIndex === pageIndex) return;
+  const xml = await exportDrawioXml(state.processModel, source.xml);
+  const imported = await importDrawioXml(xml, {
+    pageIndex,
+    fallbackName: state.modelName,
+  });
+  useWorkspaceStore.getState().loadModel(withAutoLayout(imported.model), {
+    drawioSource: { xml, pages: imported.pages, pageIndex: imported.pageIndex },
+  });
+};
+
 export function AnalysisStatusBar() {
   const locale = useWorkspaceStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const drawioStatus = useWorkspaceStore((state) => state.drawioStatus);
   const draftStatus = useWorkspaceStore((state) => state.draftStatus);
   const analysisRuntimeStatus = useWorkspaceStore((state) => state.analysisRuntimeStatus);
   const report = useWorkspaceStore((state) => state.analysisReport);
   const analysisRevision = useWorkspaceStore((state) => state.analysisRevision);
-  const isError = drawioStatus === 'error' || report.status === 'invalid';
+  const nodeCount = useWorkspaceStore(
+    (state) => Object.keys(state.processModel.nodes).length,
+  );
+  const edgeCount = useWorkspaceStore(
+    (state) => Object.keys(state.processModel.edges).length,
+  );
+  const drawioSource = useWorkspaceStore((state) => state.drawioSource);
+  const pageSelectId = useId();
+  const isError = report.status === 'invalid';
+
   return (
     <footer className="flex min-h-9 shrink-0 items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-3 text-[11px] sm:px-4">
       <div className="flex min-w-0 items-center gap-3 text-[var(--muted)]">
@@ -33,17 +66,12 @@ export function AnalysisStatusBar() {
             />
           )}
           <span className="hidden sm:inline">
-            {drawioStatus === 'loading'
-              ? `${copy.drawioEditor}…`
-              : drawioStatus === 'saving'
-                ? copy.saveFile
-                : isError
-                  ? drawioStatus === 'error'
-                    ? copy.drawioLoadError
-                    : copy.fileError
-                  : copy.canvasReady}
+            {isError ? copy.modelNeedsAttention : copy.canvasReady}
           </span>
           <span className="sm:hidden">{isError ? copy.error : copy.ready}</span>
+        </span>
+        <span className="hidden whitespace-nowrap md:inline">
+          {copy.nodesAndFlows(nodeCount, edgeCount)}
         </span>
         <span
           className="hidden items-center gap-1.5 whitespace-nowrap md:inline-flex"
@@ -95,7 +123,27 @@ export function AnalysisStatusBar() {
         </span>
       </div>
       <div className="flex shrink-0 items-center gap-3 text-[var(--muted)]">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[10px]">
+        {drawioSource && drawioSource.pages.length > 1 ? (
+          <span className="inline-flex items-center gap-1.5">
+            <Stack size={14} aria-hidden="true" />
+            <label htmlFor={pageSelectId} className="sr-only">
+              {copy.pages}
+            </label>
+            <select
+              id={pageSelectId}
+              value={drawioSource.pageIndex}
+              onChange={(event) => void switchDrawioPage(Number(event.target.value))}
+              className="focus-ring h-7 max-w-[10rem] cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface-raised)] px-1.5 text-[11px] text-[var(--text)]"
+            >
+              {drawioSource.pages.map((page, index) => (
+                <option key={page.id} value={index}>
+                  {page.name}
+                </option>
+              ))}
+            </select>
+          </span>
+        ) : null}
+        <span className="hidden items-center gap-1.5 font-mono text-[10px] sm:inline-flex">
           <Code size={14} aria-hidden="true" />
           {copy.schema} 1.0
         </span>

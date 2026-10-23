@@ -24,6 +24,18 @@ export interface TaskCost {
 
 export type ProcessMetadataValue = string | number | boolean;
 
+/**
+ * Absolute canvas geometry in diagram units (draw.io pixels). Optional so that
+ * CSV/event-log models without coordinates stay valid; the web layer lays them
+ * out deterministically before they are shown.
+ */
+export interface NodeBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface ProcessNode {
   id: string;
   label: string;
@@ -40,6 +52,8 @@ export interface ProcessNode {
   reworkProbability?: number;
   /** Original draw.io cell id when the model came from a diagram. */
   drawioCellId?: string;
+  /** Canvas geometry. */
+  bounds?: NodeBounds;
   metadata?: Record<string, ProcessMetadataValue>;
 }
 
@@ -90,3 +104,25 @@ export const createEmptyProcessModel = (name = 'Untitled process'): ProcessModel
   nodes: {},
   edges: {},
 });
+
+/**
+ * Default canvas size per semantic kind. Shared by the canvas, the draw.io
+ * exporter and the auto-layout so a node keeps one footprint everywhere.
+ */
+export const DEFAULT_NODE_SIZE: Record<
+  ProcessNodeKind,
+  { width: number; height: number }
+> = {
+  start: { width: 44, height: 44 },
+  end: { width: 44, height: 44 },
+  event: { width: 44, height: 44 },
+  gateway: { width: 56, height: 56 },
+  task: { width: 176, height: 84 },
+  subprocess: { width: 184, height: 92 },
+  data: { width: 52, height: 64 },
+  annotation: { width: 168, height: 64 },
+  unknown: { width: 160, height: 80 },
+};
+
+export const getNodeBounds = (node: ProcessNode): NodeBounds =>
+  node.bounds ?? { x: 0, y: 0, ...DEFAULT_NODE_SIZE[node.kind] };

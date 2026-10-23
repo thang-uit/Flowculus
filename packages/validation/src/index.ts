@@ -2,6 +2,13 @@ import { z } from 'zod';
 
 import { isSequenceFlowEdge, type ProcessModel } from '@flowculus/process-model';
 
+const boundsSchema = z.object({
+  x: z.number().finite(),
+  y: z.number().finite(),
+  width: z.number().finite().positive(),
+  height: z.number().finite().positive(),
+});
+
 const nodeSchema = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -31,6 +38,7 @@ const nodeSchema = z.object({
     .optional(),
   reworkProbability: z.number().finite().min(0).lt(1).optional(),
   drawioCellId: z.string().min(1).optional(),
+  bounds: boundsSchema.optional(),
   metadata: z
     .record(z.string(), z.union([z.string(), z.number(), z.boolean()]))
     .optional(),
