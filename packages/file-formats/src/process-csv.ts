@@ -1,4 +1,10 @@
-import type { ProcessEdge, ProcessModel, ProcessNode } from '@flowculus/process-model';
+import { resolveActivityTime } from '@flowculus/analysis-engine';
+import {
+  SEMANTIC_METADATA_KEYS,
+  type ProcessEdge,
+  type ProcessModel,
+  type ProcessNode,
+} from '@flowculus/process-model';
 
 import { escapeCsvValue, parseCsvTable } from './csv-table';
 
@@ -6,24 +12,41 @@ const escapeCsv = (value: unknown): string => escapeCsvValue(value);
 
 const csvValue = (value: unknown): string => (value == null ? '' : String(value));
 
-const nodeToCsvRow = (node: ProcessNode): string[] => [
-  csvValue(node.id),
-  csvValue(node.label),
-  csvValue(node.kind),
-  csvValue(node.gatewayKind),
-  csvValue(node.durationMinutes),
-  csvValue(node.processingMinutes),
-  csvValue(node.waitingMinutes),
-  csvValue(node.reworkProbability),
-  csvValue(node.cost?.resourceRatePerHour),
-  csvValue(node.cost?.otherCostPerExecution),
-  csvValue(node.cost?.resourcePoolId),
-  csvValue(node.cost?.resourceCount),
-  csvValue(node.bounds?.x),
-  csvValue(node.bounds?.y),
-  csvValue(node.bounds?.width),
-  csvValue(node.bounds?.height),
-];
+const isTimed = (node: ProcessNode): boolean =>
+  node.durationMinutes != null ||
+  node.processingMinutes != null ||
+  node.waitingMinutes != null ||
+  node.kind === 'task' ||
+  node.kind === 'subprocess';
+
+/**
+ * `cycle_time_minutes` is the observed duration D exactly as modelled (so the
+ * file re-imports unchanged); `effective_cycle_time_minutes` and
+ * `cycle_time_source` state the CT the engine uses and where it comes from.
+ */
+const nodeToCsvRow = (node: ProcessNode): string[] => {
+  const time = isTimed(node) ? resolveActivityTime(node) : undefined;
+  return [
+    csvValue(node.id),
+    csvValue(node.label),
+    csvValue(node.kind),
+    csvValue(node.gatewayKind),
+    csvValue(node.durationMinutes),
+    csvValue(node.processingMinutes),
+    csvValue(node.waitingMinutes),
+    csvValue(time?.cycleTimeMinutes),
+    csvValue(time?.cycleTimeSource),
+    csvValue(node.reworkProbability),
+    csvValue(node.cost?.resourceRatePerHour),
+    csvValue(node.cost?.otherCostPerExecution),
+    csvValue(node.cost?.resourcePoolId),
+    csvValue(node.cost?.resourceCount),
+    csvValue(node.bounds?.x),
+    csvValue(node.bounds?.y),
+    csvValue(node.bounds?.width),
+    csvValue(node.bounds?.height),
+  ];
+};
 
 const edgeToCsvRow = (edge: ProcessEdge): string[] => [
   csvValue(edge.id),
@@ -45,6 +68,8 @@ export const processModelToNodesCsv = (model: ProcessModel): string => {
       'cycle_time_minutes',
       'processing_minutes',
       'waiting_minutes',
+      'effective_cycle_time_minutes',
+      'cycle_time_source',
       'rework_probability',
       'resource_rate_per_hour',
       'other_cost_per_execution',
@@ -282,11 +307,8 @@ export const parseProcessCsv = (
     );
     const resourceCount = csvNumber(record, 'resourceCount', 'poolSize');
     const reworkProbability = csvNumber(record, 'reworkProbability', 'rework');
-    const kind = csvNodeKind(
-      firstCsvValue(record, 'kind', 'nodeType', 'type'),
-      label,
-      gatewayKind,
-    );
+    const rawKind = firstCsvValue(record, 'kind', 'nodeType', 'type');
+    const kind = csvNodeKind(rawKind, label, gatewayKind);
     const notes = firstCsvValue(record, 'notes', 'note', 'description');
     const x = csvNumber(record, 'x');
     const y = csvNumber(record, 'y');
@@ -326,7 +348,16 @@ export const parseProcessCsv = (
         height > 0
           ? { x, y, width, height }
           : undefined,
-      metadata: notes ? { csvNotes: notes, source: 'csv' } : { source: 'csv' },
+      metadata: {
+        source: 'csv',
+        ...(notes ? { csvNotes: notes } : {}),
+        // A type guessed from the label (no kind/type column) or a gateway
+        // without a declared type must be confirmed before it is trusted.
+        ...(rawKind ? {} : { [SEMANTIC_METADATA_KEYS.inferredKind]: true }),
+        ...(kind === 'gateway' && !gatewayKind
+          ? { [SEMANTIC_METADATA_KEYS.inferredGatewayKind]: true }
+          : {}),
+      },
     };
   }
 

@@ -9,12 +9,7 @@ import {
   Pulse,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type {
-  CSSProperties,
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-} from 'react';
+import type { CSSProperties } from 'react';
 
 import { AnalysisDetails } from '@/components/AnalysisDetails';
 import { AnalysisSummary } from '@/components/AnalysisSummary';
@@ -24,33 +19,8 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { formatKpiMinutes, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { MAX_DOCK_HEIGHT, MIN_DOCK_HEIGHT, useDockResize } from '@/lib/use-dock-resize';
 import { useWorkspaceStore } from '@/lib/workspace-store';
-
-const DEFAULT_DOCK_HEIGHT = 380;
-const MIN_DOCK_HEIGHT = 176;
-const MAX_DOCK_HEIGHT = 680;
-
-const clampDockHeight = (value: number): number => {
-  if (typeof window === 'undefined') {
-    return Math.min(MAX_DOCK_HEIGHT, Math.max(MIN_DOCK_HEIGHT, value));
-  }
-  const viewportLimit = Math.max(
-    MIN_DOCK_HEIGHT,
-    Math.min(MAX_DOCK_HEIGHT, window.innerHeight * 0.76),
-  );
-  return Math.round(Math.min(viewportLimit, Math.max(MIN_DOCK_HEIGHT, value)));
-};
-
-interface ResizeState {
-  pointerId: number;
-  startY: number;
-  startHeight: number;
-}
-
-interface ResizeListeners {
-  move: (event: PointerEvent) => void;
-  end: (event: PointerEvent) => void;
-}
 
 export function AnalysisDock() {
   const locale = useWorkspaceStore((state) => state.locale);
@@ -60,11 +30,8 @@ export function AnalysisDock() {
   const analysisRuntimeStatus = useWorkspaceStore((state) => state.analysisRuntimeStatus);
   const open = useWorkspaceStore((state) => state.analysisDockOpen);
   const toggle = useWorkspaceStore((state) => state.toggleAnalysisDock);
-  const [dockHeight, setDockHeight] = useState(DEFAULT_DOCK_HEIGHT);
-  const dockRef = useRef<HTMLElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const resizeStateRef = useRef<ResizeState | null>(null);
-  const resizeListenersRef = useRef<ResizeListeners | null>(null);
+  const { dockRef, panelRef, dockHeight, handleResizeStart, handleResizeKeyDown } =
+    useDockResize(open);
   const isCalculating = analysisRuntimeStatus === 'calculating';
   const isValid = report.status === 'ready';
   const statusLabel = isCalculating
@@ -72,86 +39,6 @@ export function AnalysisDock() {
     : isValid
       ? copy.analysisUpdated
       : copy.error;
-
-  const writeDockHeight = useCallback((height: number) => {
-    dockRef.current?.style.setProperty('--analysis-dock-height', `${height}px`);
-  }, []);
-
-  const finishResize = useCallback(
-    (height: number) => {
-      const nextHeight = clampDockHeight(height);
-      resizeStateRef.current = null;
-      setDockHeight(nextHeight);
-      writeDockHeight(nextHeight);
-      document.body.style.removeProperty('cursor');
-      document.body.style.removeProperty('user-select');
-      dockRef.current?.removeAttribute('data-resizing');
-    },
-    [writeDockHeight],
-  );
-
-  const removeResizeListeners = useCallback(() => {
-    const listeners = resizeListenersRef.current;
-    if (!listeners) return;
-    window.removeEventListener('pointermove', listeners.move);
-    window.removeEventListener('pointerup', listeners.end);
-    window.removeEventListener('pointercancel', listeners.end);
-    resizeListenersRef.current = null;
-  }, []);
-
-  useEffect(() => () => removeResizeListeners(), [removeResizeListeners]);
-
-  const handleResizeStart = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || !open) return;
-    event.preventDefault();
-    removeResizeListeners();
-    const startY = event.clientY;
-    const startHeight = panelRef.current?.getBoundingClientRect().height ?? dockHeight;
-    resizeStateRef.current = {
-      pointerId: event.pointerId,
-      startY,
-      startHeight,
-    };
-    dockRef.current?.setAttribute('data-resizing', 'true');
-    document.body.style.cursor = 'ns-resize';
-    document.body.style.userSelect = 'none';
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      const state = resizeStateRef.current;
-      if (!state || moveEvent.pointerId !== state.pointerId) return;
-      const delta = state.startY - moveEvent.clientY;
-      const next = clampDockHeight(state.startHeight + delta);
-      writeDockHeight(next);
-    };
-
-    const onPointerUp = (upEvent: PointerEvent) => {
-      const state = resizeStateRef.current;
-      if (!state || upEvent.pointerId !== state.pointerId) return;
-      removeResizeListeners();
-      const delta = state.startY - upEvent.clientY;
-      finishResize(state.startHeight + delta);
-    };
-
-    resizeListenersRef.current = { move: onPointerMove, end: onPointerUp };
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerup', onPointerUp, { passive: true });
-    window.addEventListener('pointercancel', onPointerUp, { passive: true });
-  };
-
-  const handleResizeKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (!open) return;
-    const step = event.shiftKey ? 32 : 12;
-    let nextHeight = dockHeight;
-    if (event.key === 'ArrowUp') nextHeight += step;
-    else if (event.key === 'ArrowDown') nextHeight -= step;
-    else if (event.key === 'Home') nextHeight = MIN_DOCK_HEIGHT;
-    else if (event.key === 'End') nextHeight = MAX_DOCK_HEIGHT;
-    else return;
-    event.preventDefault();
-    const next = clampDockHeight(nextHeight);
-    setDockHeight(next);
-    writeDockHeight(next);
-  };
 
   return (
     <section

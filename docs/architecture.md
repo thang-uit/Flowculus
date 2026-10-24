@@ -2,82 +2,151 @@
 
 ## Dependency direction
 
-`apps/web` composes the UI and application use cases. It may depend on the domain packages. Domain packages must not import React, Next.js or browser-only APIs, so they run unchanged in Web Workers and in the Node test runner.
+`apps/web` composes the UI and browser adapters. Packages are pure TypeScript
+(no React, Next.js, DOM or storage APIs), so they run unchanged in Web Workers
+and in the Vitest Node runner.
 
 ```text
 apps/web
-  -> process-model      (types, default node sizes, bounds)
-  -> validation         (schemas, graph checks)
-  -> analysis-engine    (flow equations, CPM, critical chain, capacity, queues)
-  -> formula-renderer   (formula AST formatting)
-  -> drawio-adapter     -> process-model, xml-tree
-  -> file-formats       -> process-model, graph-layout
-  -> process-mining     -> process-model, file-formats, xml-tree
-  -> graph-layout       (pure geometry, no domain imports)
-xml-tree                (no dependencies)
+  -> analysis-engine   -> validation, process-model, formula-renderer
+  -> file-formats      -> analysis-engine, graph-layout, process-model
+  -> process-mining    -> file-formats, process-model, xml-tree
+  -> drawio-adapter    -> process-model, xml-tree
+  -> validation        -> process-model
+  -> graph-layout, formula-renderer, process-model, xml-tree (leaf packages)
 ```
+
+`drawio-adapter` and `process-mining` use `validation`/`analysis-engine` only
+as dev dependencies in tests.
 
 ## Canvas
 
-The canvas is a native React Flow (`@xyflow/react`) surface; see [ADR 0002](adr/0002-native-canvas.md).
+The canvas is native React Flow (`@xyflow/react`); see
+[ADR 0002](adr/0002-native-canvas.md).
 
-- `ProcessModel` in the workspace store is the single source of truth. `lib/canvas-flow.ts` derives React Flow nodes and edges from it; `ProcessCanvas` syncs them with the derived-state pattern and keeps React Flow's measured sizes (`mergeMeasuredNodes`).
-- Pointer movement stays inside React Flow. The store is written once per gesture – drag stop, connect, delete, drop, quick action – through `commitModel`, which also records undo/redo history (100 steps).
-- Drops use `screenToFlowPosition`, and `addNodeAt` centres the new node on that point, so a shape lands exactly under the pointer at any zoom or pan.
-- Custom node views (`ProcessNodeView`) render BPMN tasks with `T`/`Wq`/rate/rework chips, diamond gateways with glyphs, events, data objects and annotations. Handles have a 28 px hit area and `connectionRadius` is 36 px.
-- `SequenceFlowEdge` routes each flow with `@flowculus/graph-layout` (`routeOrthogonalEdge`) using the committed node bounds as obstacles, and shows the branch label and probability. The critical chain is highlighted and, unless the user prefers reduced motion, animated.
-- `lib/model-editing.ts` holds the pure editing commands (add, move, connect, remove, append after, change kind, confirm inferred semantics, rebalance XOR probabilities). It is unit-tested without a DOM.
+- `ProcessModel` in the Zustand workspace store is the single source of truth.
+  `lib/canvas-flow.ts` derives React Flow nodes and edges; `ProcessCanvas`
+  composes `FlowMarkers`, `CriticalChainLegend`, and the hooks in
+  `use-canvas-commands.ts` / `use-canvas-shortcuts.ts`.
+- Pointer movement stays inside React Flow. The store is written once per
+  gesture through `commitModel`, which records undo history (100 steps).
+- `ProcessNodeView` renders `CT`/`T`/`Wq` chips from `activityTimeTerms`
+  (with the time source in the tooltip) and a "needs confirmation" badge from
+  `unconfirmedNodeCodes`. The critical chain is solid when exact and dashed
+  with a legend when it is an estimate (`data-critical-quality`).
+- `focusElement` in the store selects an element, opens the Inspector and
+  centres the canvas on it (used by diagnostics and the semantic review list).
 
-## draw.io interoperability
+## Validation and diagnostics
 
-`@flowculus/drawio-adapter` reads and writes `.drawio` files with the DOM-free `@flowculus/xml-tree`.
+`@flowculus/validation` returns structured diagnostics
+`{ code, severity, impact, scope?, path?, params? }`:
 
-- **Import** decodes plain, compressed (deflate-raw + base64 + URI) and multi-page files. A page that cannot be decoded only fails when it is opened. Absolute bounds are computed through parent containers. Shapes without `flowculus-*` metadata are classified from their draw.io style and flagged as inferred; the analysis reports an assumption until the user confirms them.
-- **Export** patches the source XML instead of regenerating it. Only geometry of moved nodes, changed labels, `flowculus-*` attributes, added cells and deleted cells change. Unknown cells, styles, pages and comments are preserved. Without a source file a fresh `mxfile` with native BPMN styles is created.
-- The round trip is covered by Vitest (`packages/drawio-adapter/src/index.test.ts`).
+- `validateModelStructure`: schema, dangling edges, time-contract conflicts,
+  branch probabilities.
+- `validateProcessGraph`: entry resolution (`resolveProcessEntry` never picks
+  "the first" of several starts), reachability, gateway checks, unsupported
+  elements and gateway kinds.
+- The app turns codes into sentences in `lib/diagnostic-messages.ts`, using
+  `lib/i18n/diagnostics-en.ts` and `diagnostics-vi.ts`, both typed
+  `Record<DiagnosticCode, …>`.
+
+## Semantic confirmation
+
+`semantic-confirmation.ts` owns the policy (see
+[ADR 0003](adr/0003-honest-analysis-and-semantic-gate.md)):
+
+- `collectUnconfirmedSemantics(model)` lists inferred node kinds, gateway
+  kinds, rework, edge kinds, edge probabilities and unknown kinds.
+- `confirmSemantics(model, targets?)` removes the inferred flags and records
+  `flowculus-confirmed: true`.
+- `checkSemanticGate` / `assertConfirmedModel` and the branded
+  `ConfirmedProcessModel` type make the exporter unusable without the gate.
+- In the app, `use-workspace-actions` is the single entry point for export and
+  share. A blocked action opens `SemanticGateDialog`; "Review in Inspector"
+  opens `SemanticReviewPanel` (per-item confirm, "Confirm all remaining…" behind
+  a second step). The Inspector shows a `ConfirmedChip` afterwards.
 
 ## Analysis
 
-The analysis worker receives a serializable process model and returns a serializable report. React components render the report but do not own formulas. A synchronous fallback is used only when the browser blocks module workers; `use-analysis-worker` ignores stale request IDs.
+`analyzeProcess` (`analysis-engine/src/analyze.ts`) orchestrates:
 
-- Block-structured equations: sequence sum, XOR probability-weighted sum, AND max for elapsed time (sum for cost and unit load), and rework as a fixed point of expected visits. A task-level rework probability applies only to that task.
-- OR is evaluated only under explicit independent-branch assumptions. Complex, event-based or unstructured graphs return diagnostics and `simulation-required` instead of an unqualified number.
-- CPM is exposed for decision-free acyclic graphs. `analyzeCriticalChain` follows the dominant branch through decisions and loops and labels the result `assumption` (`basis: 'dominant-branch'`).
-- Capacity reports compute utilisation per resource pool and an M/M/c queue (Erlang-C) with μ = 60 / unit load. `littleLawForecast` derives WIP = λ × CT from the scenario arrival rate.
-- `countProcessPaths` is a bounded graph query used by `PathQueryPanel`.
+1. `validateModelStructure` and `validateProcessGraph`.
+2. `collectActivityTimes` (`activity-diagnostics.ts`): the time contract from
+   `resolveActivityTime` (`cycle-time.ts`) with per-activity diagnostics.
+3. `resolveBlockStructure` (`structure.ts`): Cooper–Harvey–Kennedy dominators,
+   post-dominators with a virtual exit, explicit `flowculus-join-id` first,
+   then a proven join with a SESE check and matching gateway kind; otherwise
+   the split is unresolved (`simulation-required`). Tarjan SCCs mark cycles.
+4. `solveMetric` (`solver.ts`) for CT, TCT, cost and unit load: block rules,
+   OR enumeration (independent branches, at most 12), rework, and loops as an
+   absorbing Markov-chain fixed point.
+5. Formula ASTs (`formula.ts`), CTE (`computeCycleTimeEfficiency`), capacity
+   and M/M/c queues (`capacity.ts`, `queue.ts`), CPM (`critical-path.ts`), the
+   critical chain (`critical-chain.ts`) and path counts (`path-count.ts`).
+6. Quality (`quality.ts`): each diagnostic's impact applies to its scope;
+   `metricQuality` is the worst impact per metric and the headline is
+   worst(CT, TCT). Values are `null` when `simulation-required`.
 
-`ScenarioSettings` writes committed operating assumptions (`AnalysisOptions`) to the store. The same options travel with the worker request, the IndexedDB draft and the Flowculus JSON export.
+The report (`report.ts`) is plain data, so it survives `structuredClone`
+between the worker, the store, the UI and every export unchanged
+(`report-content.test.ts`).
+
+## Workers
+
+- `workers/analysis.worker.ts` runs `analyzeProcess`. `use-analysis-worker`
+  drives it through `createWorkerSupervisor` (`lib/worker-supervisor.ts`):
+  latest request wins, a stale request older than 750 ms is cancelled by
+  restarting the worker, 20 s timeout, at most 2 consecutive crash restarts,
+  then a main-thread fallback.
+- `workers/mining.worker.ts` hosts the stateful mining session.
+  `useMiningClient` adds a 90 s timeout, `cancel()` and bounded restarts;
+  `useMiningSession` maps aborts to a cleared session and a localized message.
+- Workers are bundled by webpack (`next build --webpack`); see
+  [ADR 0004](adr/0004-webpack-for-module-workers.md).
+  `scripts/verify-worker-bundle.mjs` fails the build otherwise.
+
+## draw.io interoperability
+
+`@flowculus/drawio-adapter` reads and writes `.drawio` files with
+`@flowculus/xml-tree`.
+
+- Import decodes plain, compressed and multi-page files, computes absolute
+  bounds through containers, classifies shapes from style (`describeBpmnShape`)
+  and flags every guess. Text, images, pools and lanes are presentation only.
+- Export patches the source XML. Untouched cells, `UserObject`s, styles,
+  pages and waypoints of unmoved flows are kept; the edited page is written
+  uncompressed; unconfirmed guesses are not written back. The guarantee is
+  semantic preservation (`semantic-preserving.test.ts`), not byte equality.
 
 ## Process mining
 
-`@flowculus/process-mining` is pure TypeScript:
+`@flowculus/process-mining` parses CSV/TSV/JSON/XES (`MAX_EVENT_ROWS` =
+500,000), builds traces, variants, the DFG and bottlenecks, and converts the
+filtered DFG to BPMN (`dfgToProcessModel`) with inferred gateway and
+probability flags and structured `MiningConversionWarning`s. The mining view is
+split into `MiningSourcePanel`, `MiningFilterPanel`, `MiningMapView` and
+`MiningInsightsPanel`, with the actions in `lib/use-mining-session.ts`.
 
-- `parseEventTable` reads CSV (delimiter detection), JSON (array, `events`, or `cases`) and IEEE XES. `suggestColumnMapping` recognises English, XES and Vietnamese headers. `buildEventLog` pairs lifecycle start/complete events and reads zone-less timestamps as UTC.
-- `discoverProcess` builds traces, variants, the directly-follows graph (DFG), log statistics and bottlenecks. `filterDirectlyFollowsGraph` projects activities and keeps the strongest edges so the map stays connected.
-- `dfgToProcessModel` converts the filtered DFG into BPMN: XOR split/join gateways with normalised probabilities (flagged inferred), self-loops as task rework, and warnings for possibly parallel pairs or missing start times. The result is laid out with `withAutoLayout`.
-- `MINING_PRESETS` generates seeded, reproducible sample logs.
+## Exports and reports
 
-In the web app, `lib/mining-engine.ts` wraps the package as a stateful session (load preset, inspect file, apply mapping, discover, to model, export log). `workers/mining.worker.ts` hosts it off the main thread; `use-mining-client` falls back to running the same session synchronously.
+`lib/workspace-exports.ts` writes `.drawio`, `.flowculus.json` (with
+`createAnalysisSnapshot`, CTE unit `ratio`), nodes/edges CSV (with
+`effective_cycle_time_minutes` and `cycle_time_source`), SVG, PNG and JPEG
+(rendered from the model), the PDF report (`print-report.ts`) and the image
+report (`report-image.ts`). Both reports read `buildReportContent`
+(`report-content.ts`), so they show the same metric qualities, findings and
+per-activity time sources as the UI.
 
-## Exports
+## Resilience
 
-`lib/workspace-exports.ts` is the single entry point for export formats: `.drawio` (patch export), `.flowculus.json`, nodes/edges CSV, SVG, PNG/JPEG, PDF report and PNG/JPEG report. Diagram images are rendered from the model by `processModelToSvg` (`file-formats`), not screenshotted from the DOM, so they are crisp and theme-aware; raster formats rasterise that SVG at 2–3×.
-
-Presentation-only adapters stay in `apps/web`: `localize-analysis.ts` maps stable engine diagnostics to the selected locale, `print-report.ts` builds the PDF print view and `report-image.ts` composes the shareable image report.
+`SectionErrorBoundary` wraps the canvas, mining view, analysis dock and
+Inspector with a retry. The status bar shows worker states (restarting,
+timeout, main-thread fallback) and an offline badge (`use-online-status`).
 
 ## Naming
 
-- React components: `PascalCase.tsx`
-- Hooks: `use-kebab-case.ts` with a `useX` export
-- Domain functions: `camelCase`
-- Types: `PascalCase`
-- Constants: `UPPER_SNAKE_CASE` only for true module constants
-- CSS variables: semantic kebab-case names
-
-## Performance boundaries
-
-- Pointer movement stays inside React Flow; the store holds committed model changes, never drag frames.
-- Node views are memoised; edge routing reads committed bounds, not live drag positions.
-- Parsing, validation, analysis and mining are worker-ready pure functions.
-- Large files belong in IndexedDB, not localStorage. `use-local-draft` restores and debounces one browser-local draft.
-- The image-recognition boundary is deliberately not faked: a future vision adapter must return a confidence-scored draft that the user confirms before semantic metadata is committed.
+- React components: `PascalCase.tsx`; hooks: `use-kebab-case.ts` exporting
+  `useX`; other modules: `kebab-case.ts`.
+- Types `PascalCase`, functions `camelCase`, module invariants
+  `UPPER_SNAKE_CASE`, CSS variables semantic kebab-case.

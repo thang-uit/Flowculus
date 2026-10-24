@@ -1,72 +1,53 @@
+import type { AnalysisOptions, AnalysisReport } from '@flowculus/analysis-engine';
 import type { ProcessModel } from '@flowculus/process-model';
 
-export interface FlowculusAnalysisOptions {
-  arrivalRatePerHour?: number;
-  workInProcess?: number;
-  workingHoursPerDay?: number;
-  serviceRatePerHour?: number;
-  servers?: number;
-  resourceCounts?: Record<string, number>;
-}
+/** Scenario inputs saved with a Flowculus file (same shape as the engine). */
+export type FlowculusAnalysisOptions = AnalysisOptions;
 
-export interface FlowculusAnalysisSnapshot {
-  cycleTimeMinutes: number | null;
-  theoreticalCycleTimeMinutes: number | null;
-  cycleTimeEfficiency: number | null;
-  costPerExecution: number | null;
-  littleLaw?: {
-    arrivalRatePerHour: number;
-    workInProcess: number;
-    cycleTimeHours: number;
-  };
-  queue?: {
-    status: 'ready' | 'invalid' | 'unstable';
-    model: 'M/M/1' | 'M/M/c';
-    utilization: number | null;
-    averageQueueLength: number | null;
-    averageWaitingHours: number | null;
-    averageSystemHours: number | null;
-    averageSystemCount: number | null;
-    formula: string;
-    warnings: string[];
-  };
-  criticalPath?: {
-    status: 'ready' | 'unavailable';
-    durationMinutes: number | null;
-    taskIds: string[];
-    taskLabels: string[];
-    formula: string;
-    reason?:
-      | 'missing-start'
-      | 'decision-gateway'
-      | 'missing-processing-time'
-      | 'rework-or-cycle';
-  };
-  criticalChain?: {
-    status: 'ready' | 'unavailable';
-    quality: 'exact' | 'assumption';
-    basis: 'deterministic' | 'dominant-branch';
-    nodeIds: string[];
-    edgeIds: string[];
-    taskIds: string[];
-    taskLabels: string[];
-    durationMinutes: number | null;
-    formula: string;
-  };
-  littleLawForecast?: {
-    arrivalRatePerHour: number;
-    cycleTimeHours: number;
-    workInProcess: number;
-  };
-  quality?: 'exact' | 'assumption' | 'simulation-required';
-  pathCount?: {
-    status: 'ready' | 'empty' | 'cyclic' | 'limit';
-    count: number | null;
-    endNodeIds: string[];
-    formula: string;
-    warning?: string;
-  };
-}
+/**
+ * Read-only analysis snapshot embedded in `.flowculus.json` for reviewers.
+ * It is never trusted on import: the engine recalculates from the model.
+ * `cycleTimeEfficiency` is a ratio in [0, 1]; `issues` are locale-neutral.
+ */
+export type FlowculusAnalysisSnapshot = Pick<
+  AnalysisReport,
+  | 'status'
+  | 'quality'
+  | 'metricQuality'
+  | 'cycleTimeMinutes'
+  | 'theoreticalCycleTimeMinutes'
+  | 'cycleTimeEfficiency'
+  | 'costPerExecution'
+  | 'issues'
+  | 'activityTimes'
+  | 'littleLaw'
+  | 'littleLawForecast'
+  | 'queue'
+  | 'criticalPath'
+  | 'criticalChain'
+  | 'pathCount'
+> & { units: { time: 'minutes'; cycleTimeEfficiency: 'ratio' } };
+
+export const createAnalysisSnapshot = (
+  report: AnalysisReport,
+): FlowculusAnalysisSnapshot => ({
+  status: report.status,
+  quality: report.quality,
+  metricQuality: report.metricQuality,
+  cycleTimeMinutes: report.cycleTimeMinutes,
+  theoreticalCycleTimeMinutes: report.theoreticalCycleTimeMinutes,
+  cycleTimeEfficiency: report.cycleTimeEfficiency,
+  costPerExecution: report.costPerExecution,
+  issues: report.issues,
+  activityTimes: report.activityTimes,
+  littleLaw: report.littleLaw,
+  littleLawForecast: report.littleLawForecast,
+  queue: report.queue,
+  criticalPath: report.criticalPath,
+  criticalChain: report.criticalChain,
+  pathCount: report.pathCount,
+  units: { time: 'minutes', cycleTimeEfficiency: 'ratio' },
+});
 
 export interface FlowculusFile {
   schemaVersion: 1;

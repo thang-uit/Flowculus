@@ -8,7 +8,11 @@ import type { ProcessModel } from '@flowculus/process-model';
 
 const MAX_CANVAS_SIDE = 16_384;
 
-/** True-vector SVG of the diagram with the critical chain highlighted. */
+/**
+ * True-vector SVG of the diagram with the critical chain highlighted: solid
+ * when it is exact, dashed when it is an estimate, absent when the report
+ * needs simulation (the chain is then unavailable).
+ */
 export const buildDiagramSvg = (
   model: ProcessModel,
   report: AnalysisReport,
@@ -18,6 +22,7 @@ export const buildDiagramSvg = (
   return processModelToSvg(withAutoLayout(model), {
     highlightNodeIds: chain?.nodeIds,
     highlightEdgeIds: chain?.edgeIds,
+    highlightQuality: chain?.quality === 'exact' ? 'exact' : 'assumption',
   });
 };
 

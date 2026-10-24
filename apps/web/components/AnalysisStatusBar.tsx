@@ -6,6 +6,7 @@ import {
   Lightning,
   Stack,
   WarningCircle,
+  WifiSlash,
 } from '@phosphor-icons/react';
 import { useId } from 'react';
 
@@ -13,6 +14,7 @@ import { exportDrawioXml, importDrawioXml } from '@flowculus/drawio-adapter';
 import { withAutoLayout } from '@flowculus/file-formats';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { useOnlineStatus } from '@/lib/use-online-status';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
 /** Switching page first writes the current edits back into the source file. */
@@ -46,6 +48,18 @@ export function AnalysisStatusBar() {
   const drawioSource = useWorkspaceStore((state) => state.drawioSource);
   const pageSelectId = useId();
   const isError = report.status === 'invalid';
+  const online = useOnlineStatus();
+  const runtimeLabel: Record<typeof analysisRuntimeStatus, string> = {
+    idle: copy.workerReady,
+    calculating: copy.analysisCalculating,
+    ready: copy.analysisUpdated,
+    fallback: copy.resilience.workerUnavailable,
+    restarting: copy.resilience.workerRestarting,
+    timeout: copy.resilience.analysisTimeout,
+    error: copy.resilience.analysisFailed,
+  };
+  const runtimeProblem =
+    analysisRuntimeStatus === 'timeout' || analysisRuntimeStatus === 'error';
 
   return (
     <footer className="flex min-h-9 shrink-0 items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--surface)] px-3 text-[11px] sm:px-4">
@@ -74,9 +88,14 @@ export function AnalysisStatusBar() {
           {copy.nodesAndFlows(nodeCount, edgeCount)}
         </span>
         <span
-          className="hidden items-center gap-1.5 whitespace-nowrap md:inline-flex"
+          className={
+            runtimeProblem
+              ? 'inline-flex min-w-0 items-center gap-1.5 truncate text-[var(--danger)]'
+              : 'hidden items-center gap-1.5 whitespace-nowrap md:inline-flex'
+          }
           role="status"
           aria-live="polite"
+          data-testid="analysis-runtime-status"
         >
           <Lightning
             size={14}
@@ -87,13 +106,7 @@ export function AnalysisStatusBar() {
             }
             aria-hidden="true"
           />
-          {analysisRuntimeStatus === 'calculating'
-            ? copy.analysisCalculating
-            : analysisRuntimeStatus === 'fallback'
-              ? copy.analysisFallback
-              : analysisRuntimeStatus === 'ready'
-                ? copy.analysisUpdated
-                : copy.workerReady}
+          {runtimeLabel[analysisRuntimeStatus]}
         </span>
         <span
           className="hidden items-center gap-1.5 whitespace-nowrap lg:inline-flex"
@@ -123,6 +136,18 @@ export function AnalysisStatusBar() {
         </span>
       </div>
       <div className="flex shrink-0 items-center gap-3 text-[var(--muted)]">
+        {!online ? (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-2 py-0.5 font-semibold text-[var(--muted-strong)]"
+            title={copy.resilience.offlineHint}
+            role="status"
+            data-testid="offline-badge"
+          >
+            <WifiSlash size={13} aria-hidden="true" />
+            {copy.resilience.offline}
+            <span className="sr-only">{copy.resilience.offlineHint}</span>
+          </span>
+        ) : null}
         {drawioSource && drawioSource.pages.length > 1 ? (
           <span className="inline-flex items-center gap-1.5">
             <Stack size={14} aria-hidden="true" />

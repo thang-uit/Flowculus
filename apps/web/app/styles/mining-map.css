@@ -1,0 +1,91 @@
+/* Process-mining map */
+.dfg-activity {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 6px 9px;
+  transition:
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.dfg-activity[data-dimmed='true'] {
+  opacity: 0.32;
+}
+
+.dfg-activity[data-highlight='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.dfg-activity__bar {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.dfg-activity__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.dfg-terminal {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--muted-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted-strong);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dfg-edge-path {
+  fill: none;
+  stroke-linejoin: round;
+  transition: opacity 120ms ease;
+}
+
+.dfg-edge-path[data-dimmed='true'] {
+  opacity: 0.16;
+}
+
+input[type='range'].flow-range {
+  width: 100%;
+  accent-color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.flow-marker-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.flow-marker-fill {
+  fill: var(--flow-edge);
+}
+
+.flow-marker-fill--critical {
+  fill: var(--accent-strong);
+}
+
+.flow-marker-stroke {
+  fill: none;
+  stroke: var(--flow-edge);
+  stroke-width: 1.4;
+}

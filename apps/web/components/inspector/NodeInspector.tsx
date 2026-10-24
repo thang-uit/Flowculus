@@ -2,7 +2,10 @@
 
 import { CheckCircle, Trash, WarningCircle } from '@phosphor-icons/react';
 
-import { isSequenceFlowEdge, type ProcessNode } from '@flowculus/process-model';
+import type { ProcessNode } from '@flowculus/process-model';
+import { unconfirmedNodeCodes } from '@flowculus/validation';
+
+import { ConfirmedChip } from '@/components/semantics/ConfirmedChip';
 
 import {
   InspectorSection,
@@ -11,14 +14,9 @@ import {
   TextField,
 } from '@/components/inspector/InspectorFields';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import {
-  changeNodeKind,
-  confirmNodeSemantics,
-  isNodeInferred,
-  removeElements,
-  replaceEdge,
-  replaceNode,
-} from '@/lib/model-editing';
+import { ActivityTimeSummary } from '@/components/inspector/ActivityTimeSummary';
+import { GatewaySection } from '@/components/inspector/GatewaySection';
+import { changeNodeKind, removeElements, replaceNode } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
 const NODE_KINDS: Array<ProcessNode['kind']> = [
@@ -35,8 +33,6 @@ const NODE_KINDS: Array<ProcessNode['kind']> = [
 export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
   const locale = useWorkspaceStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const edges = useWorkspaceStore((state) => state.processModel.edges);
-  const nodes = useWorkspaceStore((state) => state.processModel.nodes);
 
   const commit = (next: ProcessNode) => {
     const state = useWorkspaceStore.getState();
@@ -44,24 +40,12 @@ export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
   };
   const updateCost = (patch: Partial<NonNullable<ProcessNode['cost']>>) =>
     commit({ ...node, cost: { ...node.cost, ...patch } });
-  const inferred = isNodeInferred(node);
+  const pending = unconfirmedNodeCodes(node);
+  const inferred = node.kind !== 'unknown' && pending.length > 0;
+  const confirmSemanticItems = useWorkspaceStore((state) => state.confirmSemanticItems);
   const isActivity = node.kind === 'task' || node.kind === 'subprocess';
-  const outgoing = Object.values(edges).filter(
-    (edge) => edge.source === node.id && isSequenceFlowEdge(edge),
-  );
-  const probabilitySum = outgoing.reduce((sum, edge) => sum + (edge.probability ?? 0), 0);
   const fieldKey = (field: string, value: unknown) =>
     `${node.id}:${field}:${String(value)}`;
-  const gatewayBehaviour =
-    node.gatewayKind === 'and'
-      ? copy.parallelPaths
-      : node.gatewayKind === 'or'
-        ? copy.inclusivePaths
-        : node.gatewayKind === 'eventBased'
-          ? copy.eventChoice
-          : node.gatewayKind === 'complex'
-            ? copy.complexChoice
-            : copy.exactlyOnePath;
 
   return (
     <div className="space-y-5 p-4">
@@ -72,11 +56,14 @@ export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
             ? ` · ${node.gatewayKind?.toUpperCase() ?? 'XOR'}`
             : ''}
         </span>
-        <span
-          className="truncate font-mono text-[10px] text-[var(--muted)]"
-          title={node.id}
-        >
-          {node.id}
+        <span className="flex min-w-0 items-center gap-1.5">
+          {pending.length === 0 ? <ConfirmedChip metadata={node.metadata} /> : null}
+          <span
+            className="truncate font-mono text-[10px] text-[var(--muted)]"
+            title={node.id}
+          >
+            {node.id}
+          </span>
         </span>
       </div>
 
@@ -97,9 +84,16 @@ export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
             />
             {copy.inferredTypeHint}
           </p>
+          <ul className="list-disc space-y-0.5 pl-5 text-[11px] text-[var(--muted-strong)]">
+            {pending.map((code) => (
+              <li key={code}>{copy.semantics.codes[code]}</li>
+            ))}
+          </ul>
           <button
             type="button"
-            onClick={() => commit(confirmNodeSemantics(node))}
+            onClick={() =>
+              confirmSemanticItems([{ elementType: 'node', elementId: node.id }])
+            }
             className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent-ink)]"
           >
             <CheckCircle size={14} weight="bold" aria-hidden="true" />
@@ -164,6 +158,7 @@ export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
             <p className="text-[11px] leading-5 text-[var(--muted)]">
               {copy.timeInputsHint}
             </p>
+            <ActivityTimeSummary node={node} />
           </InspectorSection>
 
           <InspectorSection title={copy.costInputs}>
@@ -215,72 +210,7 @@ export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
         </>
       ) : null}
 
-      {node.kind === 'gateway' ? (
-        <InspectorSection title={copy.branchBehavior}>
-          <SelectField
-            label={copy.gatewayKind}
-            value={node.gatewayKind ?? 'xor'}
-            options={[
-              { value: 'xor', label: copy.xorGateway },
-              { value: 'and', label: copy.andGateway },
-              { value: 'or', label: copy.orGateway },
-              { value: 'eventBased', label: copy.eventBasedGateway },
-              { value: 'complex', label: copy.complexGateway },
-            ]}
-            onChange={(gatewayKind) =>
-              commit(changeNodeKind(node, 'gateway', gatewayKind))
-            }
-          />
-          <p className="rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] p-3 text-xs leading-5 text-[var(--muted-strong)]">
-            {gatewayBehaviour}
-            {node.gatewayKind !== 'and' ? ` ${copy.addProbabilities}` : null}
-          </p>
-          {node.gatewayKind !== 'and' && outgoing.length > 0 ? (
-            <div className="space-y-2">
-              {outgoing.map((edge) => (
-                <div
-                  key={edge.id}
-                  className="grid grid-cols-[minmax(0,1fr)_6rem] items-end gap-2 rounded-lg border border-[var(--border)] p-2"
-                >
-                  <span
-                    className="truncate pb-2 text-xs text-[var(--muted-strong)]"
-                    title={edge.id}
-                  >
-                    → {edge.condition || nodes[edge.target]?.label || edge.target}
-                  </span>
-                  <NumberField
-                    key={`${edge.id}:${String(edge.probability)}`}
-                    label={copy.probability}
-                    value={edge.probability}
-                    scale={100}
-                    max={100}
-                    suffix={copy.percent}
-                    onCommit={(probability) => {
-                      const state = useWorkspaceStore.getState();
-                      state.commitModel(
-                        replaceEdge(state.processModel, { ...edge, probability }),
-                      );
-                    }}
-                    errorMessage={copy.invalidProbability}
-                  />
-                </div>
-              ))}
-              {node.gatewayKind === 'xor' || node.gatewayKind == null ? (
-                <p
-                  className={
-                    Math.abs(probabilitySum - 1) > 1e-6
-                      ? 'text-[11px] text-[var(--danger)]'
-                      : 'text-[11px] text-[var(--muted)]'
-                  }
-                  role={Math.abs(probabilitySum - 1) > 1e-6 ? 'alert' : undefined}
-                >
-                  Σ p = {Number((probabilitySum * 100).toFixed(2))}%
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </InspectorSection>
-      ) : null}
+      {node.kind === 'gateway' ? <GatewaySection node={node} /> : null}
 
       <div className="border-t border-[var(--border)] pt-4">
         <button

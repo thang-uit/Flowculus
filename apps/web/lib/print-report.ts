@@ -1,21 +1,19 @@
 import type { AnalysisReport } from '@flowculus/analysis-engine';
+import type { ProcessModel } from '@flowculus/process-model';
 
 import type { Locale, WorkspaceCopy } from '@/lib/i18n';
-import { describeCriticalPath } from '@/lib/describe-critical-path';
-import { localizeAnalysisMessage } from '@/lib/localize-analysis';
+import { buildReportContent } from '@/lib/report-content';
 
 interface PrintAnalysisReportOptions {
   imageDataUri: string;
   title: string;
   report: AnalysisReport;
+  model: ProcessModel;
   copy: WorkspaceCopy;
   locale: Locale;
   currency?: string;
   targetWindow?: Window | null;
 }
-
-const formatNumber = (value: number | null, suffix = '', emptyValue = 'N/A') =>
-  value == null ? emptyValue : `${Number(value.toFixed(2))}${suffix}`;
 
 const appendTextList = (
   document: Document,
@@ -55,6 +53,7 @@ export function printAnalysisReport({
   imageDataUri,
   title,
   report,
+  model,
   copy,
   locale,
   currency,
@@ -80,6 +79,11 @@ export function printAnalysisReport({
     .metric { border: 1px solid #d8dee5; border-radius: 10px; padding: 12px; }
     .metric-label { color: #65717d; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
     .metric-value { margin-top: 5px; font-size: 18px; font-weight: 700; }
+    .metric-quality { margin-top: 4px; color: #65717d; font-size: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th, td { border-bottom: 1px solid #e3e8ee; padding: 5px 6px; text-align: left; vertical-align: top; }
+    th { color: #65717d; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+    .error { color: #b42318; }
     section { margin-top: 18px; page-break-inside: avoid; }
     .formula { margin: 0; padding: 12px; border-radius: 8px; background: #f3f5f7; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.7; white-space: pre-wrap; }
     ul { margin: 8px 0 0; padding-left: 20px; color: #46525e; font-size: 11px; line-height: 1.7; }
@@ -106,38 +110,11 @@ export function printAnalysisReport({
   image.alt = title;
   main.append(image);
 
+  const content = buildReportContent({ report, model, copy, locale, currency });
+
   const metrics = printDocument.createElement('div');
   metrics.className = 'metrics';
-  const metricValues: Array<[string, string]> = [
-    [
-      copy.cycleTime,
-      formatNumber(report.cycleTimeMinutes, ` ${copy.minutes}`, copy.emptyValue),
-    ],
-    [
-      copy.theoreticalTime,
-      formatNumber(
-        report.theoreticalCycleTimeMinutes,
-        ` ${copy.minutes}`,
-        copy.emptyValue,
-      ),
-    ],
-    [
-      copy.cte,
-      formatNumber(
-        report.cycleTimeEfficiency == null ? null : report.cycleTimeEfficiency * 100,
-        '%',
-        copy.emptyValue,
-      ),
-    ],
-    [
-      copy.cost,
-      report.costPerExecution == null
-        ? copy.emptyValue
-        : `${currency ? `${currency} ` : ''}${formatNumber(report.costPerExecution, '', copy.emptyValue)}`,
-    ],
-  ];
-
-  metricValues.forEach(([label, value]) => {
+  content.metrics.forEach(({ label, value, quality }) => {
     const card = printDocument.createElement('div');
     card.className = 'metric';
     const cardLabel = printDocument.createElement('div');
@@ -146,80 +123,79 @@ export function printAnalysisReport({
     const cardValue = printDocument.createElement('div');
     cardValue.className = 'metric-value';
     cardValue.textContent = value;
-    card.append(cardLabel, cardValue);
+    const cardQuality = printDocument.createElement('div');
+    cardQuality.className = 'metric-quality';
+    cardQuality.textContent = quality;
+    card.append(cardLabel, cardValue, cardQuality);
     metrics.append(card);
   });
   main.append(metrics);
 
   const formulaSection = printDocument.createElement('section');
   const formulaHeading = printDocument.createElement('h2');
-  formulaHeading.textContent = copy.formula;
+  formulaHeading.textContent = `${copy.formula} · ${content.quality}`;
   const formula = printDocument.createElement('p');
   formula.className = 'formula';
-  formula.textContent = [
-    `${copy.cycleFormulaLabel} = ${report.formula}`,
-    report.theoreticalFormula
-      ? `${copy.theoreticalFormulaLabel} = ${report.theoreticalFormula}`
-      : '',
-    report.costFormula ? `${copy.costFormulaLabel} = ${report.costFormula}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  formula.textContent = content.formulaLines.join('\n');
   formulaSection.append(formulaHeading, formula);
   main.append(formulaSection);
 
-  const pathText = describeCriticalPath(report, copy);
-  if (pathText) {
-    const criticalPathSection = printDocument.createElement('section');
-    const criticalPathHeading = printDocument.createElement('h2');
-    criticalPathHeading.textContent = copy.criticalPath;
-    const criticalPath = printDocument.createElement('p');
-    criticalPath.className = 'formula';
-    criticalPath.textContent = pathText;
-    criticalPathSection.append(criticalPathHeading, criticalPath);
-    main.append(criticalPathSection);
-  }
-
-  if (report.littleLaw || report.queue) {
-    const scenarioSection = printDocument.createElement('section');
-    const scenarioHeading = printDocument.createElement('h2');
-    scenarioHeading.textContent = copy.scenario;
-    const scenario = printDocument.createElement('p');
-    scenario.className = 'formula';
-    const lines: string[] = [];
-    if (report.littleLaw) {
-      lines.push(
-        `${copy.scenarioFormula}: ${formatNumber(report.littleLaw.workInProcess, '', copy.emptyValue)} = ${formatNumber(report.littleLaw.arrivalRatePerHour, '', copy.emptyValue)}/h × ${formatNumber(report.littleLaw.cycleTimeHours, ' h', copy.emptyValue)}`,
+  if (content.activities.length > 0) {
+    const tableCopy = copy.quality.activityTable;
+    const section = printDocument.createElement('section');
+    const tableHeading = printDocument.createElement('h2');
+    tableHeading.textContent = tableCopy.title;
+    const table = printDocument.createElement('table');
+    const head = printDocument.createElement('tr');
+    [
+      tableCopy.activity,
+      tableCopy.cycleTime,
+      tableCopy.source,
+      tableCopy.processing,
+      tableCopy.waiting,
+    ].forEach((text) => {
+      const cell = printDocument.createElement('th');
+      cell.textContent = text;
+      head.append(cell);
+    });
+    table.append(head);
+    content.activities.forEach((row) => {
+      const tr = printDocument.createElement('tr');
+      [row.label, row.cycleTime, row.source, row.processing, row.waiting].forEach(
+        (text) => {
+          const cell = printDocument.createElement('td');
+          cell.textContent = text;
+          tr.append(cell);
+        },
       );
-    }
-    if (report.queue) {
-      lines.push(
-        `${copy.queueModel} ${report.queue.model}: ${report.queue.formula}`,
-        `${copy.queueUtilization}: ${formatNumber(report.queue.utilization == null ? null : report.queue.utilization * 100, '%', copy.emptyValue)}`,
-        `${copy.averageQueue}: ${formatNumber(report.queue.averageQueueLength, '', copy.emptyValue)}`,
-        `${copy.averageWait}: ${formatNumber(report.queue.averageWaitingHours, ' h', copy.emptyValue)}`,
-        `${copy.averageSystem}: ${formatNumber(report.queue.averageSystemHours, ' h', copy.emptyValue)}`,
-      );
-    }
-    scenario.textContent = lines.join('\n');
-    scenarioSection.append(scenarioHeading, scenario);
-    main.append(scenarioSection);
+      table.append(tr);
+    });
+    section.append(tableHeading, table);
+    main.append(section);
   }
 
   appendTextList(
     printDocument,
     main,
-    copy.assumptions,
-    report.assumptions.map((item) => localizeAnalysisMessage(item, locale)),
-    copy.noAssumptions,
+    copy.quality.issueGroups.error,
+    content.errors,
+    copy.quality.noIssues,
+    'error',
   );
   appendTextList(
     printDocument,
     main,
-    copy.warnings,
-    report.warnings.map((item) => localizeAnalysisMessage(item, locale)),
+    copy.quality.issueGroups.warning,
+    content.warnings,
     copy.noWarnings,
     'warning',
+  );
+  appendTextList(
+    printDocument,
+    main,
+    copy.quality.issueGroups.info,
+    content.info,
+    copy.noAssumptions,
   );
 
   const footer = printDocument.createElement('p');

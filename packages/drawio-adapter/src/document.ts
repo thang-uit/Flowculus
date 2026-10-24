@@ -178,7 +178,7 @@ const readPage = async (diagram: XmlElement, index: number): Promise<DrawioPage>
 /**
  * Reads an `.drawio` / diagrams.net XML file (single or multi-page, plain or
  * compressed, or a bare `<mxGraphModel>`). The returned tree is mutable and is
- * the basis for lossless patch-on-export.
+ * the basis for semantic-preserving patch-on-export.
  */
 export const parseDrawioFile = async (xml: string): Promise<DrawioFile> => {
   let document = parseXml(xml);

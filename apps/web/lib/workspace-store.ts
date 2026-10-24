@@ -9,6 +9,7 @@ import {
 } from '@flowculus/analysis-engine';
 import type { DrawioPageSummary } from '@flowculus/drawio-adapter';
 import type { ProcessModel } from '@flowculus/process-model';
+import { confirmSemantics, type SemanticTarget } from '@flowculus/validation';
 
 import type { Locale } from '@/lib/i18n';
 import { INITIAL_PROCESS_MODEL } from '@/lib/initial-process-model';
@@ -17,9 +18,9 @@ export type WorkspaceMode = 'model' | 'mining';
 export type CanvasTool = 'select' | 'hand';
 export type DraftStatus = 'loading' | 'saving' | 'saved' | 'error';
 export type AnalysisRuntimeStatus =
-  'idle' | 'calculating' | 'ready' | 'fallback' | 'error';
+  'idle' | 'calculating' | 'ready' | 'fallback' | 'restarting' | 'timeout' | 'error';
 
-/** The original draw.io file, kept so export can patch it losslessly. */
+/** The original draw.io file, kept so export can patch it (semantic-preserving). */
 export interface DrawioSource {
   xml: string;
   pages: DrawioPageSummary[];
@@ -33,6 +34,19 @@ export interface CanvasViewport {
 }
 
 const HISTORY_LIMIT = 100;
+
+export interface ElementReference {
+  elementType: 'node' | 'edge';
+  elementId: string;
+}
+
+/** A one-shot request for the canvas to bring an element into view. */
+export interface FocusRequest extends ElementReference {
+  nonce: number;
+}
+
+/** Why the semantic gate dialog is open (an export or a share was refused). */
+export type SemanticGateReason = 'export' | 'share';
 
 interface ModelHistory {
   past: ProcessModel[];
@@ -66,6 +80,8 @@ interface WorkspaceState {
   draftStatus: DraftStatus;
   analysisRuntimeStatus: AnalysisRuntimeStatus;
   modelName: string;
+  focusRequest: FocusRequest | null;
+  semanticGateReason: SemanticGateReason | null;
   setMode: (mode: WorkspaceMode) => void;
   setActiveTool: (tool: CanvasTool) => void;
   setSelection: (selection: { nodeIds?: string[]; edgeId?: string | null }) => void;
@@ -86,6 +102,11 @@ interface WorkspaceState {
   setDraftStatus: (status: DraftStatus) => void;
   setAnalysisStatus: (status: AnalysisRuntimeStatus) => void;
   setModelName: (name: string) => void;
+  /** Selects an element, opens the Inspector and asks the canvas to show it. */
+  focusElement: (element: ElementReference) => void;
+  /** Records a person's confirmation of inferred semantics (undoable). */
+  confirmSemanticItems: (targets?: SemanticTarget[]) => void;
+  setSemanticGateReason: (reason: SemanticGateReason | null) => void;
 }
 
 const isWorkerOwned = (status: AnalysisRuntimeStatus) =>
@@ -120,6 +141,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   draftStatus: 'loading',
   analysisRuntimeStatus: 'idle',
   modelName: INITIAL_PROCESS_MODEL.name,
+  focusRequest: null,
+  semanticGateReason: null,
   setMode: (mode) => set({ mode }),
   setActiveTool: (activeTool) => set({ activeTool }),
   setSelection: ({ nodeIds, edgeId }) =>
@@ -216,4 +239,29 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       modelName,
       processModel: { ...state.processModel, name: modelName },
     })),
+  focusElement: ({ elementType, elementId }) =>
+    set((state) => {
+      const exists =
+        elementType === 'node'
+          ? Boolean(state.processModel.nodes[elementId])
+          : Boolean(state.processModel.edges[elementId]);
+      if (!exists) return state;
+      return {
+        mode: 'model',
+        inspectorOpen: true,
+        selectedNodeIds: elementType === 'node' ? [elementId] : [],
+        selectedEdgeId: elementType === 'edge' ? elementId : null,
+        focusRequest: {
+          elementType,
+          elementId,
+          nonce: (state.focusRequest?.nonce ?? 0) + 1,
+        },
+      };
+    }),
+  confirmSemanticItems: (targets) => {
+    const { processModel, commitModel } = get();
+    const confirmed = confirmSemantics(processModel, targets);
+    if (confirmed !== processModel) commitModel(confirmed);
+  },
+  setSemanticGateReason: (semanticGateReason) => set({ semanticGateReason }),
 }));

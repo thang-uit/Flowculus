@@ -1,5 +1,10 @@
-import type { ProcessEdge, ProcessModel, ProcessNode } from '@flowculus/process-model';
-import { DEFAULT_NODE_SIZE } from '@flowculus/process-model';
+import {
+  DEFAULT_NODE_SIZE,
+  SEMANTIC_METADATA_KEYS,
+  type ProcessEdge,
+  type ProcessModel,
+  type ProcessNode,
+} from '@flowculus/process-model';
 import {
   createXmlElement,
   getChildElements,
@@ -38,8 +43,11 @@ const isTrue = (value: unknown): boolean => value === true || value === 'true';
 
 /** Writes the semantic bridge attributes; empty values remove stale ones. */
 const writeNodeMetadata = (owner: XmlElement, node: ProcessNode): void => {
-  const inferredKind = isTrue(node.metadata?.['flowculus-inferred-kind']);
-  const inferredGateway = isTrue(node.metadata?.['flowculus-inferred-gateway-kind']);
+  const inferredKind = isTrue(node.metadata?.[SEMANTIC_METADATA_KEYS.inferredKind]);
+  const inferredGateway = isTrue(
+    node.metadata?.[SEMANTIC_METADATA_KEYS.inferredGatewayKind],
+  );
+  const joinId = node.metadata?.[SEMANTIC_METADATA_KEYS.joinId];
   if (!inferredKind) setXmlAttribute(owner, 'flowculus-kind', node.kind);
   setXmlAttribute(
     owner,
@@ -63,11 +71,32 @@ const writeNodeMetadata = (owner: XmlElement, node: ProcessNode): void => {
   setXmlAttribute(owner, 'flowculus-resource-pool-id', node.cost?.resourcePoolId);
   setXmlAttribute(owner, 'flowculus-resource-count', node.cost?.resourceCount);
   setXmlAttribute(owner, 'flowculus-currency', node.cost?.currency);
+  setXmlAttribute(
+    owner,
+    SEMANTIC_METADATA_KEYS.joinId,
+    node.kind === 'gateway' && typeof joinId === 'string' && joinId ? joinId : undefined,
+  );
 };
 
+/**
+ * Only confirmed semantics are written as explicit Flowculus attributes, so a
+ * guess never turns into a "fact" by round-tripping through a file.
+ */
 const writeEdgeMetadata = (owner: XmlElement, edge: ProcessEdge): void => {
-  setXmlAttribute(owner, 'flowculus-kind', edge.kind ?? 'sequence');
-  setXmlAttribute(owner, 'flowculus-probability', edge.probability);
+  const inferredKind = isTrue(edge.metadata?.[SEMANTIC_METADATA_KEYS.inferredEdgeKind]);
+  const inferredProbability = isTrue(
+    edge.metadata?.[SEMANTIC_METADATA_KEYS.inferredProbability],
+  );
+  setXmlAttribute(
+    owner,
+    'flowculus-kind',
+    inferredKind ? undefined : (edge.kind ?? 'sequence'),
+  );
+  setXmlAttribute(
+    owner,
+    'flowculus-probability',
+    inferredProbability ? undefined : edge.probability,
+  );
   setXmlAttribute(owner, 'flowculus-condition', edge.condition?.trim() || undefined);
   setXmlAttribute(owner, 'flowculus-rework-probability', edge.reworkProbability);
 };
@@ -275,7 +304,10 @@ const patchPage = (page: DrawioPage, model: ProcessModel): void => {
         setXmlAttribute(geometry, 'height', formatCoordinate(node.bounds.height));
       }
     }
-    if (stripMarkup(existing.label ?? '') !== node.label.trim()) {
+    const originalLabel = stripMarkup(existing.label ?? '');
+    // An unlabeled shape is imported with its id as label; keep it unlabeled.
+    const fallbackLabel = !originalLabel && node.label === existing.id;
+    if (!fallbackLabel && originalLabel !== node.label.trim()) {
       setOwnerLabel(existing, node.label);
     }
     writeNodeMetadata(owner, node);
@@ -348,9 +380,13 @@ const patchPage = (page: DrawioPage, model: ProcessModel): void => {
 
 /**
  * Serialises the model as a `.drawio` file that opens in diagrams.net with the
- * same coordinates. With `sourceXml`, the original file is patched in place:
- * unknown cells, styles, waypoints, libraries and other pages are preserved,
- * and only the process elements the user deleted in Flowculus are removed.
+ * same coordinates. With `sourceXml`, the original file is patched in place
+ * (semantic-preserving, not byte-for-byte):
+ * - unknown cells, styles, libraries, labels and other pages are kept;
+ * - waypoints are kept unless an endpoint moved or was reconnected;
+ * - only the process elements the user deleted in Flowculus are removed;
+ * - the edited page is written uncompressed; untouched pages keep their
+ *   original (possibly compressed) encoding. diagrams.net reads both.
  */
 export const exportDrawioXml = async (
   model: ProcessModel,

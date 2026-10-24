@@ -1,9 +1,10 @@
-import type {
-  GatewayKind,
-  ProcessEdge,
-  ProcessMetadataValue,
-  ProcessNode,
-  ProcessNodeKind,
+import {
+  SEMANTIC_METADATA_KEYS,
+  type GatewayKind,
+  type ProcessEdge,
+  type ProcessMetadataValue,
+  type ProcessNode,
+  type ProcessNodeKind,
 } from '@flowculus/process-model';
 
 import type { DrawioCellRecord } from './document';
@@ -238,6 +239,15 @@ export const inferGatewayKind = (
   return { kind: 'xor', inferred: true };
 };
 
+const EXPLICIT_EDGE_KIND_KEYS = [
+  'kind',
+  'flow-kind',
+  'flowType',
+  'flow-type',
+  'edgeType',
+  'edge-type',
+];
+
 const CONTROL_FLOW_TOKENS = new Set([
   'sequence',
   'sequenceflow',
@@ -265,15 +275,7 @@ export const inferEdgeKind = (
   metadata: CellMetadata,
   style: string,
 ): NonNullable<ProcessEdge['kind']> => {
-  const explicit = getMetadataString(
-    metadata,
-    'kind',
-    'flow-kind',
-    'flowType',
-    'flow-type',
-    'edgeType',
-    'edge-type',
-  );
+  const explicit = getMetadataString(metadata, ...EXPLICIT_EDGE_KIND_KEYS);
   const value = (explicit ?? '').toLowerCase().replace(/[-_\s]/g, '');
   if (value === 'message' || value === 'messageflow') return 'message';
   if (
@@ -324,22 +326,67 @@ export const isPresentationOnlyNode = (
   if (getMetadataString(metadata, 'flowculus-shape')) return false;
   const label = stripMarkup(cell.label ?? '').toLowerCase();
   const id = cell.id.toLowerCase();
+  const style = cell.style.trim().toLowerCase();
   return (
-    /^text(?:;|$)/.test(cell.style.trim().toLowerCase()) ||
+    /^text(?:;|$)/.test(style) ||
+    /^image(?:;|$)/.test(style) ||
+    /(^|;)\s*shape=image(;|$)/.test(style) ||
     /^(legend|title|subtitle|formula|note|chú giải|công thức)/.test(id) ||
     /^(legend|title|subtitle|formula|note|chú giải|công thức)/.test(label)
   );
 };
 
+const ACTIVITY_STYLE = /(^|;)\s*(rounded=1|shape=(ext|process|mxgraph\.bpmn\.task))/i;
+
+/**
+ * BPMN subtype of a native shape (call activity, event outline/trigger) and,
+ * when Flowculus cannot model it exactly, the reason it is unsupported. The
+ * cell itself is always kept in the file.
+ */
+const describeBpmnShape = (
+  cell: DrawioCellRecord,
+  kind: ProcessNodeKind,
+  parent: DrawioCellRecord | undefined,
+  explicitKind: boolean,
+): { bpmnType?: string; unsupported?: string } => {
+  const style = cell.style.toLowerCase();
+  if (kind === 'subprocess' && style.includes('callactivity')) {
+    return { bpmnType: 'callActivity' };
+  }
+  if (kind !== 'start' && kind !== 'end' && kind !== 'event') return {};
+  const outline = getStyleValue(cell.style, 'outline')?.toLowerCase();
+  const symbol = getStyleValue(cell.style, 'symbol')?.toLowerCase();
+  const bpmnType = [outline, symbol].filter(Boolean).join(':') || undefined;
+  const attachedToActivity =
+    parent != null &&
+    parent.isVertex &&
+    !isStructuralContainer(parent) &&
+    ACTIVITY_STYLE.test(parent.style);
+  if (outline === 'boundint' || outline === 'boundnonint' || attachedToActivity) {
+    return { bpmnType, unsupported: 'boundary-event' };
+  }
+  if (kind === 'end' && symbol?.startsWith('terminate') && !explicitKind) {
+    return { bpmnType, unsupported: 'terminate-end-event' };
+  }
+  return { bpmnType };
+};
+
 export const cellToProcessNode = (
   cell: DrawioCellRecord,
   bounds: ProcessNode['bounds'],
+  parent?: DrawioCellRecord,
 ): ProcessNode => {
   const metadata = getCellMetadata(cell);
   const kind = inferNodeKind(cell, metadata);
-  if (!hasExplicitKind(metadata)) metadata['flowculus-inferred-kind'] = true;
+  const explicitKind = hasExplicitKind(metadata);
+  if (!explicitKind) metadata[SEMANTIC_METADATA_KEYS.inferredKind] = true;
   const gateway = kind === 'gateway' ? inferGatewayKind(cell, metadata) : undefined;
-  if (gateway?.inferred) metadata['flowculus-inferred-gateway-kind'] = true;
+  if (gateway?.inferred) metadata[SEMANTIC_METADATA_KEYS.inferredGatewayKind] = true;
+  const shape = describeBpmnShape(cell, kind, parent, explicitKind);
+  if (shape.bpmnType) metadata[SEMANTIC_METADATA_KEYS.bpmnType] = shape.bpmnType;
+  if (shape.unsupported) {
+    metadata[SEMANTIC_METADATA_KEYS.unsupportedShape] = shape.unsupported;
+  }
 
   const resourceRatePerHour = getMetadataNumber(
     metadata,
@@ -471,19 +518,29 @@ export const cellToProcessEdge = (
 ): ProcessEdge | null => {
   if (!cell.source || !cell.target) return null;
   const metadata = getCellMetadata(cell);
-  const parsedLabel = parseFlowLabel(cell.label ?? fallbackLabel);
+  const parsedLabel = parseFlowLabel(
+    stripMarkup(cell.label ?? '') ? cell.label : fallbackLabel,
+  );
+  const explicitProbability = getMetadataNumber(
+    metadata,
+    'probability',
+    'branch-probability',
+    'branchProbability',
+  );
+  // A flow type read from the arrow style, or a probability read from the
+  // label text, is a guess until a person confirms it.
+  if (!getMetadataString(metadata, ...EXPLICIT_EDGE_KIND_KEYS)) {
+    metadata[SEMANTIC_METADATA_KEYS.inferredEdgeKind] = true;
+  }
+  if (explicitProbability == null && parsedLabel.probability != null) {
+    metadata[SEMANTIC_METADATA_KEYS.inferredProbability] = true;
+  }
   return {
     id: cell.id,
     drawioCellId: cell.id,
     source: cell.source,
     target: cell.target,
-    probability:
-      getMetadataNumber(
-        metadata,
-        'probability',
-        'branch-probability',
-        'branchProbability',
-      ) ?? parsedLabel.probability,
+    probability: explicitProbability ?? parsedLabel.probability,
     reworkProbability: getMetadataNumber(
       metadata,
       'rework-probability',

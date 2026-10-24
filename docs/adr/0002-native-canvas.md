@@ -29,3 +29,11 @@ The process-mining features also need to send discovered models to the canvas an
 - No external origin or environment variable is needed; `.env.example` and the iframe fallback were removed.
 - Flowculus now owns canvas features that draw.io provided for free. Pools and lanes are imported as containers but not drawn; arbitrary draw.io stencils are imported as their nearest BPMN kind; manual edge waypoints are not stored in the model.
 - New dependency: `@xyflow/react` 12 (MIT, maintained by xyflow). It adds about 20 packages to the lockfile: `@xyflow/system`, `classcat`, nine small d3 modules (zoom, drag, selection, transition and their helpers) with their `@types`, and its own `zustand` 4 (the app itself uses `zustand` 5).
+
+## Later updates
+
+- A comment-only `.env.example` was added back to document that the app reads
+  no environment variables; it contains no values.
+- Analysis honesty and the export gate are described in
+  [ADR 0003](0003-honest-analysis-and-semantic-gate.md); worker bundling in
+  [ADR 0004](0004-webpack-for-module-workers.md).

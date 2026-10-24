@@ -1,4 +1,4 @@
-import type { ProcessModel } from '@flowculus/process-model';
+import { SEMANTIC_METADATA_KEYS, type ProcessModel } from '@flowculus/process-model';
 
 import {
   computeAbsoluteOrigins,
@@ -29,6 +29,9 @@ export interface ImportedDrawioDiagram {
 }
 
 interface PageClassification {
+  cellsById: Map<string, DrawioCellRecord>;
+  /** Pools, lanes and groups: kept in the file, not modelled. */
+  containerCount: number;
   nodeCells: DrawioCellRecord[];
   edgeCells: DrawioCellRecord[];
   edgeLabels: Map<string, string>;
@@ -65,6 +68,9 @@ export const classifyDrawioPage = (page: DrawioPage): PageClassification => {
   const nodeIds = new Set(nodeCells.map((cell) => cell.id));
 
   return {
+    cellsById: byId,
+    containerCount: cells.filter((cell) => cell.isVertex && isStructuralContainer(cell))
+      .length,
     nodeCells,
     edgeCells: edgeCells.filter(
       (cell) =>
@@ -82,7 +88,8 @@ export const drawioPageToProcessModel = (
   page: DrawioPage,
   fallbackName: string,
 ): ProcessModel => {
-  const { nodeCells, edgeCells, edgeLabels, origins } = classifyDrawioPage(page);
+  const { nodeCells, edgeCells, edgeLabels, origins, cellsById, containerCount } =
+    classifyDrawioPage(page);
   const nodes: ProcessModel['nodes'] = {};
   const edges: ProcessModel['edges'] = {};
 
@@ -98,7 +105,11 @@ export const drawioPageToProcessModel = (
             height: geometry.height,
           }
         : undefined;
-    nodes[cell.id] = cellToProcessNode(cell, bounds);
+    nodes[cell.id] = cellToProcessNode(
+      cell,
+      bounds,
+      cell.parent ? cellsById.get(cell.parent) : undefined,
+    );
   });
 
   edgeCells.forEach((cell) => {
@@ -112,7 +123,13 @@ export const drawioPageToProcessModel = (
     name: page.name || fallbackName,
     nodes,
     edges,
-    metadata: { source: 'drawio', pageId: page.id },
+    metadata: {
+      source: 'drawio',
+      pageId: page.id,
+      ...(containerCount > 0
+        ? { [SEMANTIC_METADATA_KEYS.containerCount]: containerCount }
+        : {}),
+    },
   };
 };
 
@@ -120,9 +137,11 @@ export const summarizeDrawioPages = (file: DrawioFile): DrawioPageSummary[] =>
   file.pages.map((page) => ({ id: page.id, name: page.name }));
 
 /**
- * Imports one page of a draw.io file. Geometry becomes absolute `bounds`, and
- * shapes without explicit Flowculus metadata are flagged as inferred so the
- * analysis reports them as assumptions until the user confirms them.
+ * Imports one page of a draw.io file. Geometry becomes absolute `bounds`;
+ * shapes, gateway types, flow types and label probabilities without explicit
+ * Flowculus metadata are flagged as inferred, so analysis reports them as
+ * assumptions and export/share stays blocked until a person confirms them.
+ * Pools, lanes, groups, legends and unknown cells stay in the file untouched.
  */
 export const importDrawioXml = async (
   xml: string,

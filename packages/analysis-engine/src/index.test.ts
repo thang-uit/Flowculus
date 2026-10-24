@@ -15,7 +15,8 @@ describe('analyzeProcess', () => {
 
     expect(report.status).toBe('ready');
     expect(report.cycleTimeMinutes).toBe(0);
-    expect(report.formula).toBe('No activities yet');
+    expect(report.formula).toBe('0');
+    expect(report.issues.map((issue) => issue.code)).toEqual(['empty-model']);
   });
 
   it('returns validation warnings for an invalid graph', () => {
@@ -31,7 +32,10 @@ describe('analyzeProcess', () => {
 
     expect(report.status).toBe('invalid');
     expect(report.cycleTimeMinutes).toBeNull();
-    expect(report.warnings).toHaveLength(2);
+    expect(report.issues.map((issue) => issue.code)).toEqual([
+      'edge-missing-source',
+      'edge-missing-target',
+    ]);
   });
 
   it('calculates a sequential process and cycle-time efficiency', () => {
@@ -74,7 +78,7 @@ describe('analyzeProcess', () => {
     expect(report.formula).toContain('20');
   });
 
-  it('uses weighted XOR branches and max for AND cycle time', () => {
+  it('withholds the number when an XOR split is merged by an AND join (deadlock)', () => {
     const report = analyzeProcess({
       schemaVersion: 1,
       id: 'branch-1',
@@ -97,9 +101,12 @@ describe('analyzeProcess', () => {
       },
     });
 
-    expect(report.status).toBe('ready');
-    expect(report.cycleTimeMinutes).toBe(18);
-    expect(report.formula).toContain('0.6');
+    expect(report.status).toBe('unsupported');
+    expect(report.quality).toBe('simulation-required');
+    expect(report.cycleTimeMinutes).toBeNull();
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: 'unmatched-join', impact: 'simulation-required' }),
+    );
   });
 
   it('marks independent OR enumeration as an explicit assumption', () => {
@@ -129,7 +136,9 @@ describe('analyzeProcess', () => {
     });
 
     expect(report.quality).toBe('assumption');
-    expect(report.assumptions.join(' ')).toContain('independent branch probabilities');
+    expect(report.issues.map((issue) => issue.code)).toContain(
+      'or-independence-assumption',
+    );
   });
 
   it('calculates M/M/1 and detects an unstable queue', () => {
@@ -189,7 +198,9 @@ describe('analyzeProcess', () => {
     );
 
     expect(report.status).toBe('invalid');
-    expect(report.diagnostics).toContain('invalid_analysis_options');
+    expect(report.issues.map((issue) => issue.code)).toContain(
+      'invalid-analysis-options',
+    );
   });
 
   it('marks native-shape semantic inference as an explicit assumption', () => {
@@ -215,7 +226,9 @@ describe('analyzeProcess', () => {
     });
 
     expect(report.quality).toBe('assumption');
-    expect(report.assumptions.join(' ')).toContain('inferred');
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: 'unconfirmed-semantics', params: { count: 1 } }),
+    );
   });
 
   it('does not count a shared AND-join continuation once per branch for cost', () => {
@@ -309,7 +322,14 @@ describe('analyzeProcess', () => {
     expect(report.capacity[0]?.unitLoadMinutes).toBeCloseTo(17.5);
     expect(report.capacity[0]?.resourceCount).toBe(1);
     expect(report.capacity[0]?.isBottleneck).toBe(true);
-    expect(report.assumptions[0]).toContain('assumes one resource');
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'capacity-default-pool-size',
+        params: { poolId: 'clerks' },
+      }),
+    );
+    expect(report.metricQuality.capacity).toBe('assumption');
+    expect(report.metricQuality.cycleTime).toBe('exact');
   });
 
   it('repeats only the marked rework body, not its downstream continuation', () => {
@@ -480,10 +500,11 @@ describe('analyzeProcess', () => {
 
     expect(report.quality).toBe('simulation-required');
     expect(report.status).toBe('unsupported');
-    expect(report.warnings.join(' ')).toContain('edge-level rework');
+    expect(report.issues.map((issue) => issue.code)).toContain('edge-rework-unsupported');
+    expect(report.cycleTimeMinutes).toBeNull();
   });
 
-  it('requires explicit processing times before reporting CPM', () => {
+  it('estimates CPM from cycle time when processing time is missing, as an assumption', () => {
     const report = analyzeProcess({
       schemaVersion: 1,
       id: 'critical-path-missing-time-1',
@@ -500,8 +521,13 @@ describe('analyzeProcess', () => {
     });
 
     expect(report.criticalPath).toMatchObject({
-      status: 'unavailable',
-      reason: 'missing-processing-time',
+      status: 'ready',
+      quality: 'assumption',
+      durationMinutes: 12,
+      estimatedTaskIds: ['task'],
     });
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({ code: 'cpm-duration-estimate', scope: 'critical-path' }),
+    );
   });
 });

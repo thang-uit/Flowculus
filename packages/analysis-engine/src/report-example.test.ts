@@ -126,7 +126,7 @@ describe('critical chain across decisions', () => {
     // 0.2 × 100 = 20 dominates 0.8 × 10 = 8.
     expect(report.criticalChain).toMatchObject({
       quality: 'assumption',
-      basis: 'dominant-branch',
+      basis: 'expected-time-heuristic',
       taskIds: ['rare'],
     });
     expect(report.criticalPath?.status).toBe('unavailable');

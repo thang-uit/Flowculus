@@ -131,12 +131,18 @@ importers:
         specifier: workspace:*
         version: link:../xml-tree
     devDependencies:
+      '@flowculus/validation':
+        specifier: workspace:*
+        version: link:../validation
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
 
   packages/file-formats:
     dependencies:
+      '@flowculus/analysis-engine':
+        specifier: workspace:*
+        version: link:../analysis-engine
       '@flowculus/graph-layout':
         specifier: workspace:*
         version: link:../graph-layout

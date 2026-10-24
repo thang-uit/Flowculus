@@ -12,7 +12,7 @@ const MAX_XML_LENGTH = 50_000_000;
 
 export interface LocalDraftSnapshot {
   model: ProcessModel;
-  /** Original draw.io file of the current model, used for lossless export. */
+  /** Original draw.io file of the current model, used for semantic-preserving export. */
   drawioSource?: DrawioSource | null;
   /**
    * Drafts written before the native canvas kept only the editor XML. It is

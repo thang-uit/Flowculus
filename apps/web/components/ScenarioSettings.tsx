@@ -4,12 +4,14 @@ import { ArrowCounterClockwise, Gauge, Queue } from '@phosphor-icons/react';
 import type { AnalysisOptions } from '@flowculus/analysis-engine';
 import { useMemo, useState } from 'react';
 
-import { Tooltip } from '@/components/ui/Tooltip';
+import { CapacityTable } from '@/components/scenario/CapacityTable';
+import { QueueSummary } from '@/components/scenario/QueueSummary';
+import { ScenarioField } from '@/components/scenario/ScenarioField';
+import { formatValue } from '@/components/scenario/format-value';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { localizeAnalysisMessage } from '@/lib/localize-analysis';
 import { useWorkspaceStore } from '@/lib/workspace-store';
-import { cn } from '@/lib/cn';
 
 type ScenarioFieldKey =
   | 'arrivalRatePerHour'
@@ -43,71 +45,6 @@ const parseNumber = (raw: string): number | undefined => {
   return Number.isFinite(value) ? value : undefined;
 };
 
-const formatValue = (
-  value: number | null | undefined,
-  suffix = '',
-  emptyValue = 'N/A',
-) => (value == null ? emptyValue : `${Number(value.toFixed(2))}${suffix}`);
-
-function ScenarioField({
-  id,
-  label,
-  hint,
-  emptyValue,
-  value,
-  invalid,
-  error,
-  onChange,
-  onBlur,
-  integer = false,
-}: Readonly<{
-  id: string;
-  label: string;
-  hint: string;
-  emptyValue: string;
-  value: string;
-  invalid: boolean;
-  error?: string;
-  onChange: (value: string) => void;
-  onBlur: () => void;
-  integer?: boolean;
-}>) {
-  return (
-    <label className="min-w-0 space-y-1.5" htmlFor={id}>
-      <span className="block truncate text-[11px] font-medium text-[var(--muted-strong)]">
-        {label}
-      </span>
-      <input
-        id={id}
-        type="text"
-        inputMode={integer ? 'numeric' : 'decimal'}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={onBlur}
-        placeholder={emptyValue}
-        className={cn(
-          'focus-ring h-9 w-full rounded-lg border bg-[var(--surface)] px-2.5 text-sm text-[var(--text)] placeholder:text-[var(--muted)]',
-          invalid ? 'border-[var(--danger)]' : 'border-[var(--border)]',
-        )}
-        aria-invalid={invalid || undefined}
-        aria-describedby={error ? `${id}-hint ${id}-error` : `${id}-hint`}
-      />
-      <span id={`${id}-hint`} className="block truncate text-[10px] text-[var(--muted)]">
-        {hint}
-      </span>
-      {error ? (
-        <span
-          id={`${id}-error`}
-          className="block text-[10px] leading-4 text-[var(--danger)]"
-          role="alert"
-        >
-          {error}
-        </span>
-      ) : null}
-    </label>
-  );
-}
-
 export function ScenarioSettings() {
   const locale = useWorkspaceStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
@@ -133,7 +70,6 @@ export function ScenarioSettings() {
   const hasConfiguredInput = Object.values(displayedDraft).some(
     (value) => value.trim() !== '',
   );
-  const queue = report.queue;
 
   const fieldError = (field: ScenarioFieldKey): string | undefined => {
     if (!invalidFields[field]) return undefined;
@@ -310,148 +246,8 @@ export function ScenarioSettings() {
           </p>
         </div>
       ) : null}
-      {report.capacity.length > 0 ? (
-        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] scrollbar-thin">
-          <table className="w-full min-w-[560px] text-left text-[11px]">
-            <caption className="px-3 pt-2 text-left text-[10px] font-semibold text-[var(--muted-strong)]">
-              {copy.resourcePools}
-            </caption>
-            <thead className="text-[10px] uppercase tracking-[0.06em] text-[var(--muted)]">
-              <tr>
-                <th scope="col" className="px-3 py-1.5 font-semibold">
-                  {copy.resourcePool}
-                </th>
-                <th scope="col" className="px-3 py-1.5 font-semibold">
-                  {copy.capacityLoad}
-                </th>
-                <th scope="col" className="px-3 py-1.5 font-semibold">
-                  {copy.resourceCount}
-                </th>
-                <th scope="col" className="px-3 py-1.5 font-semibold">
-                  {copy.capacityPerDay}
-                </th>
-                <th scope="col" className="px-3 py-1.5 font-semibold">
-                  ρ
-                </th>
-                <th scope="col" className="px-3 py-1.5 font-semibold">
-                  Wq
-                </th>
-              </tr>
-            </thead>
-            <tbody className="font-mono text-[var(--text)]">
-              {report.capacity.map((pool) => (
-                <tr key={pool.resourcePoolId} className="border-t border-[var(--border)]">
-                  <td className="px-3 py-1.5 font-sans">
-                    <span className="font-medium">{pool.resourcePoolId}</span>
-                    {pool.isBottleneck ? (
-                      <span className="ml-1.5 rounded bg-[var(--accent-soft)] px-1.5 py-0.5 text-[9.5px] font-semibold text-[var(--accent-strong)]">
-                        {copy.bottleneck}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="px-3 py-1.5">
-                    {formatValue(
-                      pool.unitLoadMinutes,
-                      ` ${copy.minutesShort}`,
-                      copy.emptyValue,
-                    )}
-                  </td>
-                  <td className="px-3 py-1.5">{pool.resourceCount ?? copy.emptyValue}</td>
-                  <td className="px-3 py-1.5">
-                    {formatValue(pool.capacityPerDay, '', copy.emptyValue)}
-                  </td>
-                  <td className="px-3 py-1.5">
-                    {formatValue(
-                      pool.utilization == null ? null : pool.utilization * 100,
-                      '%',
-                      copy.emptyValue,
-                    )}
-                  </td>
-                  <td className="px-3 py-1.5">
-                    {pool.queue?.status === 'ready'
-                      ? formatValue(pool.queue.averageWaitingHours, ' h', copy.emptyValue)
-                      : pool.queue?.status === 'unstable'
-                        ? '∞'
-                        : copy.emptyValue}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      {report.littleLaw || queue ? (
-        <div className="mt-3 grid gap-2 border-t border-[var(--border)] pt-3 sm:grid-cols-2">
-          {report.littleLaw ? (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <p className="text-[10px] font-semibold text-[var(--muted-strong)]">
-                {copy.scenarioFormula}
-              </p>
-              <p className="mt-1 font-mono text-[11px] text-[var(--text)]">
-                {Number(report.littleLaw.workInProcess.toFixed(2))} ={' '}
-                {Number(report.littleLaw.arrivalRatePerHour.toFixed(2))}/h ×{' '}
-                {formatValue(report.littleLaw.cycleTimeHours, ' h', copy.emptyValue)}
-              </p>
-            </div>
-          ) : null}
-          {queue ? (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-semibold text-[var(--muted-strong)]">
-                  {copy.queueModel} · {queue.model}
-                </p>
-                <span
-                  className={cn(
-                    'text-[10px] font-semibold',
-                    queue.status === 'ready'
-                      ? 'text-[var(--success)]'
-                      : 'text-[var(--danger)]',
-                  )}
-                >
-                  {queue.status === 'ready'
-                    ? copy.ready
-                    : queue.status === 'unstable'
-                      ? copy.simulationRequired
-                      : copy.error}
-                </span>
-              </div>
-              {queue.status === 'ready' ? (
-                <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[10px] text-[var(--muted)]">
-                  <span>
-                    {copy.queueUtilization}:{' '}
-                    {formatValue(
-                      queue.utilization == null ? null : queue.utilization * 100,
-                      '%',
-                      copy.emptyValue,
-                    )}
-                  </span>
-                  <span>
-                    {copy.averageQueue}:{' '}
-                    {formatValue(queue.averageQueueLength, '', copy.emptyValue)}
-                  </span>
-                  <span>
-                    {copy.averageWait}:{' '}
-                    {formatValue(queue.averageWaitingHours, ' h', copy.emptyValue)}
-                  </span>
-                  <span>
-                    {copy.averageSystem}:{' '}
-                    {formatValue(queue.averageSystemHours, ' h', copy.emptyValue)}
-                  </span>
-                </div>
-              ) : (
-                <p className="mt-1 text-[10px] leading-4 text-[var(--muted)]">
-                  {queue.warnings
-                    .map((warning) => localizeAnalysisMessage(warning, locale))
-                    .join(' ')}
-                </p>
-              )}
-              <p className="mt-1 font-mono text-[10px] text-[var(--muted)]">
-                {queue.formula}
-              </p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <CapacityTable />
+      <QueueSummary />
     </CollapsibleSection>
   );
 }

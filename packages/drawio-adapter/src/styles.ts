@@ -19,7 +19,7 @@ export const drawioStyleForNode = (node: ProcessNode): string => {
     case 'start':
       return `${EVENT_BASE}outline=standard;symbol=general;`;
     case 'end':
-      return `${EVENT_BASE}outline=end;symbol=terminate2;`;
+      return `${EVENT_BASE}outline=end;symbol=general;`;
     case 'event':
       return `${EVENT_BASE}outline=catching;symbol=general;`;
     case 'gateway':

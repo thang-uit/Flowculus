@@ -11,6 +11,7 @@ import {
   type EventLog,
   type EventLogFormat,
   type EventTable,
+  type MiningConversionWarning,
   type MiningPresetId,
   type ProcessDiscovery,
 } from '@flowculus/process-mining';
@@ -51,7 +52,7 @@ export interface MiningTableResponse {
 export interface MiningModelResponse {
   type: 'model';
   model: ProcessModel;
-  warnings: string[];
+  warnings: MiningConversionWarning[];
 }
 
 export interface MiningCsvResponse {

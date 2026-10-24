@@ -6,6 +6,7 @@ import {
   DEFAULT_DISCOVERY_FILTER,
   type ColumnMapping,
   type DiscoveryFilter,
+  type MiningConversionWarning,
   type MiningPresetId,
 } from '@flowculus/process-mining';
 
@@ -36,7 +37,7 @@ interface MiningState {
   filter: DiscoveryFilter;
   selectedVariantId: string | null;
   edgeMetric: DfgEdgeMetric;
-  conversionWarnings: string[];
+  conversionWarnings: MiningConversionWarning[];
   queueUpload: (upload: PendingUpload) => void;
   takePendingUpload: () => PendingUpload | null;
   setStatus: (status: MiningStatus, error?: string | null) => void;
@@ -46,7 +47,9 @@ interface MiningState {
   resetFilter: () => void;
   setSelectedVariantId: (id: string | null) => void;
   setEdgeMetric: (metric: DfgEdgeMetric) => void;
-  setConversionWarnings: (warnings: string[]) => void;
+  setConversionWarnings: (warnings: MiningConversionWarning[]) => void;
+  /** The worker lost its log (cancel, timeout, crash): drop what depends on it. */
+  abortSession: (error: string | null) => void;
 }
 
 export const useMiningStore = create<MiningState>((set, get) => ({
@@ -87,4 +90,13 @@ export const useMiningStore = create<MiningState>((set, get) => ({
   setSelectedVariantId: (selectedVariantId) => set({ selectedVariantId }),
   setEdgeMetric: (edgeMetric) => set({ edgeMetric }),
   setConversionWarnings: (conversionWarnings) => set({ conversionWarnings }),
+  abortSession: (error) =>
+    set({
+      status: error ? 'error' : 'idle',
+      error,
+      result: null,
+      replay: null,
+      mappingTable: null,
+      selectedVariantId: null,
+    }),
 }));

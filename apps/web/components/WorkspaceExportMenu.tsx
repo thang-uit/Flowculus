@@ -1,7 +1,14 @@
 'use client';
 
 import { CaretDown, FileArrowDown } from '@phosphor-icons/react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -13,150 +20,206 @@ interface WorkspaceExportMenuProps {
   copy: WorkspaceCopy;
   onOpenFile: () => void;
   onExport: (format: WorkspaceExportFormat) => void;
+  onShare: () => void;
   className?: string;
   compact?: boolean;
 }
 
+interface MenuAction {
+  key: string;
+  label: string;
+  run: () => void;
+  /** Only shown where the header has no dedicated button. */
+  compactOnly?: boolean;
+}
+
+const MENU_WIDTH = 228;
+
 /**
- * Export dropdown.
- *
- * Uses a React portal so the panel is appended to <body> and never clipped by
- * a scrollable/overflow ancestor (e.g. the commandbar that uses overflow-x:auto).
- * The panel is positioned with `position:fixed` anchored to the trigger button's
- * bounding rect, recalculated on every open.
+ * Export menu with menu-button keyboard behaviour: arrow keys/Home/End move
+ * between items, Enter/Space activate, Escape and Tab close and return focus
+ * to the trigger. The panel is portalled so overflow containers cannot clip it.
  */
 export function WorkspaceExportMenu({
   copy,
   onOpenFile,
   onExport,
+  onShare,
   className,
   compact = false,
 }: Readonly<WorkspaceExportMenuProps>) {
   const [open, setOpen] = useState(false);
-  const [panelPos, setPanelPos] = useState({ top: 0, right: 0 });
+  const [panelPosition, setPanelPosition] = useState({ top: 0, right: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  /** Compute fixed position aligned to the right edge of the trigger button */
-  const computePosition = () => {
-    const btn = triggerRef.current;
-    if (!btn) return;
-    const r = btn.getBoundingClientRect();
-    setPanelPos({
-      top: r.bottom + 6,
-      // align right edge of panel to right edge of button
-      right: window.innerWidth - r.right,
-    });
-  };
-
-  // Recalculate whenever open changes or window resizes
-  useLayoutEffect(() => {
-    if (open) computePosition();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onResize = () => computePosition();
-    const onPointerDown = (e: PointerEvent) => {
-      if (
-        triggerRef.current?.contains(e.target as Node) ||
-        panelRef.current?.contains(e.target as Node)
-      )
-        return;
-      setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('resize', onResize);
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
-
-  const invoke = (fn: () => void) => {
-    fn();
-    setOpen(false);
-  };
-
-  const sections: Array<{
-    label: string;
-    items: Array<[string, WorkspaceExportFormat]>;
-  }> = [
+  const sections: Array<{ label: string; actions: MenuAction[] }> = [
+    {
+      label: copy.exportSectionFile,
+      actions: [
+        { key: 'open', label: copy.openFile, run: onOpenFile, compactOnly: true },
+        { key: 'share', label: copy.shareFile, run: onShare },
+      ],
+    },
     {
       label: copy.exportSectionDiagram,
-      items: [
-        [copy.exportDrawio, 'drawio'],
-        [copy.exportSvg, 'svg'],
-        [copy.exportPng, 'png'],
-        [copy.exportJpeg, 'jpeg'],
+      actions: [
+        { key: 'drawio', label: copy.exportDrawio, run: () => onExport('drawio') },
+        { key: 'svg', label: copy.exportSvg, run: () => onExport('svg') },
+        { key: 'png', label: copy.exportPng, run: () => onExport('png') },
+        { key: 'jpeg', label: copy.exportJpeg, run: () => onExport('jpeg') },
       ],
     },
     {
       label: copy.exportSectionReport,
-      items: [
-        [copy.exportPdf, 'pdf'],
-        [copy.exportPngReport, 'report-png'],
-        [copy.exportJpegReport, 'report-jpeg'],
+      actions: [
+        { key: 'pdf', label: copy.exportPdf, run: () => onExport('pdf') },
+        {
+          key: 'report-png',
+          label: copy.exportPngReport,
+          run: () => onExport('report-png'),
+        },
+        {
+          key: 'report-jpeg',
+          label: copy.exportJpegReport,
+          run: () => onExport('report-jpeg'),
+        },
       ],
     },
     {
       label: copy.exportSectionData,
-      items: [
-        [copy.exportFlowculus, 'flowculus'],
-        [copy.exportCsv, 'csv'],
+      actions: [
+        {
+          key: 'flowculus',
+          label: copy.exportFlowculus,
+          run: () => onExport('flowculus'),
+        },
+        { key: 'csv', label: copy.exportCsv, run: () => onExport('csv') },
       ],
     },
-  ];
+  ]
+    .map((section) => ({
+      ...section,
+      actions: section.actions.filter((action) => compact || !action.compactOnly),
+    }))
+    .filter((section) => section.actions.length > 0);
 
-  const menuItemClass =
-    'focus-ring flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--muted-strong)] transition-colors duration-100 hover:bg-[var(--surface-soft)] hover:text-[var(--text)]';
+  const close = useCallback((restoreFocus: boolean) => {
+    setOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  }, []);
 
-  const sectionLabelClass =
-    'px-2.5 pb-0.5 pt-1 text-[9.5px] font-bold uppercase tracking-wider text-[var(--muted)]';
+  const computePosition = () => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    setPanelPosition({
+      top: rect.bottom + 6,
+      right: Math.max(8, window.innerWidth - rect.right),
+    });
+  };
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    computePosition();
+    panelRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || panelRef.current?.contains(target))
+        return;
+      close(false);
+    };
+    window.addEventListener('resize', computePosition);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      window.removeEventListener('resize', computePosition);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [close, open]);
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [],
+    );
+    const index = items.indexOf(document.activeElement as HTMLButtonElement);
+    const focusAt = (next: number) =>
+      items[(next + items.length) % items.length]?.focus();
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        focusAt(index + 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        focusAt(index - 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        focusAt(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        focusAt(items.length - 1);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        close(true);
+        break;
+      case 'Tab':
+        close(false);
+        break;
+      default:
+        break;
+    }
+  };
 
   const panel = open ? (
     <div
       ref={panelRef}
       role="menu"
       aria-label={copy.exportFile}
+      aria-describedby="export-menu-hint"
+      onKeyDown={handleMenuKeyDown}
       style={{
         position: 'fixed',
-        top: panelPos.top,
-        right: panelPos.right,
-        zIndex: 9999,
-        width: 220,
+        top: panelPosition.top,
+        right: panelPosition.right,
+        width: MENU_WIDTH,
+        maxWidth: 'calc(100vw - 16px)',
       }}
-      className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-[var(--shadow-panel)]"
+      className="z-[60] max-h-[calc(100dvh-72px)] overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-[var(--shadow-panel)]"
     >
-      <button
-        role="menuitem"
-        type="button"
-        title={copy.openFile}
-        onClick={() => invoke(onOpenFile)}
-        className={cn(menuItemClass, 'lg:hidden')}
-      >
-        {copy.openFile}
-      </button>
-      <div className="my-1 border-t border-[var(--border)] lg:hidden" />
+      <span id="export-menu-hint" className="sr-only">
+        {copy.resilience.menuHint}
+      </span>
       {sections.map((section, index) => (
-        <div key={section.label}>
-          {index > 0 ? <div className="my-1 border-t border-[var(--border)]" /> : null}
-          <p className={sectionLabelClass}>{section.label}</p>
-          {section.items.map(([label, format]) => (
+        <div key={section.label} role="group" aria-label={section.label}>
+          {index > 0 ? (
+            <div className="my-1 border-t border-[var(--border)]" role="separator" />
+          ) : null}
+          <p
+            className="px-2.5 pb-0.5 pt-1 text-[9.5px] font-bold uppercase tracking-wider text-[var(--muted)]"
+            aria-hidden="true"
+          >
+            {section.label}
+          </p>
+          {section.actions.map((action) => (
             <button
               role="menuitem"
-              key={format}
+              key={action.key}
               type="button"
-              title={label}
-              onClick={() => invoke(() => onExport(format))}
-              className={menuItemClass}
+              tabIndex={-1}
+              onClick={() => {
+                close(true);
+                action.run();
+              }}
+              className="focus-ring flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-xs text-[var(--muted-strong)] transition-colors duration-100 hover:bg-[var(--surface-soft)] hover:text-[var(--text)] focus-visible:bg-[var(--surface-soft)]"
             >
-              {label}
+              {action.label}
             </button>
           ))}
         </div>
@@ -174,9 +237,15 @@ export function WorkspaceExportMenu({
           aria-haspopup="menu"
           aria-expanded={open}
           title={copy.exportFile}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOpen((value) => !value)}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown' && !open) {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
           className={cn(
-            'focus-ring flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg text-xs font-medium text-[var(--muted-strong)] transition-colors duration-120 hover:bg-[var(--surface-soft)] hover:text-[var(--text)] active:scale-[0.98]',
+            'focus-ring flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg text-xs font-medium text-[var(--muted-strong)] transition-colors duration-150 hover:bg-[var(--surface-soft)] hover:text-[var(--text)] active:scale-[0.98]',
             compact ? 'tb-btn justify-center' : 'h-8 px-2.5',
             open && 'bg-[var(--surface-soft)] text-[var(--text)]',
           )}
@@ -190,9 +259,7 @@ export function WorkspaceExportMenu({
           />
         </button>
       </Tooltip>
-
-      {/* Portal: renders outside any overflow container */}
-      {typeof document !== 'undefined' && createPortal(panel, document.body)}
+      {typeof document !== 'undefined' ? createPortal(panel, document.body) : null}
     </div>
   );
 }

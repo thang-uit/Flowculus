@@ -1,9 +1,11 @@
 'use client';
 
-import { ArrowRight, Trash } from '@phosphor-icons/react';
+import { ArrowRight, CheckCircle, Trash } from '@phosphor-icons/react';
 
 import type { ProcessEdge } from '@flowculus/process-model';
+import { unconfirmedEdgeCodes } from '@flowculus/validation';
 
+import { ConfirmedChip } from '@/components/semantics/ConfirmedChip';
 import {
   NumberField,
   SelectField,
@@ -26,6 +28,8 @@ export function EdgeInspector({ edge }: Readonly<{ edge: ProcessEdge }>) {
     state.commitModel(replaceEdge(state.processModel, next));
   };
   const branching = source?.kind === 'gateway' && source.gatewayKind !== 'and';
+  const confirmSemanticItems = useWorkspaceStore((state) => state.confirmSemanticItems);
+  const pending = unconfirmedEdgeCodes(edge);
 
   return (
     <div className="space-y-5 p-4">
@@ -33,11 +37,14 @@ export function EdgeInspector({ edge }: Readonly<{ edge: ProcessEdge }>) {
         <span className="inline-flex items-center rounded-md bg-[var(--surface-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--muted-strong)]">
           {copy.sequenceFlow}
         </span>
-        <span
-          className="truncate font-mono text-[10px] text-[var(--muted)]"
-          title={edge.id}
-        >
-          {edge.id}
+        <span className="flex min-w-0 items-center gap-1.5">
+          {pending.length === 0 ? <ConfirmedChip metadata={edge.metadata} /> : null}
+          <span
+            className="truncate font-mono text-[10px] text-[var(--muted)]"
+            title={edge.id}
+          >
+            {edge.id}
+          </span>
         </span>
       </div>
       <p className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--muted-strong)]">
@@ -49,6 +56,25 @@ export function EdgeInspector({ edge }: Readonly<{ edge: ProcessEdge }>) {
         />
         <span className="truncate">{target?.label ?? edge.target}</span>
       </p>
+      {pending.length > 0 ? (
+        <div className="space-y-2 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] p-3">
+          <ul className="list-disc space-y-0.5 pl-5 text-[11px] text-[var(--muted-strong)]">
+            {pending.map((code) => (
+              <li key={code}>{copy.semantics.codes[code]}</li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() =>
+              confirmSemanticItems([{ elementType: 'edge', elementId: edge.id }])
+            }
+            className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent-ink)]"
+          >
+            <CheckCircle size={14} weight="bold" aria-hidden="true" />
+            {copy.semantics.confirmElement}
+          </button>
+        </div>
+      ) : null}
       <TextField
         key={`${edge.id}:condition:${edge.condition ?? ''}`}
         label={copy.condition}

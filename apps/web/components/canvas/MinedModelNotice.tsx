@@ -3,7 +3,7 @@
 import { Graph, X } from '@phosphor-icons/react';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { localizeAnalysisMessage } from '@/lib/localize-analysis';
+import { formatMiningWarning } from '@/lib/diagnostic-messages';
 import { useMiningStore } from '@/lib/mining-store';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
@@ -32,7 +32,9 @@ export function MinedModelNotice() {
         <p className="text-xs font-semibold text-[var(--text)]">{copy.minedModelTitle}</p>
         <ul className="mt-1 space-y-0.5 text-[11px] leading-4 text-[var(--muted-strong)]">
           {warnings.slice(0, 4).map((warning) => (
-            <li key={warning}>{localizeAnalysisMessage(warning, locale)}</li>
+            <li key={`${warning.code}-${JSON.stringify(warning.params ?? {})}`}>
+              {formatMiningWarning(warning, copy)}
+            </li>
           ))}
         </ul>
       </div>

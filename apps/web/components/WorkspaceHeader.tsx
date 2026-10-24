@@ -7,7 +7,7 @@ import {
   SidebarSimple,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useRef, type ChangeEvent } from 'react';
 
 import { FlowculusLogo } from '@/components/branding/FlowculusLogo';
 import { HeaderKpiBadge } from '@/components/header/HeaderKpiBadge';
@@ -20,7 +20,7 @@ import { WorkspaceCanvasControls } from '@/components/WorkspaceToolbar';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { exportWorkspace, type WorkspaceExportFormat } from '@/lib/workspace-exports';
+import { useWorkspaceActions } from '@/lib/use-workspace-actions';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
 interface WorkspaceHeaderProps {
@@ -33,42 +33,8 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
   const mode = useWorkspaceStore((state) => state.mode);
   const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
   const toggleInspector = useWorkspaceStore((state) => state.toggleInspector);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const { runExport, share, statusMessage, showStatus } = useWorkspaceActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const statusTimerRef = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (statusTimerRef.current != null) window.clearTimeout(statusTimerRef.current);
-    },
-    [],
-  );
-
-  const showStatus = (message: string) => {
-    setStatusMessage(message);
-    if (statusTimerRef.current != null) window.clearTimeout(statusTimerRef.current);
-    statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2400);
-  };
-
-  const runExport = (format: WorkspaceExportFormat) => {
-    // Open the print window inside the click so pop-up blockers allow it.
-    const reportWindow = format === 'pdf' ? window.open('', '_blank') : null;
-    const state = useWorkspaceStore.getState();
-    void exportWorkspace(format, {
-      model: state.processModel,
-      report: state.analysisReport,
-      analysisOptions: state.analysisOptions,
-      drawioSource: state.drawioSource,
-      copy,
-      locale,
-      reportWindow,
-    })
-      .then(() => showStatus(copy.localCopyExported))
-      .catch(() => {
-        reportWindow?.close();
-        showStatus(copy.fileError);
-      });
-  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -82,23 +48,6 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
             : copy.fileError,
         );
       });
-  };
-
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: useWorkspaceStore.getState().processModel.name,
-          text: copy.shareText,
-        });
-        showStatus(copy.shareSheetOpened);
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-        showStatus(copy.workspaceLinkCopied);
-      }
-    } catch {
-      showStatus(copy.shareCancelled);
-    }
   };
 
   const brand = (compact: boolean) => (
@@ -131,6 +80,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
             compact
             onOpenFile={() => fileInputRef.current?.click()}
             onExport={runExport}
+            onShare={() => void share()}
           />
         </div>
       </div>
@@ -183,7 +133,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
               type="button"
               aria-label={copy.shareFile}
               title={copy.shareFile}
-              onClick={() => void handleShare()}
+              onClick={() => void share()}
               className="focus-ring tb-btn tb-btn--idle hidden xl:inline-flex"
             >
               <ShareNetwork size={15} aria-hidden="true" />
@@ -196,6 +146,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
             copy={copy}
             onOpenFile={() => fileInputRef.current?.click()}
             onExport={runExport}
+            onShare={() => void share()}
           />
           <span className="tb-divider" aria-hidden="true" />
           <LanguageToggle />

@@ -20,10 +20,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } fro
 import { unionRects } from '@flowculus/graph-layout';
 import { getNodeBounds } from '@flowculus/process-model';
 
+import { CriticalChainLegend } from '@/components/canvas/CriticalChainLegend';
+import { FlowMarkers } from '@/components/canvas/FlowMarkers';
 import { ProcessNodeView } from '@/components/canvas/ProcessNodeView';
 import { SequenceFlowEdge } from '@/components/canvas/SequenceFlowEdge';
 import {
-  FLOW_MARKER_IDS,
   mergeMeasuredNodes,
   toFlowEdges,
   toFlowNodes,
@@ -33,6 +34,7 @@ import {
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { addNodeAt, connectNodes, moveNodes, removeElements } from '@/lib/model-editing';
 import { SHAPE_DRAG_MIME, isSemanticShapeTool } from '@/lib/shape-tools';
+import { useFocusRequest, useHistoryShortcuts } from '@/lib/use-canvas-shortcuts';
 import { useMediaQuery } from '@/lib/use-media-query';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
@@ -43,55 +45,6 @@ const READABLE_ZOOM = 0.6;
 
 const sameIds = (left: string[], right: string[]): boolean =>
   left.length === right.length && left.every((id, index) => id === right[index]);
-
-const isEditableTarget = (target: EventTarget | null): boolean =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
-
-function FlowMarkers() {
-  return (
-    <svg className="flow-marker-defs" aria-hidden="true" focusable="false">
-      <defs>
-        <marker
-          id={FLOW_MARKER_IDS.default}
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto-start-reverse"
-        >
-          <path d="M 0 0 L 10 5 L 0 10 z" className="flow-marker-fill" />
-        </marker>
-        <marker
-          id={FLOW_MARKER_IDS.critical}
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="8"
-          markerHeight="8"
-          orient="auto-start-reverse"
-        >
-          <path
-            d="M 0 0 L 10 5 L 0 10 z"
-            className="flow-marker-fill flow-marker-fill--critical"
-          />
-        </marker>
-        <marker
-          id={FLOW_MARKER_IDS.open}
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="9"
-          markerHeight="9"
-          orient="auto-start-reverse"
-        >
-          <path d="M 0 0 L 10 5 L 0 10" className="flow-marker-stroke" />
-        </marker>
-      </defs>
-    </svg>
-  );
-}
 
 /**
  * The native BPMN canvas. The process model in the store is the source of
@@ -119,6 +72,15 @@ export function ProcessCanvas() {
   // framed by the effect below.
   const fittedRevisionRef = useRef<number | null>(initialViewport ? modelRevision : null);
 
+  // The highlight is solid only for an exact chain; an estimated chain is
+  // dashed and explained by the legend, so it never looks more certain than
+  // the cycle time it explains.
+  const criticalQuality =
+    criticalChain?.status === 'ready'
+      ? criticalChain.quality === 'exact'
+        ? 'exact'
+        : 'estimate'
+      : undefined;
   const critical = useMemo(() => {
     const ready = criticalChain?.status === 'ready';
     return {
@@ -182,25 +144,8 @@ export function ProcessCanvas() {
     return () => window.cancelAnimationFrame(frame);
   }, [fitView, modelRevision, setViewport]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
-      const modifier = event.metaKey || event.ctrlKey;
-      if (!modifier) return;
-      const key = event.key.toLowerCase();
-      const state = useWorkspaceStore.getState();
-      if (state.mode !== 'model') return;
-      if (key === 'z' && !event.shiftKey) {
-        event.preventDefault();
-        state.undo();
-      } else if ((key === 'z' && event.shiftKey) || key === 'y') {
-        event.preventDefault();
-        state.redo();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  useHistoryShortcuts();
+  useFocusRequest(wrapperRef);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<ProcessFlowNode>[]) =>
@@ -305,6 +250,7 @@ export function ProcessCanvas() {
       ref={wrapperRef}
       className="flow-canvas relative min-h-0 flex-1"
       data-tool={activeTool}
+      data-critical-quality={criticalQuality}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
@@ -356,6 +302,7 @@ export function ProcessCanvas() {
           position="bottom-right"
         />
       </ReactFlow>
+      <CriticalChainLegend />
     </div>
   );
 }

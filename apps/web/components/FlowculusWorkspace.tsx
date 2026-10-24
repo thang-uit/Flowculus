@@ -14,6 +14,8 @@ import { InspectorPanel } from '@/components/InspectorPanel';
 import { MobileInspectorDialog } from '@/components/MobileInspectorDialog';
 import { WorkspaceHeader } from '@/components/WorkspaceHeader';
 import { WorkspaceRail } from '@/components/WorkspaceRail';
+import { SemanticGateDialog } from '@/components/semantics/SemanticGateDialog';
+import { SectionErrorBoundary } from '@/components/ui/SectionErrorBoundary';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { importWorkspaceFiles } from '@/lib/import-process-file';
@@ -29,8 +31,26 @@ const MiningWorkspace = dynamic(
     import('@/components/mining/MiningWorkspace').then(
       (module) => module.MiningWorkspace,
     ),
-  { ssr: false },
+  { ssr: false, loading: () => <MiningLoading /> },
 );
+
+function MiningLoading() {
+  const locale = useWorkspaceStore((state) => state.locale);
+  const copy = getWorkspaceCopy(locale);
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-0 flex-1 items-center justify-center bg-[var(--canvas)] text-sm text-[var(--muted)]"
+    >
+      <span
+        className="mr-2 size-2 animate-pulse rounded-full bg-[var(--accent)]"
+        aria-hidden="true"
+      />
+      {copy.miningLoading}
+    </div>
+  );
+}
 
 export function FlowculusWorkspace() {
   const mode = useWorkspaceStore((state) => state.mode);
@@ -84,22 +104,31 @@ export function FlowculusWorkspace() {
                   className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
                   aria-label={copy.canvasLabel}
                 >
-                  <ProcessCanvas />
-                  <MinedModelNotice />
-                  <CanvasFloatingControls />
+                  <SectionErrorBoundary section="canvas">
+                    <ProcessCanvas />
+                    <MinedModelNotice />
+                    <CanvasFloatingControls />
+                  </SectionErrorBoundary>
                 </section>
-                <AnalysisDock />
+                <SectionErrorBoundary section="analysis">
+                  <AnalysisDock />
+                </SectionErrorBoundary>
                 <AnalysisStatusBar />
               </main>
-              <InspectorPanel open={inspectorOpen} />
+              <SectionErrorBoundary section="inspector">
+                <InspectorPanel open={inspectorOpen} />
+              </SectionErrorBoundary>
             </div>
           ) : (
-            <MiningWorkspace />
+            <SectionErrorBoundary section="mining">
+              <MiningWorkspace />
+            </SectionErrorBoundary>
           )}
           {mode === 'model' && !dockedInspector ? (
             <MobileInspectorDialog open={inspectorOpen} onOpenChange={setInspectorOpen} />
           ) : null}
           <FileDropOverlay copy={copy} onImportFiles={handleImportFiles} />
+          <SemanticGateDialog />
         </div>
       </ReactFlowProvider>
     </TooltipProvider>

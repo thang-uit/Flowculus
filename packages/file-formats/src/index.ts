@@ -6,6 +6,7 @@ export {
   type CsvTable,
 } from './csv-table';
 export {
+  createAnalysisSnapshot,
   parseFlowculusFile,
   serializeFlowculusFile,
   type FlowculusAnalysisOptions,

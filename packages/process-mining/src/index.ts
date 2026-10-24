@@ -28,7 +28,12 @@ export {
   type MiningPresetId,
 } from './presets';
 export { detectDayFirst, parseTimestamp } from './timestamp';
-export { dfgToProcessModel, type DiscoveredModelResult } from './to-bpmn';
+export {
+  dfgToProcessModel,
+  type DiscoveredModelResult,
+  type MiningConversionWarning,
+  type MiningConversionWarningCode,
+} from './to-bpmn';
 export {
   DEFAULT_DISCOVERY_FILTER,
   type Bottleneck,

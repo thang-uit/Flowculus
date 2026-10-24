@@ -6,6 +6,7 @@ import { useId } from 'react';
 import { EdgeInspector } from '@/components/inspector/EdgeInspector';
 import { inspectorInputClass } from '@/components/inspector/InspectorFields';
 import { NodeInspector } from '@/components/inspector/NodeInspector';
+import { SemanticReviewPanel } from '@/components/semantics/SemanticReviewPanel';
 import { IconButton } from '@/components/ui/IconButton';
 import { PanelHeader } from '@/components/ui/PanelHeader';
 import { cn } from '@/lib/cn';
@@ -22,6 +23,8 @@ export function InspectorPanel({
   const copy = getWorkspaceCopy(locale);
   const nodes = useWorkspaceStore((state) => state.processModel.nodes);
   const edges = useWorkspaceStore((state) => state.processModel.edges);
+  // A newly loaded model starts a fresh review (no stale "all confirmed").
+  const modelId = useWorkspaceStore((state) => state.processModel.id);
   const selectedNodeIds = useWorkspaceStore((state) => state.selectedNodeIds);
   const selectedEdgeId = useWorkspaceStore((state) => state.selectedEdgeId);
   const setSelection = useWorkspaceStore((state) => state.setSelection);
@@ -93,6 +96,7 @@ export function InspectorPanel({
           />
         ) : null}
       </div>
+      <SemanticReviewPanel key={modelId} />
       <div className="border-b border-[var(--border)] px-4 py-3">
         <label
           htmlFor={selectId}

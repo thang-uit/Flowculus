@@ -5,13 +5,13 @@ import {
   Clock,
   CurrencyDollar,
   GitFork,
-  Info,
   Path,
   Pulse,
 } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 
-import { Tooltip } from '@/components/ui/Tooltip';
+import { QUALITY_DOT, QualityBadge, qualityLabel } from '@/components/ui/QualityBadge';
+import { formatPathCountWarning } from '@/lib/diagnostic-messages';
 import {
   formatCost,
   formatCycleMinutes,
@@ -33,12 +33,6 @@ export function AnalysisSummary() {
   const currency = getModelCurrency(Object.values(model.nodes));
   const chain =
     report.criticalChain?.status === 'ready' ? report.criticalChain : undefined;
-  const statusLabel =
-    report.quality === 'exact'
-      ? copy.exact
-      : report.quality === 'assumption'
-        ? copy.assumption
-        : copy.simulationRequired;
   const [isUpdated, setIsUpdated] = useState(false);
   const previousRevisionRef = useRef(analysisRevision);
 
@@ -57,6 +51,7 @@ export function AnalysisSummary() {
       value: formatCycleMinutes(report.cycleTimeMinutes, copy.minutes, copy.emptyValue),
       icon: Clock,
       accent: true,
+      quality: report.metricQuality.cycleTime,
     },
     {
       label: copy.theoreticalTime,
@@ -68,6 +63,7 @@ export function AnalysisSummary() {
       ),
       icon: Pulse,
       accent: false,
+      quality: report.metricQuality.theoreticalCycleTime,
     },
     {
       label: copy.cte,
@@ -75,6 +71,7 @@ export function AnalysisSummary() {
       value: formatPercent(report.cycleTimeEfficiency) ?? copy.emptyValue,
       icon: ChartLineUp,
       accent: false,
+      quality: report.metricQuality.cycleTimeEfficiency,
     },
     {
       label: copy.cost,
@@ -82,6 +79,7 @@ export function AnalysisSummary() {
       value: formatCost(report.costPerExecution, currency, locale) ?? copy.emptyValue,
       icon: CurrencyDollar,
       accent: false,
+      quality: report.metricQuality.cost,
     },
   ];
 
@@ -92,7 +90,7 @@ export function AnalysisSummary() {
     >
       {/* 4 Full-Width KPI Cards */}
       <div className="grid w-full grid-cols-2 divide-x divide-y divide-[var(--border)] sm:divide-y-0 lg:grid-cols-4">
-        {metrics.map(({ label, sublabel, value, icon: Icon, accent }) => (
+        {metrics.map(({ label, sublabel, value, icon: Icon, accent, quality }) => (
           <div
             key={label}
             className="flex min-w-0 items-center gap-3 p-3 sm:gap-4 sm:p-4 lg:p-5"
@@ -111,6 +109,12 @@ export function AnalysisSummary() {
                 <p className="truncate text-[10px] sm:text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
                   {label}
                 </p>
+                <span
+                  className={`size-1.5 shrink-0 rounded-full ${QUALITY_DOT[quality]}`}
+                  title={qualityLabel(quality, copy)}
+                  aria-label={qualityLabel(quality, copy)}
+                  role="img"
+                />
               </div>
               <p className="mt-0.5 truncate font-mono text-base font-bold text-[var(--text)] sm:text-lg lg:text-xl">
                 <span
@@ -145,7 +149,8 @@ export function AnalysisSummary() {
             title={
               report.pathCount?.status === 'ready'
                 ? report.pathCount.formula
-                : report.pathCount?.warning || copy.pathCountUnavailable
+                : (formatPathCountWarning(report.pathCount?.warning, copy) ??
+                  copy.pathCountUnavailable)
             }
           >
             {copy.pathCount(
@@ -161,18 +166,7 @@ export function AnalysisSummary() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Tooltip content={copy.analysisQualityHint}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-[10.5px] font-semibold text-[var(--muted-strong)]">
-              <Info
-                size={13}
-                className="text-[var(--accent-strong)]"
-                aria-hidden="true"
-              />
-              {statusLabel}
-            </span>
-          </Tooltip>
-        </div>
+        <QualityBadge quality={report.quality} copy={copy} />
       </div>
 
       {chain && chain.taskLabels.length > 0 ? (
@@ -183,7 +177,7 @@ export function AnalysisSummary() {
             aria-hidden="true"
           />
           <span className="shrink-0 font-semibold text-[var(--text)]">
-            {copy.criticalPath}
+            {copy.quality.criticalChainTitle}
           </span>
           <span
             className="min-w-0 truncate text-[var(--muted-strong)]"
@@ -193,8 +187,8 @@ export function AnalysisSummary() {
           </span>
           <span className="ml-auto shrink-0 rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--muted)]">
             {chain.quality === 'exact'
-              ? copy.criticalChainExact
-              : copy.criticalChainDominant}
+              ? copy.quality.criticalChainExact
+              : copy.quality.criticalChainHeuristic}
           </span>
         </div>
       ) : null}

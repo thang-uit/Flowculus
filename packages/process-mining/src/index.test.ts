@@ -300,8 +300,10 @@ describe('dfgToProcessModel', () => {
       name: 'Orders',
       hasStartTimes: false,
     });
-    expect(warnings.join(' ')).toContain('may run in parallel');
-    expect(warnings.join(' ')).toContain('no start timestamps');
+    expect(warnings).toEqual([
+      { code: 'possible-parallelism', params: { first: 'X', second: 'Y' } },
+      { code: 'missing-start-times' },
+    ]);
     expect(validateProcessModel(model).valid).toBe(true);
   });
 });

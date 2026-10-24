@@ -1,15 +1,28 @@
 import { withAutoLayout } from '@flowculus/file-formats';
-import type { ProcessEdge, ProcessModel, ProcessNode } from '@flowculus/process-model';
+import {
+  SEMANTIC_METADATA_KEYS,
+  type ProcessEdge,
+  type ProcessModel,
+  type ProcessNode,
+} from '@flowculus/process-model';
 
 import type { DirectlyFollowsGraph } from './types';
 
 const MINUTE_MS = 60_000;
 const MAX_INFERRED_REWORK = 0.95;
 
+export type MiningConversionWarningCode =
+  'no-complete-case' | 'possible-parallelism' | 'missing-start-times';
+
+/** Locale-neutral caveat of a DFG → BPMN conversion; the UI renders the text. */
+export interface MiningConversionWarning {
+  code: MiningConversionWarningCode;
+  params?: Record<string, string>;
+}
+
 export interface DiscoveredModelResult {
   model: ProcessModel;
-  /** Human-readable caveats (English, stable patterns for the UI to localise). */
-  warnings: string[];
+  warnings: MiningConversionWarning[];
 }
 
 const slug = (value: string): string =>
@@ -68,7 +81,7 @@ export const dfgToProcessModel = (
   dfg: DirectlyFollowsGraph,
   options: { name: string; hasStartTimes: boolean },
 ): DiscoveredModelResult => {
-  const warnings: string[] = [];
+  const warnings: MiningConversionWarning[] = [];
   const nodes: Record<string, ProcessNode> = {};
   const edges: Record<string, ProcessEdge> = {};
   const nodeIdByActivity = new Map<string, string>();
@@ -115,7 +128,7 @@ export const dfgToProcessModel = (
       'mining-frequency': activity.frequency,
       'mining-case-frequency': activity.caseFrequency,
     };
-    if (rework != null) metadata['flowculus-inferred-rework'] = true;
+    if (rework != null) metadata[SEMANTIC_METADATA_KEYS.inferredRework] = true;
 
     let processingMinutes: number | undefined;
     let waitingMinutes: number | undefined;
@@ -183,7 +196,7 @@ export const dfgToProcessModel = (
   };
   const gatewayMetadata = {
     source: 'process-mining',
-    'flowculus-inferred-gateway-kind': true,
+    [SEMANTIC_METADATA_KEYS.inferredGatewayKind]: true,
   };
 
   outgoing.forEach((branches, key) => {
@@ -227,26 +240,32 @@ export const dfgToProcessModel = (
         entryOf.get(branch.key) ?? elementId(branch.key),
         {
           probability: probabilities?.get(branch.key),
-          metadata: { 'mining-frequency': branch.frequency },
+          metadata: {
+            'mining-frequency': branch.frequency,
+            ...(probabilities
+              ? {
+                  [SEMANTIC_METADATA_KEYS.inferredProbability]: true,
+                  source: 'process-mining',
+                }
+              : {}),
+          },
         },
       );
     });
   });
 
-  if (!outgoing.has(START))
-    warnings.push('The event log has no complete case to start from.');
+  if (!outgoing.has(START)) warnings.push({ code: 'no-complete-case' });
   const pairs = new Set(transitions.map((edge) => `${edge.source}\u0000${edge.target}`));
   transitions.forEach((edge) => {
     if (edge.source < edge.target && pairs.has(`${edge.target}\u0000${edge.source}`)) {
-      warnings.push(
-        `Activities ${edge.source} and ${edge.target} occur in both orders; they may run in parallel (AND) rather than loop.`,
-      );
+      warnings.push({
+        code: 'possible-parallelism',
+        params: { first: edge.source, second: edge.target },
+      });
     }
   });
   if (!options.hasStartTimes) {
-    warnings.push(
-      'The log has no start timestamps, so task times are elapsed time between completions and processing time is unknown.',
-    );
+    warnings.push({ code: 'missing-start-times' });
   }
 
   return {

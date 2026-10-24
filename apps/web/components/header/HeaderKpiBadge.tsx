@@ -2,17 +2,12 @@
 
 import { ChartLineUp } from '@phosphor-icons/react';
 
+import { QUALITY_DOT, qualityLabel } from '@/components/ui/QualityBadge';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { formatKpiMinutes, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
-
-const QUALITY_TONE = {
-  exact: 'bg-[var(--success)]',
-  assumption: 'bg-[var(--accent)]',
-  'simulation-required': 'bg-[var(--danger)]',
-} as const;
 
 /**
  * Live CT / TCT / CTE readout. It re-renders only when the worker publishes a
@@ -29,16 +24,11 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
   const dockOpen = useWorkspaceStore((state) => state.analysisDockOpen);
   const toggleDock = useWorkspaceStore((state) => state.toggleAnalysisDock);
 
-  const qualityLabel =
-    report.quality === 'exact'
-      ? copy.exact
-      : report.quality === 'assumption'
-        ? copy.assumption
-        : copy.simulationRequired;
+  const quality = qualityLabel(report.quality, copy);
   const ct = formatKpiMinutes(report.cycleTimeMinutes, copy.emptyValue);
   const tct = formatKpiMinutes(report.theoreticalCycleTimeMinutes, copy.emptyValue);
   const cte = formatPercent(report.cycleTimeEfficiency) ?? copy.emptyValue;
-  const summary = `CT ${ct} · TCT ${tct} · CTE ${cte} · ${qualityLabel}`;
+  const summary = `CT ${ct} · TCT ${tct} · CTE ${cte} · ${quality}`;
 
   return (
     <Tooltip content={`${copy.liveKpiHint} — ${summary}`}>
@@ -95,7 +85,7 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
           </>
         ) : null}
         <span
-          className={cn('size-1.5 shrink-0 rounded-full', QUALITY_TONE[report.quality])}
+          className={cn('size-1.5 shrink-0 rounded-full', QUALITY_DOT[report.quality])}
           aria-hidden="true"
         />
       </button>

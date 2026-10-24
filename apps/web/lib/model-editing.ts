@@ -1,6 +1,7 @@
 import { rectsOverlap, type Point, type Rect } from '@flowculus/graph-layout';
 import {
   DEFAULT_NODE_SIZE,
+  SEMANTIC_METADATA_KEYS,
   getNodeBounds,
   isSequenceFlowEdge,
   type ProcessEdge,
@@ -295,20 +296,24 @@ export const replaceEdge = (model: ProcessModel, edge: ProcessEdge): ProcessMode
   };
 };
 
-/** Confirms the semantic type of a node imported from a shape guess. */
-export const confirmNodeSemantics = (node: ProcessNode): ProcessNode => {
+/**
+ * Choosing a type in the Inspector is an explicit decision, so it clears the
+ * node's inferred flags (kind, gateway type, rework) and records the
+ * confirmation, exactly as `confirmSemantics` does for the whole model.
+ */
+const markNodeConfirmed = (node: ProcessNode): ProcessNode => {
   if (!node.metadata) return node;
   const metadata = { ...node.metadata };
-  delete metadata['flowculus-inferred-kind'];
-  delete metadata['flowculus-inferred-gateway-kind'];
-  delete metadata['flowculus-inferred-rework'];
+  const flags = [
+    SEMANTIC_METADATA_KEYS.inferredKind,
+    SEMANTIC_METADATA_KEYS.inferredGatewayKind,
+    SEMANTIC_METADATA_KEYS.inferredRework,
+  ];
+  if (!flags.some((flag) => flag in metadata)) return node;
+  flags.forEach((flag) => delete metadata[flag]);
+  metadata[SEMANTIC_METADATA_KEYS.confirmed] = true;
   return { ...node, metadata };
 };
-
-export const isNodeInferred = (node: ProcessNode): boolean =>
-  node.metadata?.['flowculus-inferred-kind'] === true ||
-  node.metadata?.['flowculus-inferred-gateway-kind'] === true ||
-  node.metadata?.['flowculus-inferred-rework'] === true;
 
 type ShapeFamily = 'activity' | 'event' | 'gateway' | 'artifact';
 
@@ -336,7 +341,7 @@ export const changeNodeKind = (
   const size = resize
     ? DEFAULT_NODE_SIZE[kind]
     : { width: bounds.width, height: bounds.height };
-  return confirmNodeSemantics({
+  return markNodeConfirmed({
     ...node,
     kind,
     gatewayKind:

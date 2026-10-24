@@ -1,11 +1,12 @@
 import type { AnalysisOptions, AnalysisReport } from '@flowculus/analysis-engine';
 import { exportDrawioXml } from '@flowculus/drawio-adapter';
 import {
+  createAnalysisSnapshot,
   processModelToEdgesCsv,
   processModelToNodesCsv,
   serializeFlowculusFile,
 } from '@flowculus/file-formats';
-import type { ProcessModel } from '@flowculus/process-model';
+import { assertConfirmedModel, type ConfirmedProcessModel } from '@flowculus/validation';
 
 import { downloadDataUriFile, downloadTextFile } from '@/lib/browser-file-actions';
 import { buildDiagramSvg, rasterizeSvg, svgToDataUri } from '@/lib/diagram-export';
@@ -28,7 +29,11 @@ export type WorkspaceExportFormat =
   | 'csv';
 
 export interface WorkspaceExportContext {
-  model: ProcessModel;
+  /**
+   * Only a model that passed the semantic gate (`checkSemanticGate`) can be
+   * exported; the function re-checks it, so the gate cannot be bypassed.
+   */
+  model: ConfirmedProcessModel;
   report: AnalysisReport;
   analysisOptions: AnalysisOptions;
   drawioSource: DrawioSource | null;
@@ -38,26 +43,13 @@ export interface WorkspaceExportContext {
   reportWindow?: Window | null;
 }
 
-const analysisSnapshot = (report: AnalysisReport) => ({
-  cycleTimeMinutes: report.cycleTimeMinutes,
-  theoreticalCycleTimeMinutes: report.theoreticalCycleTimeMinutes,
-  cycleTimeEfficiency: report.cycleTimeEfficiency,
-  costPerExecution: report.costPerExecution,
-  quality: report.quality,
-  littleLaw: report.littleLaw,
-  littleLawForecast: report.littleLawForecast,
-  queue: report.queue,
-  criticalPath: report.criticalPath,
-  criticalChain: report.criticalChain,
-  pathCount: report.pathCount,
-});
-
 /** Every export Flowculus offers, from the same committed model and report. */
 export const exportWorkspace = async (
   format: WorkspaceExportFormat,
   context: WorkspaceExportContext,
 ): Promise<void> => {
   const { model, report, copy, locale } = context;
+  assertConfirmedModel(model);
   const stem = safeFileStem(model.name, 'process');
   const title = model.name || copy.modelName;
   const currency = getModelCurrency(Object.values(model.nodes));
@@ -77,7 +69,7 @@ export const exportWorkspace = async (
           model,
           drawioXml,
           analysisOptions: context.analysisOptions,
-          analysis: analysisSnapshot(report),
+          analysis: createAnalysisSnapshot(report),
         }),
         'application/json',
       );
@@ -106,6 +98,7 @@ export const exportWorkspace = async (
         imageDataUri: svgToDataUri(buildDiagramSvg(model, report).svg),
         title,
         report,
+        model,
         copy,
         locale,
         currency,
@@ -121,6 +114,7 @@ export const exportWorkspace = async (
         format: imageFormat,
         title,
         report,
+        model,
         copy,
         locale,
         currency,
