@@ -2,128 +2,224 @@
 
 import { create } from 'zustand';
 
-import type { AnalysisOptions, AnalysisReport } from '@flowculus/analysis-engine';
+import {
+  analyzeProcess,
+  type AnalysisOptions,
+  type AnalysisReport,
+} from '@flowculus/analysis-engine';
+import type { DrawioPageSummary } from '@flowculus/drawio-adapter';
 import type { ProcessModel } from '@flowculus/process-model';
+import { confirmSemantics, type SemanticTarget } from '@flowculus/validation';
 
 import type { Locale } from '@/lib/i18n';
 import { INITIAL_PROCESS_MODEL } from '@/lib/initial-process-model';
-import { INITIAL_DRAWIO_XML } from '@/lib/initial-drawio';
-import { analyzeProcess } from '@flowculus/analysis-engine';
-export type { SemanticShapeTool } from '@/lib/shape-tools';
 
-export type WorkspaceTool =
-  | 'select'
-  | 'hand'
-  | 'task'
-  | 'xor'
-  | 'and'
-  | 'or'
-  | 'eventBased'
-  | 'complex'
-  | 'start'
-  | 'end'
-  | 'event'
-  | 'subprocess'
-  | 'data'
-  | 'annotation'
-  | 'rework';
-
-export type DrawioStatus = 'loading' | 'ready' | 'saving' | 'error';
+export type WorkspaceMode = 'model' | 'mining';
+export type CanvasTool = 'select' | 'hand';
 export type DraftStatus = 'loading' | 'saving' | 'saved' | 'error';
 export type AnalysisRuntimeStatus =
-  'idle' | 'calculating' | 'ready' | 'fallback' | 'error';
+  'idle' | 'calculating' | 'ready' | 'fallback' | 'restarting' | 'timeout' | 'error';
 
-export interface WorkspacePage {
-  id: string;
-  name: string;
+/** The original draw.io file, kept so export can patch it (semantic-preserving). */
+export interface DrawioSource {
+  xml: string;
+  pages: DrawioPageSummary[];
+  pageIndex: number;
+}
+
+export interface CanvasViewport {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
+const HISTORY_LIMIT = 100;
+
+export interface ElementReference {
+  elementType: 'node' | 'edge';
+  elementId: string;
+}
+
+/** A one-shot request for the canvas to bring an element into view. */
+export interface FocusRequest extends ElementReference {
+  nonce: number;
+}
+
+/** Why the semantic gate dialog is open (an export or a share was refused). */
+export type SemanticGateReason = 'export' | 'share';
+
+interface ModelHistory {
+  past: ProcessModel[];
+  future: ProcessModel[];
+}
+
+interface LoadModelOptions {
+  drawioSource?: DrawioSource | null;
+  analysisOptions?: AnalysisOptions;
+  modelName?: string;
 }
 
 interface WorkspaceState {
-  activeTool: WorkspaceTool;
-  selectedNodeId: string | null;
-  zoom: number;
+  mode: WorkspaceMode;
+  activeTool: CanvasTool;
+  selectedNodeIds: string[];
+  selectedEdgeId: string | null;
   paletteOpen: boolean;
   inspectorOpen: boolean;
   analysisDockOpen: boolean;
   locale: Locale;
   processModel: ProcessModel;
-  currentXml: string;
+  /** Increments when a different model is loaded (import, page switch, mining). */
+  modelRevision: number;
+  history: ModelHistory;
+  drawioSource: DrawioSource | null;
+  canvasViewport: CanvasViewport | null;
   analysisReport: AnalysisReport;
   analysisRevision: number;
   analysisOptions: AnalysisOptions;
-  drawioStatus: DrawioStatus;
   draftStatus: DraftStatus;
   analysisRuntimeStatus: AnalysisRuntimeStatus;
   modelName: string;
-  /** Current draw.io page index (0-based). -1 = unknown. */
-  currentPageIndex: number;
-  /** All pages in the current draw.io file. Empty = single-page or not yet loaded. */
-  pages: WorkspacePage[];
-  setActiveTool: (tool: WorkspaceTool) => void;
-  setSelectedNodeId: (nodeId: string | null) => void;
-  setZoom: (zoom: number) => void;
+  focusRequest: FocusRequest | null;
+  semanticGateReason: SemanticGateReason | null;
+  setMode: (mode: WorkspaceMode) => void;
+  setActiveTool: (tool: CanvasTool) => void;
+  setSelection: (selection: { nodeIds?: string[]; edgeId?: string | null }) => void;
   togglePalette: () => void;
   toggleInspector: () => void;
+  setInspectorOpen: (open: boolean) => void;
   toggleAnalysisDock: () => void;
   setLocale: (locale: Locale) => void;
-  setProcessModel: (model: ProcessModel) => void;
-  setCurrentXml: (xml: string) => void;
+  /** Applies an edit; recorded in undo history unless `recordHistory` is false. */
+  commitModel: (model: ProcessModel, options?: { recordHistory?: boolean }) => void;
+  /** Replaces the whole model (import, draft restore) and clears history. */
+  loadModel: (model: ProcessModel, options?: LoadModelOptions) => void;
+  undo: () => void;
+  redo: () => void;
+  setCanvasViewport: (viewport: CanvasViewport) => void;
   setAnalysisReport: (report: AnalysisReport) => void;
   setAnalysisOptions: (options: AnalysisOptions) => void;
-  setDrawioStatus: (status: DrawioStatus) => void;
   setDraftStatus: (status: DraftStatus) => void;
   setAnalysisStatus: (status: AnalysisRuntimeStatus) => void;
   setModelName: (name: string) => void;
-  setCurrentPageIndex: (index: number) => void;
-  setPages: (pages: WorkspacePage[]) => void;
+  /** Selects an element, opens the Inspector and asks the canvas to show it. */
+  focusElement: (element: ElementReference) => void;
+  /** Records a person's confirmation of inferred semantics (undoable). */
+  confirmSemanticItems: (targets?: SemanticTarget[]) => void;
+  setSemanticGateReason: (reason: SemanticGateReason | null) => void;
 }
 
-export const useWorkspaceStore = create<WorkspaceState>((set) => ({
+const isWorkerOwned = (status: AnalysisRuntimeStatus) =>
+  status === 'ready' || status === 'calculating';
+
+const pruneSelection = (
+  model: ProcessModel,
+  nodeIds: string[],
+  edgeId: string | null,
+) => ({
+  selectedNodeIds: nodeIds.filter((id) => model.nodes[id]),
+  selectedEdgeId: edgeId && model.edges[edgeId] ? edgeId : null,
+});
+
+export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
+  mode: 'model',
   activeTool: 'select',
-  selectedNodeId: 'review',
-  zoom: 1,
+  selectedNodeIds: [],
+  selectedEdgeId: null,
   paletteOpen: true,
   inspectorOpen: false,
   analysisDockOpen: false,
   locale: 'en',
   processModel: INITIAL_PROCESS_MODEL,
-  currentXml: INITIAL_DRAWIO_XML,
+  modelRevision: 0,
+  history: { past: [], future: [] },
+  drawioSource: null,
+  canvasViewport: null,
   analysisReport: analyzeProcess(INITIAL_PROCESS_MODEL),
   analysisRevision: 0,
   analysisOptions: {},
-  drawioStatus: 'loading',
   draftStatus: 'loading',
   analysisRuntimeStatus: 'idle',
   modelName: INITIAL_PROCESS_MODEL.name,
-  currentPageIndex: -1,
-  pages: [],
+  focusRequest: null,
+  semanticGateReason: null,
+  setMode: (mode) => set({ mode }),
   setActiveTool: (activeTool) => set({ activeTool }),
-  setSelectedNodeId: (selectedNodeId) => set({ selectedNodeId }),
-  setZoom: (zoom) => set({ zoom: Math.min(1.25, Math.max(0.7, zoom)) }),
+  setSelection: ({ nodeIds, edgeId }) =>
+    set((state) => ({
+      selectedNodeIds: nodeIds ?? state.selectedNodeIds,
+      selectedEdgeId: edgeId === undefined ? state.selectedEdgeId : edgeId,
+    })),
   togglePalette: () => set((state) => ({ paletteOpen: !state.paletteOpen })),
   toggleInspector: () => set((state) => ({ inspectorOpen: !state.inspectorOpen })),
+  setInspectorOpen: (inspectorOpen) => set({ inspectorOpen }),
   toggleAnalysisDock: () =>
     set((state) => ({ analysisDockOpen: !state.analysisDockOpen })),
   setLocale: (locale) => set({ locale }),
-  setProcessModel: (processModel) =>
-    set((state) => ({
-      processModel,
-      // A worker owns normal recalculation. Keep a synchronous fallback for
-      // browsers that block module workers and for the first hydration frame.
-      analysisReport:
-        state.analysisRuntimeStatus === 'ready' ||
-        state.analysisRuntimeStatus === 'calculating'
+  commitModel: (model, options) =>
+    set((state) => {
+      if (model === state.processModel) return state;
+      const recordHistory = options?.recordHistory ?? true;
+      return {
+        processModel: model,
+        history: recordHistory
+          ? {
+              past: [...state.history.past, state.processModel].slice(-HISTORY_LIMIT),
+              future: [],
+            }
+          : state.history,
+        // The worker owns normal recalculation. The synchronous fallback is
+        // only used before it is ready or when the browser blocks workers.
+        analysisReport: isWorkerOwned(state.analysisRuntimeStatus)
           ? state.analysisReport
-          : analyzeProcess(processModel, state.analysisOptions),
-      modelName: processModel.name || state.modelName,
-      selectedNodeId: processModel.nodes[state.selectedNodeId ?? '']
-        ? state.selectedNodeId
-        : (Object.values(processModel.nodes).find((node) => node.kind === 'gateway')
-            ?.id ??
-          Object.keys(processModel.nodes)[0] ??
-          null),
+          : analyzeProcess(model, state.analysisOptions),
+        modelName: model.name || state.modelName,
+        ...pruneSelection(model, state.selectedNodeIds, state.selectedEdgeId),
+      };
+    }),
+  loadModel: (model, options = {}) =>
+    set((state) => ({
+      processModel: model,
+      modelRevision: state.modelRevision + 1,
+      history: { past: [], future: [] },
+      drawioSource:
+        options.drawioSource === undefined ? state.drawioSource : options.drawioSource,
+      canvasViewport: null,
+      analysisOptions: options.analysisOptions ?? state.analysisOptions,
+      analysisReport: isWorkerOwned(state.analysisRuntimeStatus)
+        ? state.analysisReport
+        : analyzeProcess(model, options.analysisOptions ?? state.analysisOptions),
+      modelName: options.modelName ?? model.name ?? state.modelName,
+      selectedNodeIds: [],
+      selectedEdgeId: null,
     })),
-  setCurrentXml: (currentXml) => set({ currentXml }),
+  undo: () => {
+    const { history, processModel } = get();
+    const previous = history.past[history.past.length - 1];
+    if (!previous) return;
+    set((state) => ({
+      processModel: previous,
+      history: {
+        past: history.past.slice(0, -1),
+        future: [processModel, ...history.future].slice(0, HISTORY_LIMIT),
+      },
+      ...pruneSelection(previous, state.selectedNodeIds, state.selectedEdgeId),
+    }));
+  },
+  redo: () => {
+    const { history, processModel } = get();
+    const next = history.future[0];
+    if (!next) return;
+    set((state) => ({
+      processModel: next,
+      history: {
+        past: [...history.past, processModel].slice(-HISTORY_LIMIT),
+        future: history.future.slice(1),
+      },
+      ...pruneSelection(next, state.selectedNodeIds, state.selectedEdgeId),
+    }));
+  },
+  setCanvasViewport: (canvasViewport) => set({ canvasViewport }),
   setAnalysisReport: (analysisReport) =>
     set((state) => ({
       analysisReport,
@@ -132,16 +228,40 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   setAnalysisOptions: (analysisOptions) =>
     set((state) => ({
       analysisOptions,
-      analysisReport:
-        state.analysisRuntimeStatus === 'ready' ||
-        state.analysisRuntimeStatus === 'calculating'
-          ? state.analysisReport
-          : analyzeProcess(state.processModel, analysisOptions),
+      analysisReport: isWorkerOwned(state.analysisRuntimeStatus)
+        ? state.analysisReport
+        : analyzeProcess(state.processModel, analysisOptions),
     })),
-  setDrawioStatus: (drawioStatus) => set({ drawioStatus }),
   setDraftStatus: (draftStatus) => set({ draftStatus }),
   setAnalysisStatus: (analysisRuntimeStatus) => set({ analysisRuntimeStatus }),
-  setModelName: (modelName) => set({ modelName }),
-  setCurrentPageIndex: (currentPageIndex) => set({ currentPageIndex }),
-  setPages: (pages) => set({ pages }),
+  setModelName: (modelName) =>
+    set((state) => ({
+      modelName,
+      processModel: { ...state.processModel, name: modelName },
+    })),
+  focusElement: ({ elementType, elementId }) =>
+    set((state) => {
+      const exists =
+        elementType === 'node'
+          ? Boolean(state.processModel.nodes[elementId])
+          : Boolean(state.processModel.edges[elementId]);
+      if (!exists) return state;
+      return {
+        mode: 'model',
+        inspectorOpen: true,
+        selectedNodeIds: elementType === 'node' ? [elementId] : [],
+        selectedEdgeId: elementType === 'edge' ? elementId : null,
+        focusRequest: {
+          elementType,
+          elementId,
+          nonce: (state.focusRequest?.nonce ?? 0) + 1,
+        },
+      };
+    }),
+  confirmSemanticItems: (targets) => {
+    const { processModel, commitModel } = get();
+    const confirmed = confirmSemantics(processModel, targets);
+    if (confirmed !== processModel) commitModel(confirmed);
+  },
+  setSemanticGateReason: (semanticGateReason) => set({ semanticGateReason }),
 }));

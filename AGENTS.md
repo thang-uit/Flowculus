@@ -1,112 +1,183 @@
-# Flowculus project rules
+# Flowculus agent rules
 
-## Scope
+These rules are binding for every human or AI contributor working in this
+repository. They describe the code as it is; if a rule and the code disagree,
+fix one of them in the same change.
 
-These rules apply to this repository. Keep the product browser-first, responsive, accessible and fast during canvas interaction.
+## 1. Scope and product principles
 
-## Architecture
+- Flowculus is a browser-first, zero-backend workspace for BPMN-subset process
+  modelling, process mining and cycle-time analysis. Models, logs and results
+  never leave the browser.
+- Results must be honest. Every number carries a quality (`exact`,
+  `assumption` or `simulation-required`) and the findings that explain it. When
+  a value cannot be derived analytically it is withheld (`null`), never
+  guessed.
+- A guess is never shared as a fact: inferred semantics block export and share
+  until a person confirms them (section 5).
+- The canvas stays fast on low-end phones; correctness beats decoration.
 
-- `apps/web` owns routing, composition and presentation.
-- `packages/process-model` owns serializable domain types.
-- `packages/validation` owns input and graph validation.
-- `packages/analysis-engine` owns cycle-time formulas and reports.
-- `packages/formula-renderer` owns formula AST formatting for UI/report adapters.
-- `packages/drawio-adapter` owns draw.io protocol details only.
-- `packages/file-formats` owns import/export serialization.
-- Domain packages must not import React, Next.js, DOM APIs or CSS.
-- React components must not contain cycle-time formulas.
+## 2. Package ownership and dependency direction
 
-## Naming
+```text
+apps/web            composition, presentation, browser adapters, workers
+  -> analysis-engine   -> validation, process-model, formula-renderer
+  -> file-formats      -> analysis-engine, graph-layout, process-model
+  -> process-mining    -> file-formats, process-model, xml-tree
+  -> drawio-adapter    -> process-model, xml-tree
+  -> validation        -> process-model
+  -> graph-layout, formula-renderer, process-model, xml-tree (no internal deps)
+```
 
-- Components and component files use `PascalCase`.
-- Hooks use `useX` exports and `use-kebab-case.ts` filenames.
-- Functions and variables use `camelCase`.
-- Types and interfaces use `PascalCase`.
-- Constants use `UPPER_SNAKE_CASE` only when they are module-level invariants.
-- Use explicit domain names. Avoid vague names such as `data`, `helper`, `thing` and `misc`.
+- Dependencies point from `apps/web` to packages and between packages only in
+  the direction above. No cycles; never import `apps/web` from a package.
+- Packages are pure TypeScript: no React, Next.js, DOM, `window`, CSS or
+  storage APIs. They must run unchanged in a Web Worker and in Vitest (Node).
+- Ownership:
+  - `process-model`: serializable domain types, metadata keys
+    (`SEMANTIC_METADATA_KEYS`), node-kind helpers.
+  - `validation`: zod schema, structured diagnostics (`DIAGNOSTIC_CODES`),
+    graph checks (`validateProcessGraph`), the semantic confirmation policy.
+  - `analysis-engine`: every formula (CT, TCT, CTE, cost, rework, OR, CPM,
+    critical chain, capacity, M/M/c, Little's Law), block-structure proofs
+    (dominators/post-dominators) and quality.
+  - `formula-renderer`: formula AST and text/LaTeX-like formatting.
+  - `drawio-adapter`: the draw.io protocol (decode, classify, patch export).
+  - `file-formats`: `.flowculus.json`, CSV, SVG rendering, auto layout.
+  - `process-mining`: event-log parsing, DFG, variants, bottlenecks,
+    DFG → BPMN conversion.
+  - `graph-layout`, `xml-tree`: dependency-free geometry and XML.
 
-## UI and accessibility
+## 3. Naming, files and component boundaries
 
-- Use semantic HTML and keyboard-operable controls.
-- Use one yellow accent token consistently in light and dark themes.
-- Keep focus states visible and maintain WCAG AA contrast.
-- Use `min-h-[100dvh]` for viewport layouts, never `h-screen`.
-- Keep mobile editor actions reachable with a bottom sheet or compact toolbar.
-- Respect `prefers-reduced-motion`.
+- Components: `PascalCase.tsx`, one exported component per file plus small
+  private helpers. Hooks: `use-kebab-case.ts` exporting `useX`. Other modules:
+  `kebab-case.ts`. Types: `PascalCase`. Module invariants: `UPPER_SNAKE_CASE`.
+- Use domain names (`cycleTimeSource`, `joinBySplitId`), never `data`,
+  `helper`, `misc`, `utils2`.
+- Keep files focused; split a file when it mixes responsibilities or grows past
+  roughly 300 lines (tests and static data excepted).
+- Workspace and page components only compose. Business rules live in packages,
+  browser side effects in `apps/web/lib` hooks/services, presentation in
+  `apps/web/components/<feature>/`. Shared primitives live in
+  `apps/web/components/ui`.
+- No `any` without a comment explaining why. Do not swallow errors: keep the
+  root cause and surface a useful state.
 
-## Performance
+## 4. Domain formula ownership
 
-- Do not put pointer coordinates or drag frames in React global state.
-- Keep parsing, validation and analysis pure and worker-ready.
-- Debounce persistence and use IndexedDB for large files.
-- Lazy-load heavy integrations such as draw.io and image recognition.
-- Animate only `transform` and `opacity`.
+- Formulas exist only in `packages/analysis-engine`. UI, export and report
+  code render `AnalysisReport`; they never recompute a metric.
+- Activity time contract (one helper: `resolveActivityTime`):
+  - observed cycle time `D` (`durationMinutes`) wins;
+  - otherwise `CT = T + Wq` (derived);
+  - `T + Wq > D` is an error; `T + Wq < D` is an `unexplained-wait`
+    assumption.
+  - Every activity exposes `cycleTimeSource` and `processingSource`; show them
+    in the Inspector, canvas chips, CSV, PDF and image reports.
+- CTE is a ratio in `[0, 1]`. Only formatters (`formatPercent`) multiply by 100. Zero or invalid inputs produce `null` plus a diagnostic.
+- CPM (processing time, decision-free acyclic graphs) and the cycle-time
+  critical chain are different results with different names. CPM falls back to
+  `D` for missing `T` only as an `assumption` and names the tasks.
+- Joins are resolved from explicit `flowculus-join-id` metadata first, then
+  proven with post-dominators and a SESE check. If a join cannot be proven, the
+  result is `simulation-required`; never pick "the first" start, join or path.
+- Any change to a formula updates `formula-groups.test.ts`,
+  `structure.test.ts` or `cycle-time.test.ts`, and the pinned numbers in
+  `report-example.test.ts`, `initial-process-model.test.ts` and
+  `process-mining/src/regression.test.ts` must stay identical unless the change
+  is an intended correction that is documented in the README changelog.
 
-## Verification
+## 5. Validation, quality and semantic confirmation
 
-Before opening a pull request, run:
+- Validation returns structured diagnostics `{ code, severity, impact, scope,
+path, params }`. Packages never return user-facing sentences; the web app
+  maps codes to English and Vietnamese in `lib/i18n/diagnostics-*.ts` (typed as
+  `Record<DiagnosticCode, …>`, so a missing translation fails the type check).
+- Adapters (draw.io, CSV, mining) flag every guess with `flowculus-inferred-*`
+  metadata. `collectUnconfirmedSemantics` is the single source of truth.
+- Export and share go through one app-level guard (`use-workspace-actions`)
+  and the low-level exporter only accepts a `ConfirmedProcessModel` and
+  re-checks it (`assertConfirmedModel`). Never add an export path that skips
+  both. Editing, analysis and the local draft keep working while blocked.
+- Confirming records `flowculus-confirmed: true` and removes the inferred
+  flags. Unknown node kinds cannot be confirmed; the person must pick a type.
+
+## 6. draw.io preservation and export rules
+
+- draw.io is a file format, not a runtime. There is no iframe.
+- Export patches the source XML: untouched cells, styles, pages (including
+  compressed ones), unknown `UserObject`s and waypoints of unmoved flows are
+  kept. The edited page is written uncompressed. Do not claim byte-for-byte
+  lossless output; the guarantee is semantic preservation, covered by
+  `semantic-preserving.test.ts`.
+- Unconfirmed guesses are never written back as explicit `flowculus-*`
+  attributes. Confirmed semantics and explicit join pairing are.
+
+## 7. i18n, accessibility and responsive rules
+
+- English is the default locale. Every visible string has English and
+  Vietnamese values under `apps/web/lib/i18n/`. No string literals in JSX.
+- Every interactive element has an accessible name, a visible focus state and
+  keyboard support (menus: arrows/Home/End/Escape; dialogs: focus trap and
+  return focus). Quality is never shown by colour alone.
+- Layouts must work at 320, 390, 430, 768, 1024, 1440 and 1920 px. Use `dvh`,
+  never `h-screen`. Mobile actions stay reachable through the compact toolbar
+  and bottom sheet. Respect `prefers-reduced-motion`; animate only `transform`
+  and `opacity`.
+
+## 8. Performance, workers and persistence
+
+- Analysis runs in `workers/analysis.worker.ts` under `createWorkerSupervisor`
+  (latest request wins, cancellation of stale long runs, timeout, bounded
+  restart, main-thread fallback only when workers cannot run).
+- Mining runs in `workers/mining.worker.ts` through `useMiningClient`
+  (timeout, cancel, bounded restart). The worker holds the log, so an abort
+  clears the mining session.
+- Pointer movement and drag frames stay inside React Flow; the store receives
+  committed changes only (`commitModel`, with undo history).
+- One local draft is stored in IndexedDB (localStorage fallback), debounced.
+  Clean up timers, workers, listeners and object URLs on unmount.
+- Event logs are capped at `MAX_EVENT_ROWS` (500,000) and OR enumeration at 12
+  branches; keep every new loop or enumeration bounded.
+
+## 9. Security and secrets
+
+- Never put secrets in source, logs, tests, README or committed config. Only
+  `.env.example` (no values) is tracked; every other `.env.*` is ignored.
+- Treat imported files as untrusted: parse with the bounded parsers, never
+  `eval`, never inject imported text as HTML.
+- Do not add a dependency without checking existing packages first and stating
+  its purpose, size, licence and maintenance in the change summary.
+
+## 10. Vercel and release hygiene
+
+- The Vercel project uses Root Directory `apps/web` (config in
+  `apps/web/vercel.json`), Node 22 (`.nvmrc`, `engines`) and pnpm from
+  `packageManager`. The app needs no environment variables.
+- Do not deploy to production, create Vercel projects or change domains
+  unless explicitly asked. Never commit `.next`, `.vercel`, `.turbo`, drafts
+  or machine-specific settings.
+
+## 11. Required verification
+
+Run all of these before declaring work done, and report the real results:
 
 ```bash
 pnpm format:check
-pnpm lint
+pnpm test
+pnpm lint        # must report 0 warnings
 pnpm typecheck
 pnpm build
 ```
 
-Do not claim a check passed unless it was run. Preserve unrelated user changes and do not commit or push unless explicitly requested.
+For UI changes also start `pnpm start` and check the affected flows in a
+browser at mobile and desktop widths with no console errors. Never claim a
+check passed unless you ran it.
 
-## File and module boundaries
+## 12. Preserving user work
 
-- Keep feature-specific UI in `apps/web/components` and feature-specific browser
-  adapters in `apps/web/lib`. Do not turn `lib` into an unbounded catch-all.
-- A page or workspace component composes child components; it must not become the
-  home for API calls, domain formulas, large type declarations or export codecs.
-- Put serializable business concepts in the appropriate package under
-  `packages/`. Those packages must remain usable from a Worker and from tests.
-- Shared UI primitives belong in `apps/web/components/ui`; process-specific UI
-  belongs beside the feature that owns it. Avoid one-off copies of buttons,
-  tooltips, inputs or validation messages.
-- Keep public imports stable. If a module exposes a public API, prefer an
-  additive change and update its tests and consumers together.
-- Avoid circular dependencies. Dependency direction is from app composition to
-  domain packages, never from domain code back into React or Next.js.
-
-## Interaction and accessibility
-
-- English is the default locale. Every user-visible string added to the product
-  must have an English value and a Vietnamese value in `apps/web/lib/i18n.ts`.
-- Every button, link, menu trigger, file input and custom control needs an
-  accessible name, a visible focus state and a pointer cursor. Informational
-  text and status badges keep the normal cursor.
-- Use the shared Radix tooltip wrapper for compact icon-only controls. Keep a
-  native `title` or visible text fallback when a tooltip cannot open on touch.
-- Do not put hover-only behavior on the draw.io iframe. Pointer movement and
-  drag frames stay inside draw.io; React receives committed snapshots only.
-- Mobile layouts must work at 320px, 390px and 430px CSS widths. Prefer compact
-  action bars, bottom sheets and intentional horizontal scrollers over clipped
-  controls.
-
-## Domain correctness
-
-- Cycle-time, cost, capacity and queue formulas live only in
-  `packages/analysis-engine`. UI code renders reports and never reimplements a
-  formula.
-- A result must carry its quality (`exact`, `assumption` or
-  `simulation-required`) and preserve warnings when metadata is missing,
-  inferred, cyclic or structurally unsupported.
-- Never silently infer a gateway or rework rule and present it as exact. A
-  native draw.io file without Flowculus metadata remains editable, but requires
-  explicit semantic confirmation before a result is shared.
-- `.drawio` XML remains the visual interchange source; Flowculus metadata is an
-  additive bridge. Do not remove unknown draw.io cells, styles, libraries or
-  pages during import/export.
-
-## Performance and release hygiene
-
-- Lazy-load heavy integrations and keep analysis/image work off the main thread
-  when practical. Cancel timers, workers, object URLs and event listeners on
-  unmount.
-- Do not add a dependency without checking the existing workspace and explaining
-  its bundle, maintenance and security impact in the change summary.
-- Do not commit secrets, generated `.next` output, local drafts or machine-
-  specific configuration. Do not commit or push unless the user explicitly asks.
+- Never run `git reset --hard`, `git clean -fd`, `git checkout -- .` or force
+  pushes, and never delete or overwrite changes you did not make.
+- Do not commit or push unless the user explicitly asks. Keep unrelated
+  changes out of your diff.

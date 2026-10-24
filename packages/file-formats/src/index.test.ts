@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
+import type { ProcessModel } from '@flowculus/process-model';
+
 import {
+  detectCsvDelimiter,
+  parseCsvTable,
   parseFlowculusFile,
   parseProcessCsv,
   processModelToCsv,
+  processModelToSvg,
   serializeFlowculusFile,
+  withAutoLayout,
 } from './index';
 
 const validFile = {
@@ -135,5 +141,93 @@ describe('Flowculus file format', () => {
     expect(parsed.edges.e3?.kind).toBe('sequence');
     expect(parsed.edges.e2?.probability).toBe(0.6);
     expect(parsed.nodes.choice?.gatewayKind).toBe('xor');
+  });
+
+  it('round-trips node geometry through the nodes CSV columns', () => {
+    const parsed = parseProcessCsv(
+      processModelToCsv({
+        schemaVersion: 1,
+        id: 'geo',
+        name: 'Geometry',
+        nodes: {
+          task: {
+            id: 'task',
+            label: 'Task',
+            kind: 'task',
+            bounds: { x: 12.5, y: 40, width: 176, height: 84 },
+          },
+        },
+        edges: {},
+      }),
+    );
+    expect(parsed.nodes.task?.bounds).toEqual({ x: 12.5, y: 40, width: 176, height: 84 });
+  });
+});
+
+describe('CSV table reader', () => {
+  it('detects semicolon and tab delimited exports', () => {
+    expect(detectCsvDelimiter('case;activity;time\n1;A;2026')).toBe(';');
+    expect(detectCsvDelimiter('case\tactivity\n1\tA')).toBe('\t');
+    expect(parseCsvTable('"a;b";c\n1;2').rows).toEqual([
+      ['a;b', 'c'],
+      ['1', '2'],
+    ]);
+  });
+});
+
+const flow: ProcessModel = {
+  schemaVersion: 1,
+  id: 'svg',
+  name: 'Svg <flow>',
+  nodes: {
+    start: { id: 'start', label: 'Start', kind: 'start' },
+    split: { id: 'split', label: 'Approve?', kind: 'gateway', gatewayKind: 'xor' },
+    yes: {
+      id: 'yes',
+      label: 'Approve',
+      kind: 'task',
+      processingMinutes: 30,
+      waitingMinutes: 90,
+    },
+    no: { id: 'no', label: 'Reject', kind: 'task', durationMinutes: 5 },
+    end: { id: 'end', label: 'End', kind: 'end' },
+    note: { id: 'note', label: 'Policy', kind: 'annotation' },
+  },
+  edges: {
+    a: { id: 'a', source: 'start', target: 'split' },
+    b: { id: 'b', source: 'split', target: 'yes', probability: 0.7, condition: 'ok' },
+    c: { id: 'c', source: 'split', target: 'no', probability: 0.3 },
+    d: { id: 'd', source: 'yes', target: 'end' },
+    e: { id: 'e', source: 'no', target: 'end' },
+  },
+};
+
+describe('withAutoLayout', () => {
+  it('assigns left-to-right bounds only where geometry is missing', () => {
+    const laidOut = withAutoLayout(flow);
+    Object.values(laidOut.nodes).forEach((node) => expect(node.bounds).toBeDefined());
+    expect(laidOut.nodes.split!.bounds!.x).toBeGreaterThan(
+      laidOut.nodes.start!.bounds!.x,
+    );
+    expect(laidOut.nodes.end!.bounds!.x).toBeGreaterThan(laidOut.nodes.yes!.bounds!.x);
+    expect(laidOut.nodes.yes!.bounds!.y).not.toBe(laidOut.nodes.no!.bounds!.y);
+    expect(withAutoLayout(laidOut)).toBe(laidOut);
+  });
+});
+
+describe('processModelToSvg', () => {
+  it('renders shapes, labels and the highlighted path as vector markup', () => {
+    const { svg, width, height } = processModelToSvg(withAutoLayout(flow), {
+      highlightNodeIds: ['yes'],
+      highlightEdgeIds: ['b'],
+    });
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true);
+    expect(width).toBeGreaterThan(400);
+    expect(height).toBeGreaterThan(100);
+    expect(svg).toContain('<title>Svg &lt;flow&gt;</title>');
+    expect(svg).toContain('ok · p = 0.7');
+    expect(svg).toContain('T 30m · Wq 1.5h');
+    expect(svg).toContain('marker-end="url(#fc-arrow-accent)"');
+    expect(svg.match(/<polygon/g)?.length).toBeGreaterThanOrEqual(1);
   });
 });

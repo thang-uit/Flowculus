@@ -10,6 +10,7 @@ import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { cn } from '@/lib/cn';
+import { formatPathCountWarning } from '@/lib/diagnostic-messages';
 
 const selectClass =
   'focus-ring h-9 w-full min-w-0 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-sm text-[var(--text)]';
@@ -99,7 +100,7 @@ export function PathQueryPanel() {
         ? copy.pathQueryLimit
         : report?.status === 'ready' && report.count === 0
           ? copy.pathQueryNoRoute
-          : report?.warning;
+          : formatPathCountWarning(report?.warning, copy);
 
   const resetToDefaults = () => {
     setStartNodeId(defaultStartId);

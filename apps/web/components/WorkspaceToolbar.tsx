@@ -1,57 +1,55 @@
 'use client';
 
 import {
-  ArrowClockwise,
+  ArrowUUpLeft,
+  ArrowUUpRight,
   ArrowsIn,
   Cursor,
   Hand,
   Minus,
   Plus,
 } from '@phosphor-icons/react';
-import type { RefObject } from 'react';
+import { useStore } from '@xyflow/react';
 
-import type { DrawioCanvasHandle } from '@/components/DrawioCanvas';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore, type WorkspaceTool } from '@/lib/workspace-store';
+import { useCanvasCommands } from '@/lib/use-canvas-commands';
+import { useWorkspaceStore, type CanvasTool } from '@/lib/workspace-store';
 
-interface WorkspaceCanvasControlsProps {
-  canvasRef: RefObject<DrawioCanvasHandle | null>;
-  className?: string;
+/** Re-renders only when the zoom level changes, never on pan frames. */
+function ZoomLevel({ onReset, label }: Readonly<{ onReset: () => void; label: string }>) {
+  const zoomPercent = useStore((state) => Math.round(state.transform[2] * 100));
+  return (
+    <Tooltip content={label}>
+      <button
+        type="button"
+        onClick={onReset}
+        aria-label={`${label}: ${zoomPercent}%`}
+        title={label}
+        className="focus-ring tb-btn tb-btn--idle min-w-[3rem] font-mono text-[11px] font-semibold tabular-nums"
+      >
+        {zoomPercent}%
+      </button>
+    </Tooltip>
+  );
 }
 
-export function WorkspaceCanvasControls({
-  canvasRef,
-  className,
-}: Readonly<WorkspaceCanvasControlsProps>) {
+export function WorkspaceCanvasControls({ className }: Readonly<{ className?: string }>) {
   const locale = useWorkspaceStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const activeTool = useWorkspaceStore((state) => state.activeTool);
   const setActiveTool = useWorkspaceStore((state) => state.setActiveTool);
-  const zoom = useWorkspaceStore((state) => state.zoom);
-  const setZoom = useWorkspaceStore((state) => state.setZoom);
+  const canUndo = useWorkspaceStore((state) => state.history.past.length > 0);
+  const canRedo = useWorkspaceStore((state) => state.history.future.length > 0);
+  const undo = useWorkspaceStore((state) => state.undo);
+  const redo = useWorkspaceStore((state) => state.redo);
+  const { zoomIn, zoomOut, fit, resetZoom } = useCanvasCommands();
 
-  const toolOptions: Array<{ id: WorkspaceTool; label: string; icon: typeof Cursor }> = [
+  const toolOptions: Array<{ id: CanvasTool; label: string; icon: typeof Cursor }> = [
     { id: 'select', label: copy.select, icon: Cursor },
     { id: 'hand', label: copy.panCanvas, icon: Hand },
   ];
-
-  const handleZoomOut = () => {
-    canvasRef.current?.zoomOut();
-    setZoom(Math.max(0.1, zoom - 0.1));
-  };
-  const handleZoomIn = () => {
-    canvasRef.current?.zoomIn();
-    setZoom(zoom + 0.1);
-  };
-  const handleFit = () => {
-    canvasRef.current?.fit();
-    setZoom(1);
-  };
-  const handleRefresh = () => {
-    canvasRef.current?.refresh();
-  };
 
   return (
     <div
@@ -59,7 +57,6 @@ export function WorkspaceCanvasControls({
       aria-label={copy.tools}
       className={cn('flex h-8 items-center gap-1', className)}
     >
-      {/* Tool: Select / Hand */}
       {toolOptions.map(({ id, label, icon: Icon }) => {
         const isActive = activeTool === id;
         return (
@@ -81,30 +78,54 @@ export function WorkspaceCanvasControls({
         );
       })}
 
+      <span className="tb-divider" aria-hidden="true" />
+
+      <Tooltip content={copy.undo}>
+        <button
+          type="button"
+          aria-label={copy.undo}
+          title={copy.undo}
+          onClick={undo}
+          disabled={!canUndo}
+          className="focus-ring tb-btn tb-btn--idle disabled:opacity-40"
+        >
+          <ArrowUUpLeft size={15} aria-hidden="true" />
+        </button>
+      </Tooltip>
+      <Tooltip content={copy.redo}>
+        <button
+          type="button"
+          aria-label={copy.redo}
+          title={copy.redo}
+          onClick={redo}
+          disabled={!canRedo}
+          className="focus-ring tb-btn tb-btn--idle disabled:opacity-40"
+        >
+          <ArrowUUpRight size={15} aria-hidden="true" />
+        </button>
+      </Tooltip>
+
       <span className="tb-divider hidden sm:block" aria-hidden="true" />
 
-      {/* Zoom controls */}
       <div className="hidden items-center gap-0.5 sm:flex">
         <Tooltip content={copy.zoomOut}>
           <button
             type="button"
             aria-label={copy.zoomOut}
             title={copy.zoomOut}
-            onClick={handleZoomOut}
+            onClick={zoomOut}
             className="focus-ring tb-btn tb-btn--idle"
           >
             <Minus size={14} aria-hidden="true" />
           </button>
         </Tooltip>
-        <span className="min-w-[2.5rem] select-none text-center font-mono text-[11px] font-semibold tabular-nums text-[var(--muted)]">
-          {Math.round(zoom * 100)}%
-        </span>
+        <ZoomLevel onReset={resetZoom} label={copy.resetZoom} />
         <Tooltip content={copy.zoomIn}>
           <button
             type="button"
             aria-label={copy.zoomIn}
             title={copy.zoomIn}
-            onClick={handleZoomIn}
+            onClick={zoomIn}
             className="focus-ring tb-btn tb-btn--idle"
           >
             <Plus size={14} aria-hidden="true" />
@@ -112,46 +133,17 @@ export function WorkspaceCanvasControls({
         </Tooltip>
       </div>
 
-      <span className="tb-divider hidden sm:block" aria-hidden="true" />
-
-      {/* Fit + Refresh */}
       <Tooltip content={copy.fitToCanvas}>
         <button
           type="button"
           aria-label={copy.fitToCanvas}
           title={copy.fitToCanvas}
-          onClick={handleFit}
+          onClick={fit}
           className="focus-ring tb-btn tb-btn--idle"
         >
           <ArrowsIn size={15} aria-hidden="true" />
         </button>
       </Tooltip>
-      <Tooltip content={copy.refreshModel}>
-        <button
-          type="button"
-          aria-label={copy.refreshModel}
-          title={copy.refreshModel}
-          onClick={handleRefresh}
-          className="focus-ring tb-btn tb-btn--idle"
-        >
-          <ArrowClockwise size={15} aria-hidden="true" />
-        </button>
-      </Tooltip>
     </div>
-  );
-}
-
-/**
- * Standalone toolbar row — shown on mobile only (lg:hidden).
- * Desktop uses WorkspaceCanvasControls embedded inside the top navigation bar.
- */
-export function WorkspaceToolbar({
-  canvasRef,
-}: Readonly<{ canvasRef: RefObject<DrawioCanvasHandle | null> }>) {
-  return (
-    <WorkspaceCanvasControls
-      canvasRef={canvasRef}
-      className="shrink-0 border-b border-[var(--border)] px-3 lg:hidden"
-    />
   );
 }

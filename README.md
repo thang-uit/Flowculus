@@ -1,481 +1,329 @@
 <p align="center">
-  <img src="apps/web/public/logo.svg" alt="Flowculus Logo" width="100" />
+  <img src="apps/web/public/logo.svg" alt="Flowculus logo" width="96" />
 </p>
 
-# ⚡ Flowculus
+<h1 align="center">Flowculus</h1>
 
 <p align="center">
-  <strong>Interactive Business Process Modeling & Quantitative Cycle-Time Analysis Workspace</strong>
+  <strong>Mô hình hoá quy trình (tập con BPMN), khai phá quy trình và phân tích thời gian chu trình ngay trong trình duyệt.</strong><br />
+  <em>BPMN-subset process modelling, process mining and cycle-time analysis in the browser.</em>
 </p>
 
 <p align="center">
-  <a href="#-table-of-contents"><img src="https://img.shields.io/badge/Documentation-English%20%7C%20Ti%E1%BA%BFng%20Vi%E1%BB%87t-blue?style=for-the-badge" alt="Bilingual Documentation" /></a>
-  <img src="https://img.shields.io/badge/Next.js-16.3-black?style=for-the-badge&logo=next.js" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Turborepo-Monorepo-EF4444?style=for-the-badge&logo=turborepo" alt="Turborepo" />
-  <img src="https://img.shields.io/badge/Vitest-48%2F48%20Passed-6E9F18?style=for-the-badge&logo=vitest" alt="Vitest Tests" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License" />
+  Tiếng Việt trước, English ngay bên dưới mỗi phần · Vietnamese first, English follows each section.
 </p>
 
 ---
 
-## 📑 Table of Contents
+## Mục lục · Contents
 
-- [English Documentation](#-english-documentation)
-  - [Overview](#-overview)
-  - [Key Features](#-key-features)
-  - [Mathematical & Theoretical Foundation](#-mathematical--theoretical-foundation)
-  - [System Architecture](#-system-architecture)
-  - [Project & Monorepo Structure](#-project--monorepo-structure)
-  - [Getting Started & Local Development](#-getting-started--local-development)
-  - [Available Scripts](#-available-scripts)
-  - [Security & Privacy](#-security--privacy)
-  - [Acknowledgements & References](#-acknowledgements--references)
-  - [License](#-license)
-- [Tài Liệu Tiếng Việt (Vietnamese Documentation)](#-t%C3%A0i-li%E1%BB%87u-ti%E1%BA%BFng-vi%E1%BB%87t)
-  - [Giới Thiệu Tổng Quan](#-gi%E1%BB%9Bi-thi%E1%BB%87u-t%E1%BB%95ng-quan)
-  - [Các Tính Năng Nổi Bật](#-c%C3%A1c-t%C3%ADnh-n%C4%83ng-n%E1%BB%95i-b%E1%BA%ADt)
-  - [Cơ Sở Lý Thuyết & Công Thức Toán Học](#-c%C6%A1-s%E1%BB%9F-l%C3%BD-thuy%E1%BA%BFt--c%C3%B4ng-th%E1%BB%A9c-to%C3%A1n-h%E1%BB%8Dc)
-  - [Kiến Trúc Hệ Thống](#-ki%E1%BA%BFn-tr%C3%BAc-h%E1%BB%87-th%E1%BB%91ng)
-  - [Cấu Trúc Dự Án Monorepo](#-c%E1%BA%A5u-tr%C3%BAc-d%E1%BB%B1-%C3%A1n-monorepo)
-  - [Hướng Dẫn Cài Đặt & Chạy Cục Bộ](#-h%C6%B0%E1%BB%9Bng-d%E1%BA%ABn-c%C3%A0i-%C4%91%E1%BA%B7t--ch%E1%BA%A1y-c%E1%BB%A5c-b%E1%BB%99)
-  - [Danh Sách Lệnh Thực Thi](#-danh-s%C3%A1ch-l%E1%BB%87nh-th%E1%BB%B1c-thi)
-  - [Bảo Mật & Quyền Riêng Tư](#-b%E1%BA%A3o-m%E1%BA%ADt--quy%E1%BB%81n-ri%C3%AAng-t%C6%B0)
-  - [Lời Cảm Ơn & Tham Chiếu](#-l%E1%BB%9Di-c%E1%BA%A3m-%C6%A1n--tham-chi%E1%BA%BFu)
-  - [Bản Quyền](#-b%E1%BA%A3n-quy%E1%BB%81n)
+1. [Giới thiệu và phạm vi · Product and scope](#1-giới-thiệu-và-phạm-vi--product-and-scope)
+2. [Tính năng và tập con BPMN · Features and BPMN subset](#2-tính-năng-và-tập-con-bpmn--features-and-bpmn-subset)
+3. [Hình ảnh và sơ đồ · Screenshots and diagrams](#3-hình-ảnh-và-sơ-đồ--screenshots-and-diagrams)
+4. [Kiến trúc và luồng dữ liệu · Architecture and data flow](#4-kiến-trúc-và-luồng-dữ-liệu--architecture-and-data-flow)
+5. [Công thức, giả định, chất lượng và giới hạn · Formulas, assumptions, quality and limits](#5-công-thức-giả-định-chất-lượng-và-giới-hạn--formulas-assumptions-quality-and-limits)
+6. [draw.io và xác nhận ngữ nghĩa · draw.io and semantic confirmation](#6-drawio-và-xác-nhận-ngữ-nghĩa--drawio-and-semantic-confirmation)
+7. [Cấu trúc repository · Repository structure](#7-cấu-trúc-repository--repository-structure)
+8. [Yêu cầu · Prerequisites](#8-yêu-cầu--prerequisites)
+9. [Lệnh · Commands](#9-lệnh--commands)
+10. [Biến môi trường · Environment variables](#10-biến-môi-trường--environment-variables)
+11. [Worker, bản nháp cục bộ và hiệu năng · Workers, local draft and performance](#11-worker-bản-nháp-cục-bộ-và-hiệu-năng--workers-local-draft-and-performance)
+12. [Responsive và trợ năng · Responsive and accessibility](#12-responsive-và-trợ-năng--responsive-and-accessibility)
+13. [Triển khai Vercel · Vercel deployment](#13-triển-khai-vercel--vercel-deployment)
+14. [Xử lý sự cố · Troubleshooting](#14-xử-lý-sự-cố--troubleshooting)
+15. [Ma trận kiểm thử và giới hạn đã biết · Testing matrix and known limitations](#15-ma-trận-kiểm-thử-và-giới-hạn-đã-biết--testing-matrix-and-known-limitations)
+16. [Bảo mật và quyền riêng tư · Security and privacy](#16-bảo-mật-và-quyền-riêng-tư--security-and-privacy)
+17. [Changelog và ghi chú chuyển đổi · Changelog and migration notes](#17-changelog-và-ghi-chú-chuyển-đổi--changelog-and-migration-notes)
 
 ---
 
-# 🌐 English Documentation
+## 1. Giới thiệu và phạm vi · Product and scope
 
-## 🌟 Overview
+**Flowculus** là không gian làm việc chạy hoàn toàn trên trình duyệt, không có backend, để vẽ quy trình nghiệp vụ, khai phá quy trình từ nhật ký sự kiện và phân tích định lượng thời gian chu trình theo chương 7 của _Fundamentals of Business Process Management_ (Dumas và cộng sự, ấn bản 2). Có hai chế độ:
 
-**Flowculus** is a browser-first, zero-backend process modeling workspace engineered for business process design, capacity planning, and quantitative flow analysis.
+- **Model**: canvas BPMN gốc (React Flow). Mỗi chỉnh sửa được ghi vào mô hình ngữ nghĩa, rồi Web Worker tính lại phân tích.
+- **Mining**: nạp nhật ký sự kiện (CSV, TSV, JSON, XES), xem đồ thị directly-follows, biến thể, điểm nghẽn, rồi chuyển mô hình đã khai phá sang canvas.
 
-It seamlessly embeds the industry-standard **draw.io** diagram editor into a high-performance React application shell, allowing users to visually sketch process flowcharts while an isolated background Web Worker engine automatically calculates:
+Mọi kết quả đều kèm mức chất lượng (`exact`, `assumption`, `simulation-required`) và các phát hiện giải thích lý do. Khi không thể tính giải tích, Flowculus **không đưa ra con số** thay vì đoán. Flowculus không phải công cụ mô phỏng và không hỗ trợ toàn bộ BPMN 2.0.
 
-- **Cycle Time ($CT$)**
-- **Theoretical Cycle Time ($TCT$)**
-- **Cycle-Time Efficiency ($CTE$)**
-- **Cost per Execution**
-- **Little's Law Capacity & $M/M/c$ Multi-Server Queueing Metrics**
-- **Critical Path Analysis & Path Traversal Counts**
+**English.** Flowculus is a browser-only, zero-backend workspace for drawing business processes, mining them from event logs and analysing cycle time quantitatively, following chapter 7 of _Fundamentals of Business Process Management_ (Dumas et al., 2nd ed.). **Model** mode is a native React Flow BPMN canvas whose edits update a semantic model that a Web Worker re-analyses; **Mining** mode loads CSV/TSV/JSON/XES event logs, shows the directly-follows graph, variants and bottlenecks, and sends the discovered model to the canvas. Every result carries a quality (`exact`, `assumption`, `simulation-required`) plus the findings behind it; when no analytic value exists, the number is withheld rather than guessed. Flowculus is not a simulator and does not implement full BPMN 2.0.
 
-All custom attributes and calculations are stored natively inside standard `.drawio` XML files and `.flowculus.json` schemas, ensuring 100% interoperability with native diagrams.net desktop and web versions.
+## 2. Tính năng và tập con BPMN · Features and BPMN subset
 
----
+| Nhóm · Area                              | Tính năng · Feature                                                                                                                                                                                                                                                                                                              |
+| :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Canvas                                   | Kéo/thả hoặc bấm để thêm hình, nối luồng, đổi tên tại chỗ, undo/redo (100 bước), thao tác nhanh, minimap, phím tắt · drag or click to add shapes, connect flows, inline rename, undo/redo (100 steps), quick actions, minimap, shortcuts                                                                                         |
+| Dữ liệu trên sơ đồ · Data on the diagram | Chip `CT`/`T`/`Wq` kèm nguồn thời gian (tooltip), xác suất nhánh, rework, huy hiệu "cần xác nhận", chuỗi găng (nét liền = chính xác, nét đứt = ước lượng, có chú giải) · time chips with their source, branch probabilities, rework, "needs confirmation" badges, critical chain (solid = exact, dashed = estimate, with legend) |
+| Phân tích · Analysis                     | CT, TCT, CTE (tỉ lệ), chi phí, CPM, chuỗi găng, đếm đường đi, công suất theo nhóm nguồn lực, hàng đợi M/M/c, định luật Little, chất lượng theo từng chỉ số · CT, TCT, CTE (ratio), cost, CPM, critical chain, path count, capacity per pool, M/M/c queues, Little's Law, per-metric quality                                      |
+| Chẩn đoán · Diagnostics                  | Mã ổn định có mức độ, ảnh hưởng chất lượng và đường dẫn; bấm để nhảy tới phần tử · stable codes with severity, quality impact and path; click to focus the element                                                                                                                                                               |
+| draw.io                                  | Nhập file thường, nén, nhiều trang; xuất bằng cách vá XML gốc (giữ ngữ nghĩa, không cam kết giống từng byte) · import plain, compressed and multi-page files; export patches the original XML (semantic-preserving, not byte-for-byte)                                                                                           |
+| Xuất · Export                            | `.drawio`, `.flowculus.json`, CSV nút/cạnh, SVG, PNG, JPEG, báo cáo PDF và báo cáo ảnh · `.drawio`, `.flowculus.json`, nodes/edges CSV, SVG, PNG, JPEG, PDF and image reports                                                                                                                                                    |
+| Khai phá · Mining                        | 4 log mẫu, ánh xạ cột (EN/VI/XES), bộ lọc, biến thể, điểm nghẽn, DFG → BPMN có đánh dấu suy luận · 4 sample logs, column mapping (EN/VI/XES headers), filters, variants, bottlenecks, DFG → BPMN with inference flags                                                                                                            |
+| Giao diện · UI                           | Sáng/tối, Anh/Việt, 320 px → màn hình rộng, bàn phím, giảm chuyển động · light/dark, English/Vietnamese, 320 px to wide screens, keyboard, reduced motion                                                                                                                                                                        |
 
-## 🚀 Key Features
+**Tập con BPMN được hỗ trợ · Supported BPMN subset**
 
-| Feature                           | Description                                                                                                     |
-| :-------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
-| **🎨 Embedded draw.io Canvas**    | Full-featured native diagramming with BPMN 2.0 stencils, rich shapes, connectors, and multi-page tabs.          |
-| **⚡ Real-Time Math Engine**      | Instant calculation in a background Web Worker with symbolic formula AST generation.                            |
-| **📐 Full-Bleed Docked Panel**    | Edge-to-edge calculation drawer with clear 4-KPI summary, formula breakdowns, and queueing simulators.          |
-| **📑 Multi-Page / Tab Support**   | Switch between multiple process diagram pages seamlessly; calculates active page metrics instantly.             |
-| **📊 Little's Law & Queueing**    | Scenario simulation for arrival rate $\lambda$, Work In Process (WIP) $L$, and $M/M/c$ multi-server queues.     |
-| **📤 Multi-Format Export**        | Export as `.drawio` XML, `.flowculus.json`, CSV table, high-res PNG/SVG, and print-ready PDF executive reports. |
-| **🌓 Theme & Localization**       | Instant Dark/Light mode switching and English / Vietnamese (VI/EN) bilingual support.                           |
-| **🔒 100% Private & Client-Side** | Zero telemetry, zero server-side storage. Drafts persist securely in local IndexedDB.                           |
+| Phần tử · Element                                                                                               | Trạng thái · Status                                                                                          |
+| :-------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
+| Start/end event, task, collapsed subprocess (xem như một hoạt động · treated as one activity)                   | Hỗ trợ · supported                                                                                           |
+| Intermediate event có thời gian · timed intermediate event                                                      | Hỗ trợ như độ trễ · supported as a delay                                                                     |
+| XOR, AND, OR gateway dạng khối (single-entry/single-exit)                                                       | Hỗ trợ; điểm hội tụ phải được chứng minh hoặc ghép rõ · supported; joins must be proven or explicitly paired |
+| Vòng lặp/rework qua gateway · loops and rework                                                                  | Hỗ trợ qua điểm bất động kỳ vọng · supported via expected-visit fixed point                                  |
+| Event-based, complex gateway khi tách nhánh · as splits                                                         | `simulation-required`                                                                                        |
+| Nhiều start event, khối không cấu trúc, join không khớp · multiple starts, unstructured blocks, unmatched joins | `simulation-required` + chẩn đoán · diagnostic                                                               |
+| Boundary event, terminate end event                                                                             | Giữ trong file, không mô hình hoá (`assumption`) · kept in the file, not modelled                            |
+| Pool/lane, data object, annotation, message flow, association                                                   | Giữ khi xuất, bỏ qua khi phân tích · preserved on export, ignored by analysis                                |
 
----
+## 3. Hình ảnh và sơ đồ · Screenshots and diagrams
 
-## 🧮 Mathematical & Theoretical Foundation
+Repository chỉ có logo trong `apps/web/public`; README không chèn ảnh chụp giả. Hãy chạy `pnpm dev` để xem giao diện thật. Các sơ đồ kiến trúc và luồng dữ liệu ở mục 4 được vẽ bằng Mermaid.
 
-Flowculus strictly implements the quantitative flow analysis equations documented in standard Business Process Management literature (_Fundamentals of Business Process Management_, 2nd ed., Dumas et al., Chapter 7: Flow Analysis):
+**English.** The repository only ships the logo in `apps/web/public`, so this README embeds no mock screenshots. Run `pnpm dev` to see the real UI; section 4 contains the Mermaid architecture and data-flow diagrams.
 
-### 1. Sequence Pattern
+## 4. Kiến trúc và luồng dữ liệu · Architecture and data flow
 
-For tasks executed sequentially:
-$$CT = \sum_{i=1}^n T_i = T_1 + T_2 + \dots + T_n$$
+Ứng dụng Next.js chỉ điều phối và hiển thị. Mọi công thức nằm trong `packages/analysis-engine`, mọi kiểm tra trong `packages/validation`, giao thức draw.io trong `packages/drawio-adapter`. Các package là TypeScript thuần nên chạy được trong Worker và Vitest.
 
-### 2. Exclusive Choice Pattern (XOR Split / Join)
-
-For mutually exclusive branches with probabilities $p_i$ ($\sum p_i = 1$):
-$$CT = \sum_{i=1}^n (p_i \times CT_i) = p_1 CT_1 + p_2 CT_2 + \dots + p_n CT_n$$
-
-### 3. Parallel Pattern (AND Split / Join)
-
-For concurrent branches executing in parallel:
-$$CT = \max(CT_1, CT_2, \dots, CT_n)$$
-$$\text{Cost} = \sum_{i=1}^n \text{Cost}_i \quad (\text{all parallel tasks incur labor and resource costs})$$
-
-### 4. Rework Loop Pattern
-
-For an activity with rework probability $r$ ($0 \le r < 1$):
-$$CT = \frac{T}{1 - r}$$
-
-### 5. Theoretical Cycle Time ($TCT$) & Cycle-Time Efficiency ($CTE$)
-
-$TCT$ is the pure processing time with zero waiting / queueing delay:
-$$CTE = \frac{TCT}{CT} \times 100\%$$
-
-### 6. Little's Law & Queueing Theory
-
-- **Little's Law**: $L = \lambda \times W \implies CT = \frac{\text{WIP}}{\lambda}$
-- **Traffic Intensity / Utilization**: $\rho = \frac{\lambda}{c \mu}$
-- **Average Waiting Time in Queue**: $W_q$ via Erlang-C distribution.
-
----
-
-## 🏗 System Architecture
+**English.** The Next.js app only composes and presents. Formulas live in `packages/analysis-engine`, validation in `packages/validation`, the draw.io protocol in `packages/drawio-adapter`. Packages are pure TypeScript, so they run in Workers and in Vitest.
 
 ```mermaid
 graph TD
-    A[Browser UI / Next.js App Shell] --> B[Workspace State Store Zustand]
-    B --> C[Embedded draw.io Iframe Canvas]
-    B --> D[Inspector Property Panel]
-    B --> E[Analysis Dock Full-Bleed]
-
-    C -- "PostMessage Protocol" --> F[packages/drawio-adapter]
-    F -- "Extracts Nodes, Edges, Metadata" --> G[packages/process-model]
-
-    G --> H[Web Worker: analysis.worker.ts]
-    H --> I[packages/analysis-engine]
-    I --> J[Flow Graph Reduction Engine]
-    I --> K[Formula AST Builder packages/formula-renderer]
-    I --> L[Queueing & Little's Law Calculator]
-
-    H -- "AnalysisReport (CT, TCT, CTE, Formulas)" --> B
+  subgraph web["apps/web (Next.js 16, React 19)"]
+    UI[Components: canvas, inspector, analysis dock, mining] --> Store[Zustand workspace store]
+    Store --> Actions[use-workspace-actions: semantic gate]
+    Actions --> Exports[workspace-exports: ConfirmedProcessModel only]
+    Store --> AW[analysis.worker under createWorkerSupervisor]
+    UI --> MC[useMiningClient -> mining.worker]
+    Store --> Draft[(IndexedDB local draft)]
+  end
+  AW --> AE[analysis-engine]
+  AE --> VAL[validation]
+  AE --> FR[formula-renderer]
+  VAL --> PMOD[process-model]
+  MC --> PMIN[process-mining]
+  PMIN --> FF[file-formats]
+  Exports --> FF
+  Exports --> DA[drawio-adapter]
+  FF --> AE
+  FF --> GL[graph-layout]
+  DA --> XT[xml-tree]
+  PMIN --> XT
 ```
-
----
-
-## 📦 Project & Monorepo Structure
-
-```text
-Flowculus/
-├── apps/
-│   └── web/                     # Next.js 16 App Router application shell
-│       ├── app/                 # Layout, metadata, global styles (globals.css)
-│       ├── components/          # React components (AnalysisDock, Header, Inspector, etc.)
-│       ├── lib/                 # State store, i18n, drawio-model parser, worker hooks
-│       ├── public/              # Static branding assets (logo.svg, favicon.svg)
-│       └── workers/             # Dedicated analysis Web Worker
-├── packages/
-│   ├── analysis-engine/         # Core graph reduction, cycle time & cost algorithms
-│   ├── drawio-adapter/          # Draw.io embed protocol, XML serialization, multi-page tabs
-│   ├── file-formats/            # CSV, Flowculus JSON, and draw.io XML import/export
-│   ├── formula-renderer/        # Formula AST generation and mathematical string formatting
-│   ├── process-model/           # TypeScript interfaces, schemas & BPMN domain types
-│   └── validation/              # Process graph sanity and validation checks
-├── docs/                        # Architecture Decision Records (ADRs) & documentation
-├── .env.example                 # Environment variables template
-├── .env.dev                     # Development environment overrides
-├── .env.pro                     # Production environment overrides
-├── turbo.json                   # Turborepo pipeline configuration
-└── package.json                 # Workspace root package definition
-```
-
----
-
-## 💻 Getting Started & Local Development
-
-### Prerequisites
-
-- **Node.js**: `v20.9.0` or higher
-- **pnpm**: `v11.x` (managed via Corepack)
-
-### Installation & Setup
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/Flowculus.git
-cd Flowculus
-
-# 2. Enable Corepack & install dependencies
-corepack enable
-pnpm install
-
-# 3. Copy environment configuration
-cp .env.example .env.local
-
-# 4. Start development server
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser to launch the Flowculus workspace.
-
----
-
-## 🛠 Available Scripts
-
-In the repository root, you can run:
-
-```bash
-# Start development server (default)
-pnpm dev
-
-# Start development server with .env.dev
-pnpm dev:dev
-
-# Start development server with .env.pro
-pnpm dev:pro
-
-# Run unit tests across all packages (48 tests)
-pnpm test
-
-# Type-check all packages with TypeScript
-pnpm typecheck
-
-# Lint codebase with ESLint
-pnpm lint
-
-# Format code with Prettier
-pnpm format
-
-# Verify formatting
-pnpm format:check
-
-# Production build (default)
-pnpm build
-
-# Production build with .env.pro
-pnpm build:pro
-
-# Start production server with .env.pro
-pnpm start:pro
-```
-
----
-
-## 🔒 Security & Privacy
-
-- **Zero Remote Telemetry**: Flowculus does not collect or transmit user process models, business data, or calculation results to external servers.
-- **Strict Origin Validation**: All cross-origin `postMessage` communications with embedded draw.io are strictly verified against the configured `DRAWIO_ORIGIN`.
-- **Local Persistence**: Drafts are stored locally in the user's browser using `IndexedDB`.
-
----
-
-## 🙏 Acknowledgements & References
-
-Flowculus is built upon and integrates with **draw.io** (diagrams.net), the world-class open-source diagramming suite created and maintained by **JGraph**:
-
-- **draw.io Open Source Project**: [https://github.com/jgraph/drawio](https://github.com/jgraph/drawio)
-- **draw.io Official Website**: [https://www.drawio.com/](https://www.drawio.com/)
-
-We express our deepest gratitude to the JGraph team and the open-source community for developing the powerful diagramming canvas, XML serialization standards, and responsive embed protocol that make visual process modeling in Flowculus possible.
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**.
-
----
-
-# 🇻🇳 Tài Liệu Tiếng Việt
-
-## 🌟 Giới Thiệu Tổng Quan
-
-**Flowculus** là không gian làm việc mô hình hóa quy trình kinh doanh và phân tích định lượng thời gian chu trình (Cycle Time) chạy trực tiếp trên trình duyệt, không cần máy chủ backend.
-
-Flowculus tích hợp trực tiếp trình vẽ **draw.io** chuẩn công nghiệp vào khung ứng dụng React hiệu năng cao. Trong khi người dùng thao tác vẽ sơ đồ luồng quy trình, bộ công cụ tính toán chạy ngầm trong Web Worker sẽ tự động bóc tách và tính toán:
-
-- **Thời gian chu trình ($CT - \text{Cycle Time}$)**
-- **Thời gian lý thuyết ($TCT - \text{Theoretical Cycle Time}$)**
-- **Hiệu suất chu trình ($CTE - \text{Cycle-Time Efficiency}$)**
-- **Chi phí cho mỗi lượt thực thi ($\text{Cost / Execution}$)**
-- **Năng lực hệ thống theo Định luật Little & Mô hình hàng đợi đa kênh $M/M/c$**
-- **Phân tích đường găng (Critical Path) & Đếm số lượng đường đi qua quy trình**
-
-Toàn bộ thuộc tính ngữ nghĩa và thông số tính toán được lưu trữ trực tiếp bên trong cấu trúc XML của tệp `.drawio` và lược đồ JSON `.flowculus.json`, đảm bảo tương thích 100% với các phiên bản Draw.io / diagrams.net trên máy tính lẫn nền tảng web.
-
----
-
-## 🚀 Các Tính Năng Nổi Bật
-
-| Tính năng                               | Mô tả chi tiết                                                                                                                             |
-| :-------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
-| **🎨 Canvas Draw.io Nhúng**             | Vẽ sơ đồ quy trình hoàn chỉnh với đầy đủ bộ ký hiệu BPMN 2.0, hình khối, đường nối thông minh và hỗ trợ nhiều trang (Multi-page tabs).     |
-| **⚡ Bộ Tính Toán Thời Gian Thực**      | Xử lý tính toán tức thời trong Web Worker ngầm, tự động sinh cây cú pháp trừu tượng (AST) và hiển thị công thức đại số toán học.           |
-| **📐 Bảng Phân Tích Tràn Viền**         | Bảng tính toán phẳng tràn viền 100% ở đáy màn hình, hiển thị trực quan 4 thẻ chỉ số KPI chính, chi tiết công thức và các cảnh báo.         |
-| **📑 Hỗ Trợ Nhiều Tab / Trang**         | Chuyển đổi linh hoạt giữa nhiều trang sơ đồ quy trình trong cùng một tệp; tự động tính toán chính xác theo trang hiện hành.                |
-| **📊 Định Luật Little & Hàng Đợi**      | Mô phỏng kịch bản vận hành với tốc độ đến $\lambda$, lượng công việc dở dang ($WIP$) $L$, và hệ thống hàng đợi nhiều kênh phục vụ $M/M/c$. |
-| **📤 Xuất Dữ Liệu Đa Định Dạng**        | Hỗ trợ xuất tệp `.drawio` XML, JSON, bảng dữ liệu CSV, ảnh chất lượng cao PNG/SVG và tệp báo cáo PDF hoàn chỉnh để in ấn.                  |
-| **🌓 Đổi Theme & Song Ngữ**             | Chuyển đổi nhanh chóng giữa chế độ Sáng/Tối (Light/Dark) và song ngữ Tiếng Việt / Tiếng Anh (VI/EN).                                       |
-| **🔒 Riêng Tư & Chạy Phía Client 100%** | Hoàn toàn không gửi dữ liệu ra máy chủ ngoài. Bản nháp được lưu trữ bảo mật cục bộ trên trình duyệt qua IndexedDB.                         |
-
----
-
-## 🧮 Cơ Sở Lý Thuyết & Công Thức Toán Học
-
-Hệ thống áp dụng chuẩn xác các công thức Flow Analysis theo tài liệu lý thuyết Quản trị quy trình kinh doanh (_Fundamentals of Business Process Management_, Dumas et al., Chương 7):
-
-### 1. Khối công việc tuần tự (Sequence Pattern)
-
-Đối với các công việc thực hiện nối tiếp nhau:
-$$CT = \sum_{i=1}^n T_i = T_1 + T_2 + \dots + T_n$$
-
-### 2. Khối rẽ nhánh lựa chọn loại trừ (XOR Split / Join)
-
-Đối với các nhánh rẽ có điều kiện loại trừ với xác suất $p_i$ ($\sum p_i = 1$):
-$$CT = \sum_{i=1}^n (p_i \times CT_i) = p_1 CT_1 + p_2 CT_2 + \dots + p_n CT_n$$
-
-### 3. Khối rẽ nhánh song song (AND Split / Join)
-
-Đối với các nhánh công việc thực hiện đồng thời cùng lúc:
-$$CT = \max(CT_1, CT_2, \dots, CT_n)$$
-$$\text{Cost} = \sum_{i=1}^n \text{Cost}_i \quad (\text{tất cả các nhánh song song đều tiêu tốn chi phí nhân công và tài nguyên})$$
-
-### 4. Khối lặp / Làm lại (Rework Loop Pattern)
-
-Đối với công việc có xác suất phải làm lại là $r$ ($0 \le r < 1$):
-$$CT = \frac{T}{1 - r}$$
-
-### 5. Thời gian lý thuyết ($TCT$) & Hiệu suất chu trình ($CTE$)
-
-$TCT$ là thời gian xử lý thực tế thuần túy (loại bỏ hoàn toàn thời gian chờ và xếp hàng):
-$$CTE = \frac{TCT}{CT} \times 100\%$$
-
-### 6. Định luật Little & Lý thuyết hàng đợi
-
-- **Định luật Little**: $L = \lambda \times W \implies CT = \frac{\text{WIP}}{\lambda}$
-- **Hệ số sử dụng (Traffic Intensity)**: $\rho = \frac{\lambda}{c \mu}$
-- **Thời gian chờ trung bình trong hàng đợi**: $W_q$ tính toán qua phân phối Erlang-C.
-
----
-
-## 🏗 Kiến Trúc Hệ Thống
 
 ```mermaid
-graph TD
-    A[Giao diện Trình duyệt / Next.js] --> B[Kho trạng thái Zustand]
-    B --> C[Iframe nhúng Draw.io Canvas]
-    B --> D[Bảng thuộc tính Inspector]
-    B --> E[Bảng tính toán Analysis Dock]
-
-    C -- "Giao thức PostMessage" --> F[packages/drawio-adapter]
-    F -- "Bóc tách Nodes, Edges, Metadata" --> G[packages/process-model]
-
-    G --> H[Web Worker: analysis.worker.ts]
-    H --> I[packages/analysis-engine]
-    I --> J[Bộ rút gọn đồ thị luồng]
-    I --> K[Bộ sinh công thức AST packages/formula-renderer]
-    I --> L[Bộ tính toán Hàng đợi & Little's Law]
-
-    H -- "Báo cáo phân tích (CT, TCT, CTE, Công thức)" --> B
+sequenceDiagram
+  participant U as User
+  participant C as Canvas / Inspector
+  participant S as Workspace store
+  participant W as Analysis worker
+  participant G as Semantic gate
+  participant X as Exporter
+  U->>C: edit (drag stop, connect, field commit)
+  C->>S: commitModel(model) + undo history
+  S->>W: { requestId, model, options }
+  W->>W: validateProcessGraph -> resolveBlockStructure -> solveMetric
+  W-->>S: AnalysisReport { metricQuality, issues, activityTimes, ... }
+  S-->>C: KPIs, chips, diagnostics (formatted per locale)
+  U->>G: Export / Share
+  G->>G: collectUnconfirmedSemantics(model)
+  alt items pending
+    G-->>U: blocked dialog with count + "Review in Inspector"
+  else all confirmed
+    G->>X: ConfirmedProcessModel
+    X->>X: assertConfirmedModel (re-check), write file
+  end
 ```
 
----
+Chi tiết: [docs/architecture.md](docs/architecture.md), [ADR 0002](docs/adr/0002-native-canvas.md), [ADR 0003](docs/adr/0003-honest-analysis-and-semantic-gate.md), [ADR 0004](docs/adr/0004-webpack-for-module-workers.md).
 
-## 📦 Cấu Trúc Dự Án Monorepo
+## 5. Công thức, giả định, chất lượng và giới hạn · Formulas, assumptions, quality and limits
+
+**Hợp đồng thời gian của hoạt động · Activity time contract** (một hàm duy nhất · one helper: `resolveActivityTime`)
+
+| Dữ liệu nhập · Inputs               | CT của hoạt động · Activity CT | Nguồn · `cycleTimeSource` | Chất lượng · Quality                                                         |
+| :---------------------------------- | :----------------------------- | :------------------------ | :--------------------------------------------------------------------------- |
+| `D` (thời gian quan sát · observed) | `D`                            | `observed`                | exact; nếu `T + Wq < D` → cảnh báo `unexplained-wait` (assumption) · warning |
+| `T` và/hoặc `Wq`, không có `D`      | `T + Wq`                       | `derived`                 | exact                                                                        |
+| `T + Wq > D`                        | —                              | —                         | lỗi `time-components-exceed-cycle-time` · error                              |
+| không có gì · nothing               | 0                              | `missing`                 | assumption (`missing-activity-time`)                                         |
+
+Nguồn thời gian xử lý `T` (`processingSource`): `explicit`, `derived` (`D − Wq`), `cycle-time-estimate` (lấy `D` làm `T`, là giả định) hoặc `missing`. Cả hai nguồn được hiển thị trong Inspector, tooltip của chip, CSV (`cycle_time_source`, `effective_cycle_time_minutes`), báo cáo PDF và báo cáo ảnh.
+
+**English.** Observed cycle time `D` wins; otherwise `CT = T + Wq`; `T + Wq > D` is an error and `T + Wq < D` raises an `unexplained-wait` assumption. Processing time `T` is `explicit`, `derived` (`D − Wq`), a `cycle-time-estimate` (an assumption) or `missing`. Both sources are shown in the Inspector, chip tooltips, CSV, PDF and image reports.
+
+**Quy tắc khối · Block rules** (Dumas et al., ch. 7)
+
+$$\text{Sequence: } CT=\sum_i CT_i \qquad \text{XOR: } CT=\sum_i p_i\,CT_i \qquad \text{AND: } CT=\max_i CT_i,\ \text{Cost}=\sum_i \text{Cost}_i$$
+
+$$\text{Rework on one task: } CT=\frac{CT_{task}}{1-r}\ (0\le r<1) \qquad \text{Loops: expected visits as an absorbing Markov-chain fixed point}$$
+
+- **OR**: trung bình kỳ vọng của `max` trên mọi tổ hợp nhánh khác rỗng, giả định các nhánh **độc lập** (luôn là `assumption`); quá 12 nhánh → `simulation-required` · expected `max` over every non-empty branch combination, assuming **independent** branches (always `assumption`); more than 12 branches → `simulation-required`.
+- **Ghép split/join · Split/join pairing**: dùng `flowculus-join-id` nếu có (chọn trong Inspector), nếu không thì chứng minh bằng post-dominator + kiểm tra SESE + cùng loại gateway. Không chứng minh được → `simulation-required`, không bao giờ "chọn cái đầu tiên" · explicit `flowculus-join-id` first, otherwise post-dominators + SESE + matching kind; unproven → `simulation-required`, never "the first one".
+- **TCT** dùng `T` thay cho CT của hoạt động · uses `T` instead of activity CT. **CTE = TCT / CT** là tỉ lệ trong `[0, 1]`; chỉ bộ định dạng mới nhân 100. `CT = 0` hoặc đầu vào không hợp lệ → `null` + chẩn đoán; `TCT > CT` → `cte-out-of-range` · CTE is a ratio in `[0, 1]`, only formatters multiply by 100; `CT = 0` or invalid inputs give `null` plus a diagnostic.
+- **Cost** = Σ lượt thăm kỳ vọng × (`T`/60 × đơn giá giờ + chi phí khác) · expected visits × (`T`/60 × hourly rate + other cost).
+- **CPM** (đường găng theo `T`): chỉ cho đồ thị không có quyết định và không có chu trình. Thiếu `T` thì dùng `D` như **giả định** và cảnh báo nêu tên các hoạt động (`cpm-duration-estimate`) · only for decision-free acyclic graphs; missing `T` falls back to `D` as an **assumption** that names the tasks.
+- **Chuỗi găng · Critical chain** (theo CT kỳ vọng): `exact` khi không có quyết định; nếu có, đây là **heuristic thời gian kỳ vọng** (nhánh có xác suất × thời gian còn lại lớn nhất), không phải "nhánh khả dĩ nhất". Canvas vẽ nét đứt và có chú giải khi là ước lượng · `exact` when decision-free, otherwise an **expected-time heuristic** (largest probability × remaining expected time), not "the most likely branch"; dashed with a legend on the canvas.
+- **Công suất · Capacity**: `ρ = λ × tải đơn vị / (60 × c)` (λ theo giờ, tải đơn vị = phút xử lý của nhóm trên mỗi ca · λ per hour, unit load = pool processing minutes per case); hàng đợi M/M/c bằng Erlang C với `μ = 60 / tải đơn vị`; `ρ ≥ 1` → không ổn định · Erlang C per pool, unstable when `ρ ≥ 1`. **Little's Law**: `WIP = λ × CT`.
+
+**Mức chất lượng · Quality levels**
+
+| Mức · Level           | Ý nghĩa · Meaning                                                                                                                                                |
+| :-------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exact`               | Đúng theo công thức sách với dữ liệu đã cho · exact under the book's equations for the given inputs                                                              |
+| `assumption`          | Có số, nhưng dựa trên giả định được liệt kê (thời gian ước lượng, OR độc lập, ngữ nghĩa suy luận, phần tử bỏ qua…) · a number that depends on listed assumptions |
+| `simulation-required` | Không có giá trị giải tích; số bị ẩn (`null`) · no analytic value; the number is withheld                                                                        |
+
+Mỗi chẩn đoán có `impact` và `scope` (`model`, `processing`, `efficiency`, `cost`, `capacity`, `queue`, `critical-path`); chất lượng từng chỉ số (`metricQuality`) là mức xấu nhất của các chẩn đoán liên quan. Mức tiêu đề = xấu nhất của CT và TCT.
+
+**English.** Each diagnostic has an `impact` and a `scope`; each metric's quality (`metricQuality`) is the worst impact in its scope, and the headline is the worse of CT and TCT.
+
+**Giới hạn · Limits**: không mô phỏng; không có phân phối thời gian (chỉ kỳ vọng); OR giả định độc lập; tài nguyên dùng chung giữa các nhánh song song không được mô hình hoá; hàng đợi là xấp xỉ theo từng nhóm nguồn lực (`pool-queue-approximation`). · No simulation, expected values only, independent-OR assumption, no shared-resource contention across parallel branches, per-pool queue approximation.
+
+## 6. draw.io và xác nhận ngữ nghĩa · draw.io and semantic confirmation
+
+- **Nhập · Import**: file thường, nén (deflate-raw + base64 + URI) và nhiều trang. Hình không có metadata `flowculus-*` được phân loại từ style và **gắn cờ suy luận** (`flowculus-inferred-*`): loại phần tử, loại gateway, loại luồng, xác suất đọc từ nhãn. Ảnh, chữ, pool/lane là phần trình bày. Nhập CSV và mô hình khai phá cũng gắn cờ tương tự · plain, compressed and multi-page files; shapes without Flowculus metadata are classified from their style and flagged as inferred; CSV import and mined models are flagged the same way.
+- **Cổng xác nhận · Semantic gate**: còn mục chưa xác nhận thì mọi lệnh **Export** và **Share** bị chặn bởi một hộp thoại song ngữ có số lượng và nút "Review in Inspector". Inspector cho xác nhận từng mục, hoặc "Confirm all remaining…" qua bước xác nhận thứ hai. Xác nhận ghi `flowculus-confirmed`. Lớp xuất cấp thấp chỉ nhận `ConfirmedProcessModel` và kiểm tra lại. Chỉnh sửa, phân tích và bản nháp cục bộ vẫn hoạt động khi bị chặn · while anything is pending, Export and Share open a bilingual blocked dialog with the count and "Review in Inspector"; confirm per item or "Confirm all remaining…" behind a second step; confirmation records `flowculus-confirmed`; the low-level exporter accepts only a `ConfirmedProcessModel` and re-checks it; editing, analysis and the local draft keep working.
+- **Xuất · Export (round-trip)**: vá XML gốc. Giữ nguyên ô không xác định, `UserObject`, style, nhãn HTML, waypoint của luồng không đổi và các trang khác (trang nén vẫn nén). Trang đang sửa được ghi **không nén**. Phỏng đoán chưa xác nhận **không** bao giờ được ghi lại như thuộc tính tường minh; ngữ nghĩa đã xác nhận và ghép join thì được ghi để lần nhập sau không cần xác nhận lại. Đây là **bảo toàn ngữ nghĩa**, không phải "lossless từng byte" · patches the original XML; keeps unknown cells, styles, HTML labels, waypoints of unchanged flows and other pages (still compressed); the edited page is written uncompressed; unconfirmed guesses are never written back as explicit attributes, confirmed ones are. This is **semantic preservation**, not byte-for-byte.
+
+## 7. Cấu trúc repository · Repository structure
 
 ```text
 Flowculus/
-├── apps/
-│   └── web/                     # Ứng dụng Next.js 16 App Router chính
-│       ├── app/                 # Bố cục giao diện, metadata, global styles (globals.css)
-│       ├── components/          # Các thành phần React (AnalysisDock, Header, Inspector, v.v.)
-│       ├── lib/                 # Store trạng thái, i18n, bộ phân tích drawio-model, worker hooks
-│       ├── public/              # Logo nhận diện và biểu tượng (logo.svg, favicon.svg)
-│       └── workers/             # Web Worker chạy thuật toán phân tích ngầm
+├── apps/web/                    Next.js 16 App Router app
+│   ├── app/                     layout, error/loading pages, styles/ (canvas, dock, formula, mining CSS)
+│   ├── components/
+│   │   ├── analysis/            FormulaCard, IssueList, CriticalPathPanel
+│   │   ├── canvas/              React Flow canvas, BPMN node views, legend
+│   │   ├── inspector/           node/edge inspectors, time summary, join pairing
+│   │   ├── mining/              source, filters, map, insights, column mapping
+│   │   ├── scenario/            scenario fields, capacity table, queue summary
+│   │   ├── semantics/           gate dialog, review panel, confirmed chip
+│   │   └── ui/                  shared primitives (tooltip, quality badge, error boundary…)
+│   ├── lib/                     store, hooks, exports, report content, i18n/, worker supervisor
+│   ├── scripts/                 verify-worker-bundle.mjs (build guard)
+│   └── workers/                 analysis.worker.ts, mining.worker.ts
 ├── packages/
-│   ├── analysis-engine/         # Thuật toán cốt lõi tính toán thời gian chu trình, chi phí & rút gọn luồng
-│   ├── drawio-adapter/          # Giao thức nhúng Draw.io, đồng bộ XML và hỗ trợ nhiều trang
-│   ├── file-formats/            # Bộ chuyển đổi nhập/xuất file CSV, Flowculus JSON và Draw.io XML
-│   ├── formula-renderer/        # Bộ sinh cây AST và định dạng công thức toán học
-│   ├── process-model/           # Định nghĩa kiểu dữ liệu TypeScript, lược đồ BPMN
-│   └── validation/              # Bộ kiểm tra tính hợp lệ và cấu trúc logic của đồ thị quy trình
-├── docs/                        # Tài liệu kiến trúc và quyết định thiết kế (ADRs)
-├── .env.example                 # Mẫu cấu hình biến môi trường
-├── .env.dev                     # Cấu hình môi trường phát triển
-├── .env.pro                     # Cấu hình môi trường production
-├── turbo.json                   # Cấu hình Turborepo pipeline
-└── package.json                 # Định nghĩa gói và kịch bản thực thi ở thư mục gốc
+│   ├── analysis-engine/         formulas, structure proofs, quality, CPM, chain, capacity, queues
+│   ├── validation/              schema, diagnostics, graph checks, semantic confirmation
+│   ├── process-model/           domain types and metadata keys
+│   ├── drawio-adapter/          draw.io decode/classify/patch export
+│   ├── file-formats/            .flowculus.json, CSV, SVG, auto layout
+│   ├── process-mining/          log parsing, DFG, variants, bottlenecks, DFG → BPMN
+│   ├── formula-renderer/        formula AST
+│   ├── graph-layout/            layered layout, orthogonal routing
+│   └── xml-tree/                dependency-free XML
+├── docs/                        architecture.md, adr/
+├── AGENTS.md                    contributor and agent rules (English)
+└── .nvmrc, .env.example, turbo.json, vitest.config.mts
 ```
 
----
+## 8. Yêu cầu · Prerequisites
 
-## 💻 Hướng Dẫn Cài Đặt & Chạy Cục Bộ
+- Node.js **22.x** (`.nvmrc`; tối thiểu · minimum 20.9 theo · per Next.js 16).
+- pnpm **11.22.0** qua Corepack (`corepack enable`) · via Corepack.
+- Trình duyệt hỗ trợ module Web Worker và IndexedDB (Chrome, Edge, Firefox, Safari bản hiện hành) · a browser with module workers and IndexedDB.
 
-### Yêu cầu hệ thống
-
-- **Node.js**: Phiên bản `>= 20.9.0`
-- **pnpm**: Phiên bản `11.x` (quản lý qua Corepack)
-
-### Các bước thực hiện
+## 9. Lệnh · Commands
 
 ```bash
-# 1. Clone mã nguồn
-git clone https://github.com/your-username/Flowculus.git
-cd Flowculus
-
-# 2. Kích hoạt Corepack và cài đặt dependencies
 corepack enable
-pnpm install
-
-# 3. Tạo tệp cấu hình môi trường cục bộ
-cp .env.example .env.local
-
-# 4. Khởi động môi trường phát triển
-pnpm dev
+pnpm install            # cài đặt · install
+pnpm dev                # máy chủ phát triển · dev server (http://localhost:3000)
+pnpm test               # Vitest cho mọi package và app · all packages and the app
+pnpm lint               # ESLint (0 cảnh báo · 0 warnings)
+pnpm typecheck          # TypeScript cho mọi package · all packages
+pnpm format             # Prettier ghi · write
+pnpm format:check       # Prettier kiểm tra · check
+pnpm build              # next build --webpack + kiểm tra worker · worker bundle check
+pnpm start              # chạy bản build · serve the build
+pnpm check              # test + format:check + lint + typecheck + build
 ```
 
-Truy cập [http://localhost:3000](http://localhost:3000) trên trình duyệt để bắt đầu sử dụng Flowculus.
+Các biến thể `:dev`/`:pro` (`pnpm dev:pro`, `pnpm build:pro`…) chỉ nạp thêm `.env.dev`/`.env.pro` nếu bạn tạo. · The `:dev`/`:pro` variants only load an optional `.env.dev`/`.env.pro`.
 
----
+## 10. Biến môi trường · Environment variables
 
-## 🛠 Danh Sách Lệnh Thực Thi
+Flowculus **không đọc biến môi trường nào**. `.env.example` chỉ có chú thích; mọi file `.env.*` khác bị git bỏ qua. Không bao giờ commit giá trị bí mật. Trên Vercel không cần cấu hình biến nào; `ENABLE_EXPERIMENTAL_COREPACK=1` là tuỳ chọn để Vercel dùng đúng pnpm trong `packageManager`.
 
-Tại thư mục gốc của dự án, bạn có thể sử dụng các lệnh sau:
+**English.** Flowculus reads **no environment variables**. `.env.example` only contains comments, every other `.env.*` file is git-ignored, and secrets must never be committed. Vercel needs no variables; `ENABLE_EXPERIMENTAL_COREPACK=1` is optional to make Vercel use the exact pnpm from `packageManager`.
 
-```bash
-# Khởi động môi trường phát triển (Mặc định)
-pnpm dev
+## 11. Worker, bản nháp cục bộ và hiệu năng · Workers, local draft and performance
 
-# Khởi động với file môi trường .env.dev
-pnpm dev:dev
+- **Analysis worker** (`createWorkerSupervisor`): yêu cầu mới nhất thắng; yêu cầu cũ chạy quá 750 ms bị huỷ bằng cách khởi động lại worker; quá 20 s thì dừng và báo; worker lỗi được khởi động lại tối đa 2 lần liên tiếp rồi mới chuyển sang tính trên luồng chính · latest request wins, stale runs over 750 ms are cancelled by restarting the worker, 20 s timeout, at most 2 consecutive restarts before the main-thread fallback.
+- **Mining worker** (`useMiningClient`): timeout 90 s, nút **Cancel** khi đang tải, khởi động lại có giới hạn. Worker giữ nhật ký nên khi huỷ/lỗi, phiên khai phá được xoá và cần nạp lại · 90 s timeout, a Cancel button while loading, bounded restart; aborts clear the session because the worker holds the log.
+- Worker được webpack đóng gói thành `flowculus-analysis.*.js` và `flowculus-mining.*.js`; `scripts/verify-worker-bundle.mjs` làm build thất bại nếu worker bị xuất dưới dạng mã nguồn `.ts` (xem ADR 0004) · webpack bundles the workers; the build fails if a worker is emitted as raw `.ts` (ADR 0004).
+- **Bản nháp · Draft**: một bản nháp trong IndexedDB (dự phòng localStorage), ghi có debounce · one debounced IndexedDB draft with a localStorage fallback.
+- Kéo thả nằm trong React Flow; store chỉ nhận thay đổi đã commit. Nhật ký giới hạn 500.000 dòng; OR giới hạn 12 nhánh; đếm đường đi có giới hạn · drag frames stay inside React Flow; logs are capped at 500,000 rows, OR at 12 branches, path counting is bounded.
+- Mỗi vùng chính (canvas, mining, phân tích, Inspector) có error boundary với nút thử lại; trạng thái offline hiện ở thanh trạng thái · each main region has an error boundary with retry; offline state shows in the status bar.
 
-# Khởi động với file môi trường .env.pro
-pnpm dev:pro
+## 12. Responsive và trợ năng · Responsive and accessibility
 
-# Chạy toàn bộ bộ kiểm thử tự động (48 test cases)
-pnpm test
+- Đã kiểm tra ở 320, 390, 430, 768, 1024, 1440 và 1920 px: không tràn ngang, Export luôn truy cập được, hộp thoại vừa màn hình. Trên điện thoại Inspector là bottom sheet và thanh công cụ thu gọn · checked at 320–1920 px: no horizontal overflow, Export reachable, dialogs fit; on phones the Inspector is a bottom sheet with a compact toolbar.
+- Menu Export hỗ trợ phím mũi tên, Home/End, Enter, Escape và trả focus; hộp thoại giữ focus; mọi nút có tên truy cập; chất lượng hiển thị bằng chấm + chữ + tooltip, không chỉ bằng màu · keyboard menus, focus-trapped dialogs, accessible names, quality shown by dot + text + tooltip, never colour alone.
+- Sáng/tối, tương phản WCAG AA, tôn trọng `prefers-reduced-motion`, chỉ animate `transform`/`opacity` · light/dark, WCAG AA contrast, reduced motion respected.
 
-# Kiểm tra kiểu tĩnh với TypeScript trên toàn bộ packages
-pnpm typecheck
+## 13. Triển khai Vercel · Vercel deployment
 
-# Kiểm tra chuẩn mã nguồn với ESLint
-pnpm lint
+1. Import repository vào Vercel, đặt **Root Directory = `apps/web`** (giữ bật "Include files outside the root directory"). Vercel đọc `apps/web/vercel.json`: framework `nextjs`, cài đặt `pnpm install --frozen-lockfile` (cài cả workspace), build `pnpm run build` · set **Root Directory = `apps/web`**; Vercel reads `apps/web/vercel.json`.
+2. Node.js **22.x** (từ `engines` của `apps/web/package.json`) · Node 22.x from `engines`.
+3. Không cần biến môi trường. Tuỳ chọn `ENABLE_EXPERIMENTAL_COREPACK=1` · no variables needed.
+4. **Preview**: mỗi pull request/nhánh tạo một Preview Deployment; kiểm tra lại các luồng ở mục 15 trên URL preview · every branch/PR gets a preview; re-run the section 15 flows there.
+5. **Production**: merge vào nhánh production, hoặc "Promote to Production" một preview đã kiểm tra · merge to the production branch or promote a verified preview.
+6. **Rollback**: Vercel → Deployments → chọn bản trước → "Instant Rollback" (hoặc `vercel rollback`) · Instant Rollback to the previous deployment.
 
-# Tự động định dạng mã nguồn với Prettier
-pnpm format
+Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framework: nextjs` trong khi `package.json` gốc không có `next`, nên Vercel không nhận diện được Next.js nếu Root Directory là gốc, và bị bỏ qua nếu Root Directory là `apps/web`. Cấu hình nay nằm cạnh ứng dụng. Các header bảo mật được đặt trong `next.config.ts` để chạy ở mọi môi trường. Trang là static (`○`), không có API route.
 
-# Kiểm tra định dạng mã nguồn
-pnpm format:check
+**English.** The old root `vercel.json` declared `framework: nextjs` while the root `package.json` has no `next` dependency, so Next.js detection fails with Root Directory at the repo root and the file is ignored with Root Directory `apps/web`; the config now lives next to the app. Security headers are set in `next.config.ts` so they apply everywhere. All routes are static; there are no API routes. The Vercel CLI was not run from this environment, so verify the first preview deployment by hand.
 
-# Đóng gói bản Production (Mặc định)
-pnpm build
+## 14. Xử lý sự cố · Troubleshooting
 
-# Đóng gói bản Production với cấu hình .env.pro
-pnpm build:pro
+| Triệu chứng · Symptom                                                   | Cách xử lý · Fix                                                                                                                        |
+| :---------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel: "No Next.js version detected"                                   | Root Directory phải là `apps/web` · must be `apps/web`                                                                                  |
+| Build báo "Worker bundling check failed" · build fails the worker check | Đừng build bằng Turbopack; dùng `pnpm build` (webpack) · build with webpack via `pnpm build` (ADR 0004)                                 |
+| Thanh trạng thái: "calculating on the main thread"                      | Trình duyệt chặn module worker (CSP, extension); kết quả vẫn đúng nhưng chậm hơn · workers are blocked; results stay correct but slower |
+| Export/Share mở hộp thoại "Confirm inferred semantics first"            | Bấm "Review in Inspector" và xác nhận hoặc sửa từng mục · review and confirm in the Inspector                                           |
+| KPI hiện N/A với chấm đỏ · N/A with a red dot                           | Mô hình cần mô phỏng (nhiều start, khối không cấu trúc, join không khớp…); xem danh sách phát hiện · see the findings list              |
+| Khai phá bị dừng/huỷ · mining stopped                                   | Log quá lớn hoặc bị huỷ; lọc bớt hoặc nạp lại · reload or filter the log                                                                |
+| `pnpm install` lỗi phiên bản pnpm · pnpm version error                  | `corepack enable` rồi cài lại · then reinstall                                                                                          |
 
-# Khởi chạy server Production với cấu hình .env.pro
-pnpm start:pro
-```
+## 15. Ma trận kiểm thử và giới hạn đã biết · Testing matrix and known limitations
 
----
+| Tầng · Layer                                          | Nội dung · Coverage                                                                                                                                                                                                                                                                              |
+| :---------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analysis-engine`                                     | mọi nhóm công thức (sequence, XOR, AND, OR, rework, loop, TCT, CTE 0/1/giữa/không hợp lệ, cost, CPM, chain, capacity, M/M/c, Little) và cấu trúc (XOR/AND/OR lồng, join dùng chung, không cấu trúc, thiếu join, vòng lặp); số liệu ghim · every formula group and structure case; pinned numbers |
+| `validation`                                          | chẩn đoán đồ thị, nhiều start, chính sách xác nhận · graph diagnostics, multiple starts, confirmation policy                                                                                                                                                                                     |
+| `drawio-adapter`                                      | round-trip bảo toàn ngữ nghĩa (file gốc không metadata, trang nén, waypoint, UserObject, join-id) · semantic-preserving round trip                                                                                                                                                               |
+| `file-formats`, `process-mining`                      | hợp đồng CSV/JSON, số liệu preset ghim · CSV/JSON contracts, pinned preset numbers                                                                                                                                                                                                               |
+| `apps/web`                                            | lệnh chỉnh sửa, worker supervisor, nội dung báo cáo, chất lượng đi qua worker → store → UI → export, đủ bản dịch chẩn đoán · editing commands, worker supervisor, report content, quality pipeline, diagnostic translations                                                                      |
+| Trình duyệt · Browser (Playwright, thủ công · manual) | palette, nhập draw.io gốc, bị chặn export/share, xác nhận, export thành công, chẩn đoán không cấu trúc, offline, mining, 320–1920 px · the main flows at 320–1920 px                                                                                                                             |
 
-## 🔒 Bảo Mật & Quyền Riêng Tư
+**Giới hạn đã biết · Known limitations**: chưa có CSP (cần nonce cho script của Next.js); chưa có test e2e tự động trong CI (kịch bản Playwright chạy thủ công); không có mô phỏng; pool/lane không được vẽ; boundary event không được mô hình hoá; xuất PDF dùng hộp thoại in của trình duyệt. · No CSP yet, no automated e2e in CI, no simulation, pools/lanes not drawn, boundary events not modelled, PDF uses the browser print dialog.
 
-- **Không Thu Thập Dữ Liệu Từ Xa**: Flowculus không gửi bất kỳ dữ liệu sơ đồ quy trình hay kết quả tính toán nào của người dùng về máy chủ bên ngoài.
-- **Kiểm Soát Nguồn Iframe Nghiêm Ngặt**: Mọi tin nhắn giao tiếp qua `postMessage` với Draw.io đều được đối chiếu và xác thực theo `DRAWIO_ORIGIN`.
-- **Lưu Trữ Cục Bộ Trực Tiếp**: Bản nháp và lịch sử chỉnh sửa được lưu an toàn trực tiếp trên trình duyệt của người dùng thông qua `IndexedDB`.
+## 16. Bảo mật và quyền riêng tư · Security and privacy
 
----
+- Không telemetry, không server lưu trữ: mô hình, nhật ký và kết quả ở lại trong trình duyệt · no telemetry, no server storage.
+- Không iframe bên thứ ba; header `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, `Permissions-Policy` · no third-party iframe; baseline security headers.
+- File nhập được xem là không tin cậy: parser XML/CSV tự viết có giới hạn, không `eval`, không chèn HTML từ file · imported files are untrusted: bounded parsers, no `eval`, no HTML injection.
+- Không có secret trong repository; chỉ `.env.example` được theo dõi · no secrets in the repository.
 
-## 🙏 Lời Cảm Ơn & Tham Chiếu
+## 17. Changelog và ghi chú chuyển đổi · Changelog and migration notes
 
-Flowculus được xây dựng và tích hợp trên nền tảng **draw.io** (diagrams.net) – bộ công cụ vẽ sơ đồ mã nguồn mở hàng đầu thế giới được sáng lập và phát triển bởi **JGraph**:
+**Production hardening**
 
-- **Dự án mã nguồn mở draw.io**: [https://github.com/jgraph/drawio](https://github.com/jgraph/drawio)
-- **Trang chủ chính thức draw.io**: [https://www.drawio.com/](https://www.drawio.com/)
+- Chẩn đoán có cấu trúc thay cho chuỗi văn bản: `AnalysisReport.issues: Diagnostic[]` thay cho `assumptions`/`warnings`; thêm `metricQuality` và `activityTimes` · structured diagnostics replace string lists.
+- Nhiều start event, khối không cấu trúc và join không chứng minh được giờ là `simulation-required` (trước đây có thể ra số "exact"). Ví dụ: XOR tách rồi AND hội tụ trước đây cho CT 18, nay không có số · unproven structures now return `simulation-required` instead of a number.
+- CTE là tỉ lệ `[0, 1]` trong engine, snapshot và file (`units.cycleTimeEfficiency: "ratio"`) · CTE is a ratio everywhere.
+- CSV thêm cột `effective_cycle_time_minutes` và `cycle_time_source` (sau `waiting_minutes`); bộ đọc CSV cũ vẫn đọc được vì cột được nhận theo tên · CSV gains two columns, read by name.
+- Export/Share bị chặn cho tới khi xác nhận ngữ nghĩa suy luận · export/share require confirmation of inferred semantics.
+- Build dùng webpack để đóng gói worker; cấu hình Vercel chuyển vào `apps/web/vercel.json` · webpack build for workers; Vercel config moved.
+- Số liệu của mô hình mẫu và 4 preset khai phá giữ nguyên (đã ghim bằng test) · starter and mining preset numbers are unchanged and pinned.
 
-Chúng tôi xin gửi lời cảm ơn và tri ân sâu sắc nhất đến đội ngũ tác giả JGraph cùng cộng đồng mã nguồn mở đã kiến tạo nên trình vẽ sơ đồ đồ họa mạnh mẽ, chuẩn lưu trữ XML linh hoạt và giao thức nhúng tuyệt vời làm nền tảng cốt lõi cho trải nghiệm mô hình hóa trực quan trong Flowculus.
+## Tham khảo · References
 
----
+- Dumas, La Rosa, Mendling & Reijers, _Fundamentals of Business Process Management_, 2nd ed., Springer.
+- React Flow (`@xyflow/react`, MIT): https://reactflow.dev
+- draw.io / diagrams.net file format: https://github.com/jgraph/drawio
+- IEEE 1849-2016 XES.
 
-## 📄 Bản Quyền
-
-Phát hành theo giấy phép mã nguồn mở **MIT License**.
+Giấy phép · License: MIT.

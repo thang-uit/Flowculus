@@ -2,25 +2,52 @@
 
 import { useEffect, useRef } from 'react';
 
-import { loadLocalDraft, saveLocalDraft } from '@/lib/local-draft';
+import { importDrawioXml } from '@flowculus/drawio-adapter';
+import { withAutoLayout } from '@flowculus/file-formats';
+import type { ProcessModel } from '@flowculus/process-model';
+
+import {
+  loadLocalDraft,
+  saveLocalDraft,
+  type LocalDraftSnapshot,
+} from '@/lib/local-draft';
 import { useWorkspaceStore } from '@/lib/workspace-store';
-import type { DrawioCanvasHandle } from '@/components/DrawioCanvas';
 
 const SAVE_DEBOUNCE_MS = 650;
 
+/** Drafts from the iframe era stored geometry only inside the editor XML. */
+const restoreLegacyGeometry = async (
+  draft: LocalDraftSnapshot,
+): Promise<ProcessModel> => {
+  if (Object.values(draft.model.nodes).every((node) => node.bounds) || !draft.drawioXml) {
+    return withAutoLayout(draft.model);
+  }
+  try {
+    const { model: legacy } = await importDrawioXml(draft.drawioXml);
+    return withAutoLayout({
+      ...draft.model,
+      nodes: Object.fromEntries(
+        Object.entries(draft.model.nodes).map(([id, node]) => [
+          id,
+          node.bounds ? node : { ...node, bounds: legacy.nodes[id]?.bounds },
+        ]),
+      ),
+    });
+  } catch {
+    return withAutoLayout(draft.model);
+  }
+};
+
 /**
- * Restores one browser-local workspace and persists changes without putting
- * serialization or storage work on draw.io's pointer/drag path.
+ * Restores one browser-local workspace and persists committed changes after a
+ * short debounce. Drag frames never reach this hook: the model only changes
+ * once per gesture.
  */
-export function useLocalDraft(canvasRef: React.RefObject<DrawioCanvasHandle | null>) {
+export function useLocalDraft() {
   const processModel = useWorkspaceStore((state) => state.processModel);
   const analysisOptions = useWorkspaceStore((state) => state.analysisOptions);
-  const currentXml = useWorkspaceStore((state) => state.currentXml);
+  const drawioSource = useWorkspaceStore((state) => state.drawioSource);
   const modelName = useWorkspaceStore((state) => state.modelName);
-  const setProcessModel = useWorkspaceStore((state) => state.setProcessModel);
-  const setCurrentXml = useWorkspaceStore((state) => state.setCurrentXml);
-  const setModelName = useWorkspaceStore((state) => state.setModelName);
-  const setAnalysisOptions = useWorkspaceStore((state) => state.setAnalysisOptions);
   const setDraftStatus = useWorkspaceStore((state) => state.setDraftStatus);
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
@@ -30,17 +57,19 @@ export function useLocalDraft(canvasRef: React.RefObject<DrawioCanvasHandle | nu
     setDraftStatus('loading');
 
     void loadLocalDraft()
-      .then((draft) => {
+      .then(async (draft) => {
         if (cancelled) return;
         if (draft) {
-          setProcessModel(draft.model);
-          if (draft.analysisOptions) setAnalysisOptions(draft.analysisOptions);
-          setCurrentXml(draft.drawioXml);
-          setModelName(draft.modelName);
-          canvasRef.current?.load(draft.drawioXml);
+          const model = await restoreLegacyGeometry(draft);
+          if (cancelled) return;
+          useWorkspaceStore.getState().loadModel(model, {
+            drawioSource: draft.drawioSource ?? null,
+            analysisOptions: draft.analysisOptions ?? {},
+            modelName: draft.modelName,
+          });
         }
         hydratedRef.current = true;
-        setDraftStatus(draft ? 'saved' : 'saved');
+        setDraftStatus('saved');
       })
       .catch(() => {
         if (cancelled) return;
@@ -51,19 +80,17 @@ export function useLocalDraft(canvasRef: React.RefObject<DrawioCanvasHandle | nu
     return () => {
       cancelled = true;
     };
-    // A workspace owns one draft restore operation for its lifetime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setDraftStatus]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !currentXml) return;
+    if (!hydratedRef.current) return;
     if (saveTimerRef.current != null) window.clearTimeout(saveTimerRef.current);
     setDraftStatus('saving');
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null;
       void saveLocalDraft({
         model: processModel,
-        drawioXml: currentXml,
+        drawioSource,
         modelName,
         analysisOptions,
         updatedAt: Date.now(),
@@ -78,5 +105,5 @@ export function useLocalDraft(canvasRef: React.RefObject<DrawioCanvasHandle | nu
         saveTimerRef.current = null;
       }
     };
-  }, [analysisOptions, currentXml, modelName, processModel, setDraftStatus]);
+  }, [analysisOptions, drawioSource, modelName, processModel, setDraftStatus]);
 }

@@ -10,9 +10,11 @@
     }
   },
   "dependencies": {
-    "@flowculus/process-model": "workspace:*"
+    "@flowculus/process-model": "workspace:*",
+    "@flowculus/xml-tree": "workspace:*"
   },
   "devDependencies": {
+    "@flowculus/validation": "workspace:*",
     "typescript": "^5.9.3"
   },
   "scripts": {

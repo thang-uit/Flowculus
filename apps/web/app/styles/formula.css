@@ -1,0 +1,44 @@
+/* Formula AST rendering (FormulaMath). */
+.formula-math {
+  display: block;
+  flex: none;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.formula-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+}
+
+.formula-operator,
+.formula-function {
+  color: var(--muted-strong);
+}
+
+.formula-function {
+  font-style: italic;
+}
+
+.formula-fraction {
+  display: inline-flex;
+  min-width: 3.2rem;
+  flex-direction: column;
+  align-items: stretch;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.formula-fraction-part {
+  display: block;
+  padding-inline: 0.25rem;
+}
+
+.formula-fraction-part + .formula-fraction-part {
+  border-top: 1px solid currentColor;
+}

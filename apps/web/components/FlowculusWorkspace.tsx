@@ -1,183 +1,136 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
+import dynamic from 'next/dynamic';
+import { useCallback, useEffect } from 'react';
 
 import { AnalysisDock } from '@/components/AnalysisDock';
 import { AnalysisStatusBar } from '@/components/AnalysisStatusBar';
-import { CanvasStage } from '@/components/CanvasStage';
-import type { DrawioCanvasHandle } from '@/components/DrawioCanvas';
+import { CanvasFloatingControls } from '@/components/canvas/CanvasFloatingControls';
+import { MinedModelNotice } from '@/components/canvas/MinedModelNotice';
+import { ProcessCanvas } from '@/components/canvas/ProcessCanvas';
+import { FileDropOverlay } from '@/components/FileDropOverlay';
 import { InspectorPanel } from '@/components/InspectorPanel';
 import { MobileInspectorDialog } from '@/components/MobileInspectorDialog';
 import { WorkspaceHeader } from '@/components/WorkspaceHeader';
 import { WorkspaceRail } from '@/components/WorkspaceRail';
+import { SemanticGateDialog } from '@/components/semantics/SemanticGateDialog';
+import { SectionErrorBoundary } from '@/components/ui/SectionErrorBoundary';
 import { TooltipProvider } from '@/components/ui/Tooltip';
-import { useWorkspaceStore } from '@/lib/workspace-store';
-import type { SemanticShapeTool } from '@/lib/shape-tools';
-import type { ProcessNode } from '@flowculus/process-model';
-import { patchDrawioXmlForEdge, patchDrawioXmlForNode } from '@/lib/drawio-xml';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useLocalDraft } from '@/lib/use-local-draft';
+import { importWorkspaceFiles } from '@/lib/import-process-file';
+import { useMiningStore } from '@/lib/mining-store';
 import { useAnalysisWorker } from '@/lib/use-analysis-worker';
-import { importProcessFiles } from '@/lib/import-process-file';
-import { FileDropOverlay } from '@/components/FileDropOverlay';
+import { useLocalDraft } from '@/lib/use-local-draft';
+import { useMediaQuery } from '@/lib/use-media-query';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 
-export function FlowculusWorkspace() {
-  const canvasRef = useRef<DrawioCanvasHandle | null>(null);
-  const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
-  const toggleInspector = useWorkspaceStore((state) => state.toggleInspector);
-  const setProcessModel = useWorkspaceStore((state) => state.setProcessModel);
-  const setCurrentXml = useWorkspaceStore((state) => state.setCurrentXml);
-  const setModelName = useWorkspaceStore((state) => state.setModelName);
-  const setAnalysisOptions = useWorkspaceStore((state) => state.setAnalysisOptions);
-  const setDrawioStatus = useWorkspaceStore((state) => state.setDrawioStatus);
-  const setSelectedNodeId = useWorkspaceStore((state) => state.setSelectedNodeId);
-  const currentXml = useWorkspaceStore((state) => state.currentXml);
+// The mining view (worker, map and tables) is only loaded when it is opened.
+const MiningWorkspace = dynamic(
+  () =>
+    import('@/components/mining/MiningWorkspace').then(
+      (module) => module.MiningWorkspace,
+    ),
+  { ssr: false, loading: () => <MiningLoading /> },
+);
+
+function MiningLoading() {
   const locale = useWorkspaceStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const pendingInsertedNodeIdRef = useRef<string | null>(null);
-  const [draggedShape, setDraggedShape] = useState<{
-    tool: SemanticShapeTool;
-    label: string;
-  } | null>(null);
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-0 flex-1 items-center justify-center bg-[var(--canvas)] text-sm text-[var(--muted)]"
+    >
+      <span
+        className="mr-2 size-2 animate-pulse rounded-full bg-[var(--accent)]"
+        aria-hidden="true"
+      />
+      {copy.miningLoading}
+    </div>
+  );
+}
 
-  useLocalDraft(canvasRef);
+export function FlowculusWorkspace() {
+  const mode = useWorkspaceStore((state) => state.mode);
+  const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
+  const setInspectorOpen = useWorkspaceStore((state) => state.setInspectorOpen);
+  const locale = useWorkspaceStore((state) => state.locale);
+  const copy = getWorkspaceCopy(locale);
+  // The bottom sheet is modal; it must not exist (and hide the page from
+  // assistive technology) when the docked desktop inspector is visible.
+  const dockedInspector = useMediaQuery('(min-width: 1280px)');
+
+  useLocalDraft();
   useAnalysisWorker();
 
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
-  const handleInspectorOpenChange = (open: boolean) => {
-    if (open !== inspectorOpen) toggleInspector();
-  };
+
   const handleImportFiles = useCallback(
     async (files: File[]) => {
-      const imported = await importProcessFiles(files, copy.modelName);
-      setAnalysisOptions(imported.analysisOptions);
-      if (imported.model) setProcessModel(imported.model);
-      setCurrentXml(imported.xml);
-      setModelName(imported.modelName);
-      canvasRef.current?.load(imported.xml);
-    },
-    [copy.modelName, setAnalysisOptions, setCurrentXml, setModelName, setProcessModel],
-  );
-
-  const handleModelChange = useCallback(
-    (model: Parameters<typeof setProcessModel>[0], xml: string) => {
-      setProcessModel(model);
-      setCurrentXml(xml);
-      const pendingNodeId = pendingInsertedNodeIdRef.current;
-      if (pendingNodeId && model.nodes[pendingNodeId]) {
-        setSelectedNodeId(pendingNodeId);
-        pendingInsertedNodeIdRef.current = null;
+      const imported = await importWorkspaceFiles(files, copy.modelName);
+      const state = useWorkspaceStore.getState();
+      if (imported.kind === 'event-log') {
+        useMiningStore.getState().queueUpload({
+          fileName: imported.fileName,
+          source: imported.source,
+        });
+        state.setMode('mining');
+        return;
       }
-    },
-    [setCurrentXml, setProcessModel, setSelectedNodeId],
-  );
-  const handleInsertShape = useCallback(
-    (tool: SemanticShapeTool, label: string) => {
-      const insertedNodeId = canvasRef.current?.insertShape(tool, label);
-      if (!insertedNodeId) return;
-      pendingInsertedNodeIdRef.current = insertedNodeId;
-      if (!inspectorOpen) toggleInspector();
-    },
-    [inspectorOpen, toggleInspector],
-  );
-  const handleDropShape = useCallback(
-    (position: { x: number; y: number }) => {
-      if (!draggedShape) return;
-      const insertedNodeId = canvasRef.current?.insertShape(
-        draggedShape.tool,
-        draggedShape.label,
-        position,
-      );
-      if (insertedNodeId) {
-        pendingInsertedNodeIdRef.current = insertedNodeId;
-        if (!inspectorOpen) toggleInspector();
-      }
-      setDraggedShape(null);
-    },
-    [draggedShape, inspectorOpen, toggleInspector],
-  );
-  const handleInspectorModelChange = useCallback(
-    (node: ProcessNode) => {
-      const model = useWorkspaceStore.getState().processModel;
-      setProcessModel({ ...model, nodes: { ...model.nodes, [node.id]: node } });
-      const xml = patchDrawioXmlForNode(
-        currentXml || canvasRef.current?.getXml() || '',
-        node,
-      );
-      if (xml) {
-        setCurrentXml(xml);
-        canvasRef.current?.load(xml);
-      }
-    },
-    [currentXml, setCurrentXml, setProcessModel],
-  );
-  const handleInspectorEdgeChange = useCallback(
-    (edgeId: string, probability: number | undefined) => {
-      const model = useWorkspaceStore.getState().processModel;
-      setProcessModel({
-        ...model,
-        edges: { ...model.edges, [edgeId]: { ...model.edges[edgeId], probability } },
+      state.loadModel(imported.model, {
+        drawioSource: imported.drawioSource,
+        analysisOptions: imported.analysisOptions,
+        modelName: imported.modelName,
       });
-      const xml = patchDrawioXmlForEdge(
-        currentXml || canvasRef.current?.getXml() || '',
-        edgeId,
-        probability,
-      );
-      if (xml) {
-        setCurrentXml(xml);
-        canvasRef.current?.load(xml);
-      }
+      state.setMode('model');
     },
-    [currentXml, setCurrentXml, setProcessModel],
+    [copy.modelName],
   );
 
   return (
     <TooltipProvider>
-      <div className="flex min-h-[100dvh] max-h-[100dvh] flex-col overflow-hidden overscroll-none bg-[var(--canvas)]">
-        <WorkspaceHeader canvasRef={canvasRef} onImportFiles={handleImportFiles} />
-        <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
-          <WorkspaceRail
-            onInsertShape={handleInsertShape}
-            onOpenNativeLibrary={() => canvasRef.current?.invokeAction('toggleShapes')}
-            onDragShapeStart={(tool, label) => setDraggedShape({ tool, label })}
-            onDragShapeEnd={() => {
-              // Let the drop event run first; browsers dispatch dragend
-              // immediately after drop and a synchronous clear can remove the
-              // drop target before its handler receives the coordinates.
-              window.setTimeout(() => setDraggedShape(null), 0);
-            }}
-          />
-          <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
-            <CanvasStage
-              canvasRef={canvasRef}
-              onModelChange={handleModelChange}
-              onXmlChange={setCurrentXml}
-              onStatusChange={setDrawioStatus}
-              dropShape={draggedShape}
-              onDropShape={handleDropShape}
-              dropShapeLabel={copy.dropShape}
-            />
-            <AnalysisDock />
-            <AnalysisStatusBar />
-          </main>
-          <InspectorPanel
-            open={inspectorOpen}
-            onModelChange={handleInspectorModelChange}
-            onEdgeChange={handleInspectorEdgeChange}
-          />
+      <ReactFlowProvider>
+        <div className="flex min-h-[100dvh] max-h-[100dvh] flex-col overflow-hidden overscroll-none bg-[var(--canvas)]">
+          <WorkspaceHeader onImportFiles={handleImportFiles} />
+          {mode === 'model' ? (
+            <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
+              <WorkspaceRail />
+              <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+                <section
+                  className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
+                  aria-label={copy.canvasLabel}
+                >
+                  <SectionErrorBoundary section="canvas">
+                    <ProcessCanvas />
+                    <MinedModelNotice />
+                    <CanvasFloatingControls />
+                  </SectionErrorBoundary>
+                </section>
+                <SectionErrorBoundary section="analysis">
+                  <AnalysisDock />
+                </SectionErrorBoundary>
+                <AnalysisStatusBar />
+              </main>
+              <SectionErrorBoundary section="inspector">
+                <InspectorPanel open={inspectorOpen} />
+              </SectionErrorBoundary>
+            </div>
+          ) : (
+            <SectionErrorBoundary section="mining">
+              <MiningWorkspace />
+            </SectionErrorBoundary>
+          )}
+          {mode === 'model' && !dockedInspector ? (
+            <MobileInspectorDialog open={inspectorOpen} onOpenChange={setInspectorOpen} />
+          ) : null}
+          <FileDropOverlay copy={copy} onImportFiles={handleImportFiles} />
+          <SemanticGateDialog />
         </div>
-        <div className="xl:hidden">
-          <MobileInspectorDialog
-            open={inspectorOpen}
-            onOpenChange={handleInspectorOpenChange}
-            onModelChange={handleInspectorModelChange}
-            onEdgeChange={handleInspectorEdgeChange}
-          />
-        </div>
-        <FileDropOverlay copy={copy} onImportFiles={handleImportFiles} />
-      </div>
+      </ReactFlowProvider>
     </TooltipProvider>
   );
 }

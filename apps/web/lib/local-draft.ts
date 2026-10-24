@@ -2,6 +2,8 @@ import { isAnalysisOptions, type AnalysisOptions } from '@flowculus/analysis-eng
 import type { ProcessModel } from '@flowculus/process-model';
 import { validateProcessModel } from '@flowculus/validation';
 
+import type { DrawioSource } from '@/lib/workspace-store';
+
 const DATABASE_NAME = 'flowculus-workspace';
 const DATABASE_VERSION = 1;
 const STORE_NAME = 'drafts';
@@ -10,7 +12,13 @@ const MAX_XML_LENGTH = 50_000_000;
 
 export interface LocalDraftSnapshot {
   model: ProcessModel;
-  drawioXml: string;
+  /** Original draw.io file of the current model, used for semantic-preserving export. */
+  drawioSource?: DrawioSource | null;
+  /**
+   * Drafts written before the native canvas kept only the editor XML. It is
+   * read once to recover geometry and never written again.
+   */
+  drawioXml?: string;
   modelName: string;
   analysisOptions?: AnalysisOptions;
   updatedAt: number;
@@ -19,14 +27,27 @@ export interface LocalDraftSnapshot {
 const isBrowser = (): boolean =>
   typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 
+const isDrawioSource = (value: unknown): value is DrawioSource => {
+  if (value == null || typeof value !== 'object') return false;
+  const candidate = value as Partial<DrawioSource>;
+  return (
+    typeof candidate.xml === 'string' &&
+    candidate.xml.length <= MAX_XML_LENGTH &&
+    Array.isArray(candidate.pages) &&
+    typeof candidate.pageIndex === 'number'
+  );
+};
+
 const isLocalDraftSnapshot = (value: unknown): value is LocalDraftSnapshot => {
   if (value == null || typeof value !== 'object') return false;
   const candidate = value as Partial<LocalDraftSnapshot>;
   if (
-    typeof candidate.drawioXml !== 'string' ||
-    candidate.drawioXml.length > MAX_XML_LENGTH ||
     typeof candidate.modelName !== 'string' ||
-    typeof candidate.updatedAt !== 'number'
+    typeof candidate.updatedAt !== 'number' ||
+    (candidate.drawioXml != null &&
+      (typeof candidate.drawioXml !== 'string' ||
+        candidate.drawioXml.length > MAX_XML_LENGTH)) ||
+    (candidate.drawioSource != null && !isDrawioSource(candidate.drawioSource))
   ) {
     return false;
   }
@@ -137,28 +158,5 @@ export const saveLocalDraft = async (snapshot: LocalDraftSnapshot): Promise<void
     await writeIndexedDbDraft(snapshot);
   } catch {
     writeFallbackDraft(snapshot);
-  }
-};
-
-export const clearLocalDraft = async (): Promise<void> => {
-  if (!isBrowser()) return;
-  try {
-    const database = await openDatabase();
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(STORE_NAME, 'readwrite');
-      transaction.objectStore(STORE_NAME).delete(DRAFT_KEY);
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () =>
-        reject(transaction.error ?? new Error('Could not clear the local draft.'));
-    });
-    database.close();
-  } catch {
-    // A fallback draft may still exist when IndexedDB is unavailable.
-  }
-
-  try {
-    window.localStorage.removeItem(`${DATABASE_NAME}:${DRAFT_KEY}`);
-  } catch {
-    // Ignore unavailable storage during cleanup.
   }
 };

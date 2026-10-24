@@ -4,11 +4,12 @@ import {
   type ProcessModel,
   type ProcessNode,
 } from '@flowculus/process-model';
+import { resolveProcessEntry } from '@flowculus/validation';
 
 export type PathCountStatus = 'ready' | 'empty' | 'cyclic' | 'limit';
 
 export interface PathCountOptions {
-  /** Optional source node. Defaults to the first explicit start event. */
+  /** Optional source node. Defaults to the unique process entry (never a guess among several starts). */
   startNodeId?: string;
   /** Optional terminal nodes. Defaults to end events or dead-end nodes. */
   endNodeIds?: string[];
@@ -16,13 +17,23 @@ export interface PathCountOptions {
   maxPaths?: number;
 }
 
+export type PathCountWarningCode =
+  | 'start-not-found'
+  | 'no-unique-start'
+  | 'end-not-found'
+  | 'requested-ends-missing'
+  | 'cycle'
+  | 'limit';
+
 export interface PathCountReport {
   status: PathCountStatus;
   count: number | null;
   startNodeId?: string;
   endNodeIds: string[];
+  /** Mathematical notation only. */
   formula: string;
-  warning?: string;
+  /** Locale-neutral reason; the web layer renders the message. */
+  warning?: { code: PathCountWarningCode; params?: Record<string, string | number> };
 }
 
 const MAX_PATH_COUNT = 1_000_000;
@@ -57,16 +68,11 @@ const buildSequenceAdjacency = (model: ProcessModel): SequenceAdjacency => {
 
 const findStartNode = (
   model: ProcessModel,
-  adjacency: SequenceAdjacency,
   requestedStartNodeId?: string,
 ): ProcessNode | undefined => {
   if (requestedStartNodeId != null) return model.nodes[requestedStartNodeId];
-  return (
-    Object.values(model.nodes).find((node) => node.kind === 'start') ??
-    Object.values(model.nodes).find(
-      (node) => (adjacency.incoming.get(node.id) ?? 0) === 0,
-    )
-  );
+  const { startNodeId } = resolveProcessEntry(model);
+  return startNodeId != null ? model.nodes[startNodeId] : undefined;
 };
 
 const normalizeMaxPaths = (value: number | undefined): number =>
@@ -102,7 +108,7 @@ export const countProcessPaths = (
   const maxPaths = normalizeMaxPaths(options.maxPaths);
   const explicitStart = options.startNodeId != null;
   const explicitEnds = options.endNodeIds != null;
-  const start = findStartNode(model, adjacency, options.startNodeId);
+  const start = findStartNode(model, options.startNodeId);
 
   if (!start) {
     return {
@@ -113,8 +119,8 @@ export const countProcessPaths = (
         ? `P(${options.startNodeId ?? 'start'} → end) = undefined`
         : 'P = undefined',
       warning: explicitStart
-        ? `Requested start node ${options.startNodeId} was not found.`
-        : 'No process start node was found.',
+        ? { code: 'start-not-found', params: { nodeId: options.startNodeId ?? '' } }
+        : { code: 'no-unique-start' },
     };
   }
 
@@ -133,7 +139,7 @@ export const countProcessPaths = (
       startNodeId: start.id,
       endNodeIds: [],
       formula: `P(${start.id} → end) = 0`,
-      warning: 'No requested end node was found.',
+      warning: { code: 'end-not-found' },
     };
   }
 
@@ -200,7 +206,7 @@ export const countProcessPaths = (
         explicitStart || explicitEnds
           ? `P(${start.id} → ${hasExplicitEnds ? [...requestedEndIds].join('|') : 'end'}) = undefined (cycle detected)`
           : 'P = undefined (cycle detected)',
-      warning: 'The graph contains a cycle, so the finite path count is undefined.',
+      warning: { code: 'cycle' },
     };
   }
   if (limitReached) {
@@ -210,12 +216,12 @@ export const countProcessPaths = (
       startNodeId: start.id,
       endNodeIds: [...endNodeIds],
       formula: `P > ${maxPaths}`,
-      warning: `The graph has more than ${maxPaths} paths; count was capped.`,
+      warning: { code: 'limit', params: { limit: maxPaths } },
     };
   }
 
-  const warning = missingEndIds.length
-    ? `Requested end node(s) not found: ${missingEndIds.join(', ')}.`
+  const warning: PathCountReport['warning'] = missingEndIds.length
+    ? { code: 'requested-ends-missing', params: { nodeIds: missingEndIds.join(', ') } }
     : undefined;
   return {
     status: 'ready',

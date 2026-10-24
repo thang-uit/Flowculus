@@ -1,79 +1,102 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { analyzeProcess } from '@flowculus/analysis-engine';
+import {
+  analyzeProcess,
+  type AnalysisOptions,
+  type AnalysisReport,
+} from '@flowculus/analysis-engine';
+import type { ProcessModel } from '@flowculus/process-model';
 
+import { createWorkerSupervisor, type WorkerSupervisor } from '@/lib/worker-supervisor';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+
+interface AnalysisPayload {
+  model: ProcessModel;
+  options: AnalysisOptions;
+}
 
 interface AnalysisWorkerResponse {
   requestId: number;
-  report?: ReturnType<typeof analyzeProcess>;
+  report?: AnalysisReport;
   error?: string;
 }
 
-/** Runs graph analysis off the main thread once the browser supports workers. */
+/** A request still running after this long is cancelled when a newer one arrives. */
+const CANCEL_AFTER_MS = 750;
+/** Larger OR fan-outs can be slow, but never this slow on a supported model. */
+const TIMEOUT_MS = 20_000;
+const MAX_RESTARTS = 2;
+
+/**
+ * Runs graph analysis off the main thread. The worker is supervised: stale
+ * long computations are cancelled, a crash restarts it (bounded), a timeout is
+ * reported, and only when the worker cannot run at all does the analysis fall
+ * back to the main thread.
+ */
 export function useAnalysisWorker() {
   const processModel = useWorkspaceStore((state) => state.processModel);
   const analysisOptions = useWorkspaceStore((state) => state.analysisOptions);
   const setAnalysisReport = useWorkspaceStore((state) => state.setAnalysisReport);
   const setAnalysisStatus = useWorkspaceStore((state) => state.setAnalysisStatus);
-  const workerRef = useRef<Worker | null>(null);
-  const requestIdRef = useRef(0);
+  const supervisorRef = useRef<WorkerSupervisor<AnalysisPayload> | null>(null);
 
   useEffect(() => {
-    if (typeof Worker === 'undefined') {
-      setAnalysisStatus('fallback');
-      return;
-    }
-
-    const worker = new Worker(new URL('../workers/analysis.worker.ts', import.meta.url), {
-      type: 'module',
-      name: 'flowculus-analysis',
-    });
-    workerRef.current = worker;
-
-    const handleMessage = (event: MessageEvent<AnalysisWorkerResponse>) => {
-      if (event.data.requestId !== requestIdRef.current) return;
-      if (event.data.report) {
-        setAnalysisReport(event.data.report);
-        setAnalysisStatus('ready');
-      } else {
-        setAnalysisStatus('error');
-      }
-    };
-    const handleError = () => setAnalysisStatus('fallback');
-    worker.addEventListener('message', handleMessage);
-    worker.addEventListener('error', handleError);
-
-    return () => {
-      worker.removeEventListener('message', handleMessage);
-      worker.removeEventListener('error', handleError);
-      worker.terminate();
-      workerRef.current = null;
-    };
-  }, [setAnalysisReport, setAnalysisStatus]);
-
-  useEffect(() => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-    setAnalysisStatus('calculating');
-
-    const worker = workerRef.current;
-    if (!worker) {
-      // The synchronous fallback is only used by browsers that disable
-      // workers. Normal desktop and mobile browsers stay off the UI thread.
-      const timer = window.setTimeout(() => {
+    if (typeof Worker === 'undefined') return undefined;
+    const runOnMainThread = (payload: AnalysisPayload | null) => {
+      if (!payload) return;
+      window.setTimeout(() => {
         try {
-          setAnalysisReport(analyzeProcess(processModel, analysisOptions));
-          setAnalysisStatus('ready');
+          setAnalysisReport(analyzeProcess(payload.model, payload.options));
+          setAnalysisStatus('fallback');
         } catch {
           setAnalysisStatus('error');
         }
       }, 0);
-      return () => window.clearTimeout(timer);
-    }
+    };
+    const supervisor = createWorkerSupervisor<AnalysisPayload, AnalysisWorkerResponse>({
+      create: () =>
+        new Worker(new URL('../workers/analysis.worker.ts', import.meta.url), {
+          type: 'module',
+          name: 'flowculus-analysis',
+        }),
+      timeoutMs: TIMEOUT_MS,
+      cancelAfterMs: CANCEL_AFTER_MS,
+      maxRestarts: MAX_RESTARTS,
+      onResponse: (response) => {
+        if (response.report) {
+          setAnalysisReport(response.report);
+          setAnalysisStatus('ready');
+        } else {
+          setAnalysisStatus('error');
+        }
+      },
+      onRestart: () => setAnalysisStatus('restarting'),
+      onTimeout: () => setAnalysisStatus('timeout'),
+      onFailure: runOnMainThread,
+    });
+    supervisorRef.current = supervisor;
+    return () => {
+      supervisor.dispose();
+      supervisorRef.current = null;
+    };
+  }, [setAnalysisReport, setAnalysisStatus]);
 
-    worker.postMessage({ requestId, model: processModel, options: analysisOptions });
-    return undefined;
+  useEffect(() => {
+    setAnalysisStatus('calculating');
+    const payload = { model: processModel, options: analysisOptions };
+    if (supervisorRef.current?.request(payload)) return undefined;
+
+    // Browsers without (working) module workers compute on the main thread
+    // after a macrotask so the edit that triggered it still paints first.
+    const timer = window.setTimeout(() => {
+      try {
+        setAnalysisReport(analyzeProcess(payload.model, payload.options));
+        setAnalysisStatus('fallback');
+      } catch {
+        setAnalysisStatus('error');
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [analysisOptions, processModel, setAnalysisReport, setAnalysisStatus]);
 }

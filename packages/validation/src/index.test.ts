@@ -142,4 +142,39 @@ describe('validateProcessModel', () => {
       result.issues.some((issue) => issue.path === 'nodes.task.reworkProbability'),
     ).toBe(true);
   });
+
+  it('accepts optional canvas bounds and rejects degenerate geometry', () => {
+    const base = {
+      schemaVersion: 1 as const,
+      id: 'bounds-1',
+      name: 'Geometry',
+      edges: {},
+    };
+    expect(
+      validateProcessModel({
+        ...base,
+        nodes: {
+          task: {
+            id: 'task',
+            label: 'Task',
+            kind: 'task',
+            bounds: { x: -20, y: 40, width: 160, height: 80 },
+          },
+        },
+      }).valid,
+    ).toBe(true);
+    const invalid = validateProcessModel({
+      ...base,
+      nodes: {
+        task: {
+          id: 'task',
+          label: 'Task',
+          kind: 'task',
+          bounds: { x: 0, y: 0, width: 0, height: 80 },
+        },
+      },
+    });
+    expect(invalid.valid).toBe(false);
+    expect(invalid.issues[0]?.path).toBe('nodes.task.bounds.width');
+  });
 });
