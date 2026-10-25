@@ -28,7 +28,6 @@ import { insertEdgeWaypoint } from '@flowculus/file-formats';
 import { getNodeBounds } from '@flowculus/process-model';
 
 import { CanvasOverview } from '@/components/canvas/CanvasOverview';
-import { CanvasEmptyState } from '@/components/canvas/CanvasEmptyState';
 import { CriticalChainLegend } from '@/components/canvas/CriticalChainLegend';
 import {
   CanvasContextMenu,
@@ -36,6 +35,7 @@ import {
 } from '@/components/canvas/CanvasContextMenu';
 import { FlowMarkers } from '@/components/canvas/FlowMarkers';
 import { ImageReferenceLayer } from '@/components/canvas/ImageReferenceLayer';
+import { ImageReferenceToolbar } from '@/components/canvas/ImageReferenceToolbar';
 import { ProcessNodeView } from '@/components/canvas/ProcessNodeView';
 import { SequenceFlowEdge } from '@/components/canvas/SequenceFlowEdge';
 import {
@@ -373,7 +373,7 @@ export function ProcessCanvas() {
         />
         <CanvasOverview />
       </ReactFlow>
-      <CanvasEmptyState />
+      <ImageReferenceToolbar />
       {contextMenu ? (
         <CanvasContextMenu position={contextMenu} onClose={closeContextMenu} />
       ) : null}

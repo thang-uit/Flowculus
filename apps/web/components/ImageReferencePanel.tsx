@@ -4,45 +4,44 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useReactFlow } from '@xyflow/react';
 import { ImageSquare, Trash, UploadSimple, X } from '@phosphor-icons/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ImageReferenceControls } from '@/components/image-trace/ImageReferenceControls';
 import { ImageTraceReview } from '@/components/image-trace/ImageTraceReview';
 import { IconButton } from '@/components/ui/IconButton';
-import { Tooltip } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { getNodeBounds } from '@flowculus/process-model';
 import { useImageTrace } from '@/lib/image-trace/use-image-trace';
-import {
-  EMPTY_TRACE_CROP,
-  validateTraceFile,
-  type TraceCrop,
-} from '@/lib/image-trace/file-validation';
+import { EMPTY_TRACE_CROP, type TraceCrop } from '@/lib/image-trace/file-validation';
 import { useImageReferenceStore } from '@/lib/use-image-reference-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-export function ImageReferencePanel() {
+interface ImageReferencePanelProps {
+  onImportFiles: (files: File[], signal?: AbortSignal) => Promise<boolean>;
+}
+
+export function ImageReferencePanel(props: Readonly<ImageReferencePanelProps>) {
+  const url = useImageReferenceStore((state) => state.url);
+  return <ImageReferenceDialog key={url ?? 'empty'} {...props} />;
+}
+
+function ImageReferenceDialog({ onImportFiles }: Readonly<ImageReferencePanelProps>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const url = useImageReferenceStore((state) => state.url);
   const name = useImageReferenceStore((state) => state.name);
   const blob = useImageReferenceStore((state) => state.blob);
   const storageError = useImageReferenceStore((state) => state.storageError);
-  const opacity = useImageReferenceStore((state) => state.opacity);
   const rotation = useImageReferenceStore((state) => state.rotation);
-  const locked = useImageReferenceStore((state) => state.locked);
-  const setImage = useImageReferenceStore((state) => state.setImage);
-  const setOpacity = useImageReferenceStore((state) => state.setOpacity);
-  const setRotation = useImageReferenceStore((state) => state.setRotation);
-  const setLocked = useImageReferenceStore((state) => state.setLocked);
-  const setPosition = useImageReferenceStore((state) => state.setPosition);
   const clearImage = useImageReferenceStore((state) => state.clear);
-  const [file, setFile] = useState<File | null>(null);
   const [crop, setCrop] = useState<TraceCrop>(EMPTY_TRACE_CROP);
   const open = useImageReferenceStore((state) => state.open);
   const setOpen = useImageReferenceStore((state) => state.setOpen);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const trace = useImageTrace();
+  const uploadRef = useRef<AbortController | null>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  useEffect(() => () => uploadRef.current?.abort(), []);
   const { setViewport } = useReactFlow();
   const busy = !['idle', 'done', 'error'].includes(trace.stage);
   const stageText =
@@ -53,39 +52,28 @@ export function ImageReferencePanel() {
   const errorText =
     rawError && rawError in copy.imageTraceError
       ? copy.imageTraceError[rawError as keyof typeof copy.imageTraceError]
-      : rawError;
+      : rawError
+        ? copy.imageTraceError['trace-failed']
+        : null;
 
   const acceptFile = async (selected: File | undefined) => {
     if (!selected) return;
-    trace.cancel();
-    const invalid = validateTraceFile(selected);
-    if (invalid) {
-      setError(invalid);
-      return;
-    }
+    uploadRef.current?.abort();
+    const controller = new AbortController();
+    uploadRef.current = controller;
+    trace.reset();
+    setUploading(true);
+    setError(null);
     try {
-      const bitmap = await createImageBitmap(selected);
-      const width = bitmap.width;
-      const height = bitmap.height;
-      bitmap.close();
-      if (width < 32 || height < 32 || width * height > 100_000_000) {
-        setError('invalid-dimensions');
-        return;
+      await onImportFiles([selected], controller.signal);
+    } catch (reason) {
+      if (!controller.signal.aborted)
+        setError(reason instanceof Error ? reason.message : 'decode-failed');
+    } finally {
+      if (uploadRef.current === controller) {
+        uploadRef.current = null;
+        setUploading(false);
       }
-      setImage(selected, width, height);
-      const bottom = Math.max(
-        0,
-        ...Object.values(useWorkspaceStore.getState().processModel.nodes).map((node) => {
-          const bounds = getNodeBounds(node);
-          return bounds.y + bounds.height;
-        }),
-      );
-      setPosition(0, bottom > 0 ? bottom + 80 : 0);
-      setFile(selected);
-      setCrop(EMPTY_TRACE_CROP);
-      setError(null);
-    } catch {
-      setError('decode-failed');
     }
   };
   const showReference = () => {
@@ -107,6 +95,8 @@ export function ImageReferencePanel() {
         { duration: 220 },
       );
     }
+    uploadRef.current?.abort();
+    if (busy) trace.cancel();
     setOpen(false);
   };
 
@@ -115,24 +105,30 @@ export function ImageReferencePanel() {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next && busy) trace.cancel();
+        if (!next) {
+          uploadRef.current?.abort();
+          setUploading(false);
+          if (busy) trace.cancel();
+        }
       }}
     >
-      <Tooltip content={copy.openImage}>
-        <Dialog.Trigger asChild>
-          <button
-            type="button"
-            aria-label={copy.openImage}
-            title={copy.openImage}
-            className="focus-ring tb-btn tb-btn--idle"
-          >
-            <ImageSquare size={15} aria-hidden="true" />
-          </button>
-        </Dialog.Trigger>
-      </Tooltip>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-30 bg-[rgb(10_14_18_/_0.38)] backdrop-blur-[2px]" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-40 max-h-[calc(100dvh-2rem)] w-[min(920px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-panel)] focus:outline-none sm:p-6">
+        <Dialog.Content
+          onOpenAutoFocus={() => {
+            returnFocusRef.current =
+              document.activeElement instanceof HTMLElement
+                ? document.activeElement
+                : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const target = returnFocusRef.current;
+            if (target?.isConnected) target.focus();
+            else document.querySelector<HTMLElement>('.flow-canvas')?.focus();
+          }}
+          className="fixed left-1/2 top-1/2 z-40 max-h-[calc(100dvh-2rem)] w-[min(920px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-panel)] focus:outline-none sm:p-6"
+        >
           <div className="flex items-start justify-between gap-4">
             <div>
               <Dialog.Title className="text-base font-semibold text-[var(--text)]">
@@ -164,13 +160,13 @@ export function ImageReferencePanel() {
             <div className="flex flex-col gap-2">
               <label className="focus-ring flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-ink)]">
                 <UploadSimple size={15} aria-hidden="true" />
-                {copy.openImage}
+                {url ? copy.replaceImage : copy.openImage}
                 <input
                   ref={inputRef}
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
-                  capture="environment"
                   className="sr-only"
+                  aria-label={url ? copy.replaceImage : copy.openImage}
                   onChange={(event) => {
                     void acceptFile(event.target.files?.[0]);
                     event.target.value = '';
@@ -182,78 +178,20 @@ export function ImageReferencePanel() {
                   <p className="break-all text-[11px] text-[var(--muted-strong)]">
                     {name}
                   </p>
-                  <label className="text-[11px] text-[var(--muted)]">
-                    {copy.imageTraceOpacity}
-                    <input
-                      type="range"
-                      min="10"
-                      max="100"
-                      value={Math.round(opacity * 100)}
-                      onChange={(event) => setOpacity(Number(event.target.value) / 100)}
-                      className="flow-range mt-2"
-                    />
-                  </label>
-                  <label className="text-[11px] text-[var(--muted)]">
-                    {copy.imageTraceRotation}
-                    <input
-                      type="range"
-                      min="-180"
-                      max="180"
-                      value={rotation}
-                      onChange={(event) => setRotation(Number(event.target.value))}
-                      className="flow-range mt-2"
-                    />
-                  </label>
-                  <label className="flex items-center gap-2 text-[11px] text-[var(--muted-strong)]">
-                    <input
-                      type="checkbox"
-                      checked={locked}
-                      onChange={(event) => setLocked(event.target.checked)}
-                      className="flow-checkbox"
-                    />
-                    {copy.imageTraceLocked}
-                  </label>
-                  <div className="space-y-1 border-t border-[var(--border)] pt-2">
-                    <p className="text-[11px] font-medium text-[var(--muted-strong)]">
-                      {copy.imageTraceCrop}
-                    </p>
-                    {(['left', 'top', 'right', 'bottom'] as const).map((side) => (
-                      <label key={side} className="block text-[11px] text-[var(--muted)]">
-                        {copy.imageTraceCropSide[side]} · {crop[side]}%
-                        <input
-                          type="range"
-                          min="0"
-                          max={Math.min(
-                            80,
-                            80 -
-                              crop[
-                                side === 'left'
-                                  ? 'right'
-                                  : side === 'right'
-                                    ? 'left'
-                                    : side === 'top'
-                                      ? 'bottom'
-                                      : 'top'
-                              ],
-                          )}
-                          value={crop[side]}
-                          onChange={(event) =>
-                            setCrop((current) => ({
-                              ...current,
-                              [side]: Number(event.target.value),
-                            }))
-                          }
-                          className="flow-range mt-1.5"
-                        />
-                      </label>
-                    ))}
-                  </div>
+                  <ImageReferenceControls
+                    crop={crop}
+                    onCropChange={(next) => {
+                      trace.reset();
+                      setCrop(next);
+                    }}
+                    onGeometryChange={trace.reset}
+                  />
                   <button
                     type="button"
                     onClick={() => {
                       clearImage();
-                      setFile(null);
-                      trace.cancel();
+                      uploadRef.current?.abort();
+                      trace.reset();
                       if (inputRef.current) inputRef.current.value = '';
                     }}
                     className="focus-ring flex items-center justify-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs text-[var(--danger)]"
@@ -261,6 +199,9 @@ export function ImageReferencePanel() {
                     <Trash size={14} />
                     {copy.removeImage}
                   </button>
+                  <p className="text-[11px] leading-5 text-[var(--muted-strong)]">
+                    {copy.removeImageHint}
+                  </p>
                 </>
               ) : null}
             </div>
@@ -269,11 +210,10 @@ export function ImageReferencePanel() {
             <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
-                disabled={(!file && !blob) || busy}
+                disabled={!blob || busy || uploading || rotation !== 0}
                 onClick={() => {
-                  const image =
-                    file ?? (blob ? new File([blob], name, { type: blob.type }) : null);
-                  if (image) void trace.scan(image, crop);
+                  const image = blob ? new File([blob], name, { type: blob.type }) : null;
+                  if (image) void trace.scan(image, crop, blob ?? image);
                 }}
                 className="focus-ring rounded-lg border border-[var(--accent-strong)] px-3 py-2 text-xs font-semibold text-[var(--text)] hover:bg-[var(--accent-soft)] disabled:opacity-50"
               >
@@ -297,6 +237,16 @@ export function ImageReferencePanel() {
               </button>
             </div>
           ) : null}
+          {url && rotation !== 0 ? (
+            <p className="mt-3 text-xs text-[var(--muted-strong)]">
+              {copy.imageTraceRotationHint}
+            </p>
+          ) : null}
+          {uploading ? (
+            <p role="status" className="mt-3 text-xs text-[var(--muted-strong)]">
+              {copy.imageUploading}
+            </p>
+          ) : null}
           {stageText ? (
             <p
               role="status"
@@ -316,11 +266,14 @@ export function ImageReferencePanel() {
               {copy.imageStorageError}
             </p>
           ) : null}
-          {trace.result && url ? (
+          {trace.result && url && trace.source === blob && rotation === 0 ? (
             <ImageTraceReview
               result={trace.result}
               imageUrl={url}
-              onDone={() => setOpen(false)}
+              onDone={() => {
+                trace.reset();
+                setOpen(false);
+              }}
             />
           ) : null}
           {!trace.result && !busy ? (

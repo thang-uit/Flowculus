@@ -54,6 +54,12 @@ Mọi kết quả đều kèm mức chất lượng (`exact`, `assumption`, `sim
 
 The **Knowledge** page (`/knowledge`) provides 21 bilingual topics, accent-insensitive search, contents navigation, diagrams, copyable formulas and an isolated rework example using the actual engine. **About** (`/about`) introduces the product, its two developers and the verified repository links. Click the Flowculus brand to open project navigation from either workspace; the reading pages have their own navigation, language and theme controls.
 
+**Quản lý ảnh · Image controls.** Khi có ảnh trên canvas, thanh công cụ ngay trên canvas luôn có **Tùy chỉnh ảnh** và **Xóa ảnh**, kể cả trên điện thoại và khi ảnh bị khóa. Mở tùy chỉnh để **Thay ảnh**. Xóa ảnh chỉ xóa lớp tham chiếu, giữ các shape đã vẽ; lựa chọn xóa được checkpoint trước khi ghi IndexedDB để ảnh cũ không quay lại khi reload nhanh. Thay ảnh/crop hủy kết quả nhận dạng cũ. Đặt góc xoay về 0° khi chạy nhận dạng; xoay ảnh vẫn dùng được khi vẽ tay.
+
+![Quản lý ảnh tham chiếu · Reference image controls](docs/images/image-reference.webp)
+
+**English.** A visible canvas toolbar exposes **Image settings** and **Remove image** at every supported width, including locked images. Settings includes **Replace image**. Removing a photo preserves model shapes and synchronously records the removal before IndexedDB cleanup. Replacing the source or crop invalidates old detection results. Detection requires 0° rotation; manual reference drawing supports rotation. Fresh canvases contain no central onboarding text.
+
 **Lần mở đầu · First visit.** Canvas bắt đầu trống, không tự nạp sơ đồ minh họa. Mining cũng đợi bạn tải log hoặc chủ động chọn mẫu. Bản nháp đã chỉnh sửa tiếp tục được phục hồi; bản nháp khớp hoàn toàn sơ đồ mẫu tự nạp cũ được bỏ qua để không xuất hiện lại sau cập nhật. Cache trình duyệt/CDN không phải nguồn của sơ đồ mặc định này.
 
 **English.** Fresh workspaces start empty. Mining waits for an upload or an explicit sample selection. Edited drafts remain recoverable; only an exact untouched copy of the retired automatic starter is skipped. The old diagram came from application initialization, not a CDN cache.

@@ -78,9 +78,6 @@ export const EN: WorkspaceCopy = {
   zoomIn: 'Zoom in',
   toggleInspector: 'Toggle inspector',
   canvasLabel: 'Process model canvas',
-  canvasEmptyTitle: 'Start your process',
-  canvasEmptyHint:
-    'Add a shape from the palette or open a process file. Your work is saved in this browser.',
   nodesAndFlows: (nodes, flows) => `${nodes} nodes, ${flows} flows`,
   pathCount: (count) => `${count == null ? 'N/A' : count} paths`,
   pathCountUnavailable: 'Path count unavailable',
@@ -226,6 +223,10 @@ export const EN: WorkspaceCopy = {
     'Place a local photo on the canvas, or detect editable shape candidates with OpenCV.',
   imageFileHint: 'PNG, JPEG or WebP up to 20 MB',
   removeImage: 'Remove image',
+  replaceImage: 'Replace image',
+  editImage: 'Image settings',
+  removeImageHint: 'Remove the reference image. Drawn shapes are kept.',
+  imageUploading: 'Opening image…',
   close: 'Close',
   imageVisualTrace: 'Use as canvas reference',
   imageAssistedTrace: 'Detect shapes with OpenCV',
@@ -261,6 +262,8 @@ export const EN: WorkspaceCopy = {
     'This adds the reviewed shapes to the current model. One Undo removes the whole import.',
   imageTraceOpacity: 'Image opacity',
   imageTraceRotation: 'Image rotation',
+  imageTraceRotationHint:
+    'Set rotation to 0° before detecting shapes. You can rotate the reference when drawing manually.',
   imageTraceCrop: 'Recognition area',
   imageTraceCropSide: {
     left: 'Left crop',

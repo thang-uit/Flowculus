@@ -29,6 +29,7 @@ export function useImageTrace() {
   const workerRef = useRef<Worker | null>(null);
   const timerRef = useRef<number | null>(null);
   const requestRef = useRef(0);
+  const [source, setSource] = useState<Blob | null>(null);
   const cancel = useCallback(() => {
     requestRef.current += 1;
     workerRef.current?.terminate();
@@ -37,8 +38,14 @@ export function useImageTrace() {
     timerRef.current = null;
     setState((current) => ({ ...current, stage: 'idle' }));
   }, []);
+  const reset = useCallback(() => {
+    cancel();
+    setSource(null);
+    setState({ stage: 'idle', result: null, error: null, dimensions: null });
+  }, [cancel]);
   useEffect(
     () => () => {
+      requestRef.current += 1;
       workerRef.current?.terminate();
       if (timerRef.current != null) window.clearTimeout(timerRef.current);
     },
@@ -46,8 +53,9 @@ export function useImageTrace() {
   );
 
   const scan = useCallback(
-    async (file: File, crop: TraceCrop) => {
+    async (file: File, crop: TraceCrop, photo: Blob = file) => {
       cancel();
+      setSource(photo);
       const id = ++requestRef.current;
       const invalid =
         validateTraceFile(file) ?? (validTraceCrop(crop) ? null : 'invalid-dimensions');
@@ -117,26 +125,35 @@ export function useImageTrace() {
             dimensions,
           });
         };
-        worker.onerror = () => {
+        const fail = () => {
           if (id !== requestRef.current) return;
           worker.terminate();
           workerRef.current = null;
           if (timerRef.current != null) window.clearTimeout(timerRef.current);
+          timerRef.current = null;
           setState({ stage: 'error', result: null, error: 'worker-failed', dimensions });
         };
+        worker.onerror = fail;
+        worker.onmessageerror = fail;
         timerRef.current = window.setTimeout(() => {
           if (id !== requestRef.current) return;
           worker.terminate();
           workerRef.current = null;
+          timerRef.current = null;
           setState({ stage: 'error', result: null, error: 'timeout', dimensions });
         }, TIMEOUT_MS);
         worker.postMessage({ id, bitmap, crop }, [bitmap]);
       } catch {
+        workerRef.current?.terminate();
+        workerRef.current = null;
+        if (timerRef.current != null) window.clearTimeout(timerRef.current);
+        timerRef.current = null;
         bitmap.close();
-        setState({ stage: 'error', result: null, error: 'worker-failed', dimensions });
+        if (id === requestRef.current)
+          setState({ stage: 'error', result: null, error: 'worker-failed', dimensions });
       }
     },
     [cancel],
   );
-  return { ...state, scan, cancel };
+  return { ...state, source, scan, cancel, reset };
 }

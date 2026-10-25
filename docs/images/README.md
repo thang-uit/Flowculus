@@ -4,6 +4,7 @@ All images are real browser captures of the local Flowculus production build, wi
 illustrative bundled data. Captured at 1440 px desktop width on 2026-10-25 and
 compressed to WebP; they are not generated mockups.
 
+- `image-reference.webp`: visible image settings/removal controls with a synthetic test diagram.
 - `empty-workspace.webp`: the actual empty first-visit canvas, Vietnamese light theme.
 - `formula-or.webp`: the conditional OR equations rendered with native MathML,
   with independent-branch assumptions explained in Vietnamese.

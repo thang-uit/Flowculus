@@ -78,9 +78,6 @@ export const VI: WorkspaceCopy = {
   zoomIn: 'Phóng to',
   toggleInspector: 'Bật/tắt thuộc tính',
   canvasLabel: 'Canvas mô hình quy trình',
-  canvasEmptyTitle: 'Bắt đầu quy trình của bạn',
-  canvasEmptyHint:
-    'Thêm hình từ thanh công cụ hoặc mở tệp quy trình. Bản vẽ được lưu trong trình duyệt này.',
   nodesAndFlows: (nodes, flows) => `${nodes} nút, ${flows} luồng`,
   pathCount: (count) => `${count == null ? 'N/A' : count} đường đi`,
   pathCountUnavailable: 'Không thể đếm đường đi',
@@ -226,6 +223,10 @@ export const VI: WorkspaceCopy = {
     'Đặt ảnh cục bộ lên canvas để vẽ theo, hoặc dùng OpenCV tìm các hình có thể chỉnh sửa.',
   imageFileHint: 'PNG, JPEG hoặc WebP tối đa 20 MB',
   removeImage: 'Xóa ảnh',
+  replaceImage: 'Thay ảnh',
+  editImage: 'Tùy chỉnh ảnh',
+  removeImageHint: 'Xóa ảnh tham chiếu. Các hình đã vẽ vẫn được giữ.',
+  imageUploading: 'Đang mở ảnh…',
   close: 'Đóng',
   imageVisualTrace: 'Đặt ảnh lên canvas để vẽ theo',
   imageAssistedTrace: 'Nhận dạng hình bằng OpenCV',
@@ -260,6 +261,8 @@ export const VI: WorkspaceCopy = {
     'Thao tác này thêm các hình đã rà vào mô hình hiện tại. Hoàn tác một lần sẽ xóa toàn bộ phần vừa nhập.',
   imageTraceOpacity: 'Độ mờ của ảnh',
   imageTraceRotation: 'Góc xoay ảnh',
+  imageTraceRotationHint:
+    'Đặt góc xoay về 0° trước khi nhận dạng. Bạn vẫn có thể xoay ảnh khi vẽ theo ảnh.',
   imageTraceCrop: 'Vùng nhận dạng',
   imageTraceCropSide: {
     left: 'Cắt mép trái',

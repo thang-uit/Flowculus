@@ -91,6 +91,43 @@ describe('image trace candidate model', () => {
     ).toBeNull();
   });
 
+  it('rejects interior ink and equally plausible neighboring shapes', () => {
+    expect(
+      snapConnector({ x: 60, y: 60 }, { x: 200, y: 60 }, result.candidates),
+    ).toBeNull();
+    const duplicate = {
+      ...result.candidates[0],
+      id: 'nearby',
+      bounds: { ...result.candidates[0].bounds, y: 31 },
+    };
+    expect(
+      snapConnector({ x: 110, y: 60 }, { x: 200, y: 60 }, [
+        ...result.candidates,
+        duplicate,
+      ]),
+    ).toBeNull();
+    expect(
+      snapConnector({ x: Infinity, y: 60 }, { x: 200, y: 60 }, result.candidates),
+    ).toBeNull();
+    expect(
+      snapConnector({ x: 110, y: 60 }, { x: 200, y: 60 }, result.candidates, -1),
+    ).toBeNull();
+  });
+
+  it('does not misclassify an arbitrary quadrilateral as a gateway', () => {
+    expect(
+      classifyContour(
+        [
+          { x: 0, y: 0 },
+          { x: 100, y: 0 },
+          { x: 65, y: 60 },
+          { x: 35, y: 60 },
+        ],
+        0.5,
+      ),
+    ).toBeNull();
+  });
+
   it('keeps every guessed semantic unconfirmed and adds the draft as one model edit', () => {
     const trace = traceToProcessModel(result, 'Photo');
     expect(trace.nodes.a.durationMinutes).toBeUndefined();

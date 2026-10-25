@@ -10,6 +10,7 @@ import { CanvasFloatingControls } from '@/components/canvas/CanvasFloatingContro
 import { MinedModelNotice } from '@/components/canvas/MinedModelNotice';
 import { ProcessCanvas } from '@/components/canvas/ProcessCanvas';
 import { FileDropOverlay } from '@/components/FileDropOverlay';
+import { ImageReferencePanel } from '@/components/ImageReferencePanel';
 import { InspectorPanel } from '@/components/InspectorPanel';
 import { MobileInspectorDialog } from '@/components/MobileInspectorDialog';
 import { WorkspaceHeader } from '@/components/WorkspaceHeader';
@@ -120,6 +121,7 @@ export function FlowculusWorkspace({
             <MobileInspectorDialog open={inspectorOpen} onOpenChange={setInspectorOpen} />
           ) : null}
           <FileDropOverlay copy={copy} onImportFiles={handleImportFiles} />
+          <ImageReferencePanel onImportFiles={handleImportFiles} />
           <SemanticGateDialog />
         </div>
       </ReactFlowProvider>

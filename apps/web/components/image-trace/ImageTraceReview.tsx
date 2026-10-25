@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Trash } from '@phosphor-icons/react';
 import type { ProcessNodeKind } from '@flowculus/process-model';
 import { validateProcessGraph } from '@flowculus/validation';
@@ -35,10 +35,17 @@ export function ImageTraceReview({
 }: Readonly<{ result: TraceResult; imageUrl: string; onDone: () => void }>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const [draft, setDraft] = useState(result);
+  const [draft, setDraft] = useState(() => ({
+    ...result,
+    candidates: result.candidates.map((candidate, index) => ({
+      ...candidate,
+      label: candidate.label.trim() || `${copy.shapeTypes[candidate.kind]} ${index + 1}`,
+    })),
+  }));
   const [focusId, setFocusId] = useState<string | null>(null);
   const [sourceId, setSourceId] = useState('');
   const [targetId, setTargetId] = useState('');
+  const committed = useRef(false);
   const imageX = useImageReferenceStore((state) => state.x);
   const imageY = useImageReferenceStore((state) => state.y);
   const scale = Math.min(1, 1200 / result.width);
@@ -47,6 +54,13 @@ export function ImageTraceReview({
     [draft],
   );
   const commit = () => {
+    if (
+      committed.current ||
+      draft.candidates.length === 0 ||
+      useImageReferenceStore.getState().url !== imageUrl
+    )
+      return;
+    committed.current = true;
     const state = useWorkspaceStore.getState();
     const trace = traceToProcessModel(draft, state.modelName);
     const merged = mergeTracedModel(state.processModel, trace, scale, {

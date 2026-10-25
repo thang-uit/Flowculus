@@ -81,8 +81,6 @@ export interface WorkspaceCopy {
   zoomIn: string;
   toggleInspector: string;
   canvasLabel: string;
-  canvasEmptyTitle: string;
-  canvasEmptyHint: string;
   nodesAndFlows: (nodes: number, flows: number) => string;
   pathCount: (count: number | null) => string;
   pathCountUnavailable: string;
@@ -211,6 +209,10 @@ export interface WorkspaceCopy {
   imageReferenceDescription: string;
   imageFileHint: string;
   removeImage: string;
+  replaceImage: string;
+  editImage: string;
+  removeImageHint: string;
+  imageUploading: string;
   close: string;
   imageVisualTrace: string;
   imageAssistedTrace: string;
@@ -241,6 +243,7 @@ export interface WorkspaceCopy {
   imageTraceReplaceWarning: string;
   imageTraceOpacity: string;
   imageTraceRotation: string;
+  imageTraceRotationHint: string;
   imageTraceCrop: string;
   imageTraceCropSide: Record<'left' | 'top' | 'right' | 'bottom', string>;
   imageTraceLocked: string;

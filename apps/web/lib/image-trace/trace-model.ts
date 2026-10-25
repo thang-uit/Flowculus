@@ -1,30 +1,12 @@
-import {
-  SEMANTIC_METADATA_KEYS,
-  type ProcessModel,
-  type ProcessNodeKind,
-} from '@flowculus/process-model';
+import { SEMANTIC_METADATA_KEYS, type ProcessModel } from '@flowculus/process-model';
 
-export type TraceShape = 'rectangle' | 'diamond' | 'ellipse';
-export interface TraceCandidate {
-  id: string;
-  shape: TraceShape;
-  kind: ProcessNodeKind;
-  label: string;
-  bounds: { x: number; y: number; width: number; height: number };
-  confidence: number;
-}
-export interface TraceConnector {
-  source: string;
-  target: string;
-  confidence: number;
-  kind?: 'sequence' | 'message' | 'association';
-}
-export interface TraceResult {
-  width: number;
-  height: number;
-  candidates: TraceCandidate[];
-  connectors: TraceConnector[];
-}
+import type { TraceResult, TraceShape } from './trace-types';
+export type {
+  TraceCandidate,
+  TraceConnector,
+  TraceResult,
+  TraceShape,
+} from './trace-types';
 
 /** Geometric candidates are never treated as confirmed BPMN semantics. */
 export function traceToProcessModel(result: TraceResult, name: string): ProcessModel {
@@ -85,10 +67,12 @@ export function mergeTracedModel(
   const nodes = { ...current.nodes };
   const edges = { ...current.edges };
   const remap = new Map<string, string>();
+  let nodeIndex = 1;
   for (const node of Object.values(trace.nodes)) {
-    let index = 1;
+    let index = nodeIndex;
     while (nodes[`trace-${index}`]) index += 1;
     const id = `trace-${index}`;
+    nodeIndex = index + 1;
     remap.set(node.id, id);
     nodes[id] = {
       ...node,
@@ -103,13 +87,15 @@ export function mergeTracedModel(
         : undefined,
     };
   }
+  let edgeIndex = 1;
   for (const edge of Object.values(trace.edges)) {
     const source = remap.get(edge.source);
     const target = remap.get(edge.target);
     if (!source || !target) continue;
-    let index = 1;
+    let index = edgeIndex;
     while (edges[`trace-flow-${index}`]) index += 1;
     const id = `trace-flow-${index}`;
+    edgeIndex = index + 1;
     edges[id] = { ...edge, id, source, target };
   }
   return { model: { ...current, nodes, edges }, nodeIds: [...remap.values()] };
@@ -125,6 +111,12 @@ export function classifyContour(
     const width = Math.max(...xs) - Math.min(...xs);
     const height = Math.max(...ys) - Math.min(...ys);
     if (width <= 0 || height <= 0) return null;
+    if (vertices.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y)))
+      return null;
+    const minX = Math.min(...xs),
+      minY = Math.min(...ys);
+    const aspect = width / height;
+    if (aspect < 0.25 || aspect > 5) return null;
     const corners = vertices.every(
       (point) =>
         Math.min(
@@ -138,50 +130,24 @@ export function classifyContour(
         ) <
           height * 0.2,
     );
-    return corners ? 'rectangle' : 'diamond';
+    if (corners) return 'rectangle';
+    const tips = [
+      { x: minX + width / 2, y: minY },
+      { x: minX + width, y: minY + height / 2 },
+      { x: minX + width / 2, y: minY + height },
+      { x: minX, y: minY + height / 2 },
+    ];
+    return tips.every((tip) =>
+      vertices.some(
+        (point) =>
+          Math.abs(point.x - tip.x) < width * 0.2 &&
+          Math.abs(point.y - tip.y) < height * 0.2,
+      ),
+    )
+      ? 'diamond'
+      : null;
   }
   return vertices.length >= 6 && circularity >= 0.7 ? 'ellipse' : null;
 }
 
-const centre = (candidate: TraceCandidate) => ({
-  x: candidate.bounds.x + candidate.bounds.width / 2,
-  y: candidate.bounds.y + candidate.bounds.height / 2,
-});
-
-/** Snaps a segment to two distinct shapes, rejecting loose or ambiguous lines. */
-export function snapConnector(
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-  candidates: readonly TraceCandidate[],
-  radius = 38,
-): TraceConnector | null {
-  const nearest = (point: { x: number; y: number }) =>
-    candidates
-      .map((candidate) => ({
-        candidate,
-        distance:
-          Math.hypot(centre(candidate).x - point.x, centre(candidate).y - point.y) -
-          Math.max(candidate.bounds.width, candidate.bounds.height) / 2,
-      }))
-      .sort((left, right) => left.distance - right.distance)[0];
-  const first = nearest(a);
-  const second = nearest(b);
-  if (
-    !first ||
-    !second ||
-    first.candidate.id === second.candidate.id ||
-    first.distance > radius ||
-    second.distance > radius
-  )
-    return null;
-  // Direction from a photograph is uncertain without a reliable arrowhead.
-  // This left-to-right/top-to-bottom proposal remains explicitly inferred.
-  const ca = centre(first.candidate);
-  const cb = centre(second.candidate);
-  const forward = ca.x < cb.x || (Math.abs(ca.x - cb.x) < 16 && ca.y <= cb.y);
-  return {
-    source: forward ? first.candidate.id : second.candidate.id,
-    target: forward ? second.candidate.id : first.candidate.id,
-    confidence: 0.4,
-  };
-}
+export { snapConnector } from './connector-snap';

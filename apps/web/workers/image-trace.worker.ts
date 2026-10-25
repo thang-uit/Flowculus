@@ -1,6 +1,6 @@
+import { createConnectorSnapper } from '../lib/image-trace/connector-snap';
 import {
   classifyContour,
-  snapConnector,
   type TraceCandidate,
   type TraceResult,
 } from '../lib/image-trace/trace-model';
@@ -57,7 +57,8 @@ workerScope.onmessage = async (event: MessageEvent<Request>) => {
   try {
     // This dynamic import stays in the worker chunk and is fetched only on demand.
     const cvModule = await import('@techstark/opencv-js');
-    const cv = (cvModule as unknown as { default?: typeof cvModule }).default ?? cvModule;
+    const cv = await ((cvModule as unknown as { default?: typeof cvModule }).default ??
+      cvModule);
     const source = cv.matFromImageData(pixels);
     const gray = new cv.Mat();
     const binary = new cv.Mat();
@@ -105,7 +106,13 @@ workerScope.onmessage = async (event: MessageEvent<Request>) => {
           vertices,
           perimeter > 0 ? (4 * Math.PI * area) / (perimeter * perimeter) : 0,
         );
-        if (!shape) continue;
+        if (!shape || !cv.isContourConvex(approx)) continue;
+        const fillRatio = area / (rect.width * rect.height);
+        if (
+          (shape === 'rectangle' && fillRatio < 0.6) ||
+          (shape === 'diamond' && (fillRatio < 0.3 || fillRatio > 0.75))
+        )
+          continue;
         const bounds = {
           x: cropX + rect.x / scale,
           y: cropY + rect.y / scale,
@@ -127,7 +134,7 @@ workerScope.onmessage = async (event: MessageEvent<Request>) => {
           id: `trace-node-${candidates.length + 1}`,
           shape,
           kind,
-          label: `${kind === 'event' ? 'Event' : kind === 'gateway' ? 'Gateway' : 'Task'} ${candidates.length + 1}`,
+          label: '',
           bounds,
           confidence: shape === 'rectangle' ? 0.7 : 0.55,
         });
@@ -140,15 +147,14 @@ workerScope.onmessage = async (event: MessageEvent<Request>) => {
     cv.HoughLinesP(binary, lines, 1, Math.PI / 180, 65, 30, 12);
     const connectors: TraceResult['connectors'] = [];
     const seen = new Set<string>();
+    const snap = createConnectorSnapper(candidates, 42 / scale);
     for (let index = 0; index < Math.min(lines.rows, 500); index += 1) {
       const [x1, y1, x2, y2] = Array.from(
         lines.data32S.subarray(index * 4, index * 4 + 4),
       );
-      const connection = snapConnector(
+      const connection = snap(
         { x: cropX + x1 / scale, y: cropY + y1 / scale },
         { x: cropX + x2 / scale, y: cropY + y2 / scale },
-        candidates,
-        42 / scale,
       );
       if (!connection) continue;
       const key = `${connection.source}:${connection.target}`;

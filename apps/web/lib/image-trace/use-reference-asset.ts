@@ -7,10 +7,12 @@ import {
   saveReferenceAsset,
 } from './reference-asset';
 import { useImageReferenceStore } from '@/lib/use-image-reference-store';
+import { checkpointReferencePresentation } from './reference-selection';
 
 /** Persists the separate photo asset without embedding it in ProcessModel. */
 export function useReferenceAsset() {
   const blob = useImageReferenceStore((state) => state.blob);
+  const assetId = useImageReferenceStore((state) => state.assetId);
   const name = useImageReferenceStore((state) => state.name);
   const width = useImageReferenceStore((state) => state.width);
   const height = useImageReferenceStore((state) => state.height);
@@ -23,6 +25,7 @@ export function useReferenceAsset() {
   const setStorageError = useImageReferenceStore((state) => state.setStorageError);
   const [hydrated, setHydrated] = useState(false);
   const queue = useRef<Promise<void>>(Promise.resolve());
+  const previousBlob = useRef<Blob | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,29 +49,34 @@ export function useReferenceAsset() {
   useEffect(() => {
     if (!hydrated) return;
     const persist = () => {
+      const current = useImageReferenceStore.getState();
+      const snapshot = current.blob
+        ? {
+            assetId: current.assetId ?? undefined,
+            blob: current.blob,
+            name: current.name,
+            width: current.width,
+            height: current.height,
+            x: current.x,
+            y: current.y,
+            opacity: current.opacity,
+            rotation: current.rotation,
+            locked: current.locked,
+          }
+        : null;
+      if (snapshot) checkpointReferencePresentation(snapshot);
       queue.current = queue.current
         .catch(() => undefined)
-        .then(() =>
-          blob
-            ? saveReferenceAsset({
-                blob,
-                name,
-                width,
-                height,
-                x,
-                y,
-                opacity,
-                rotation,
-                locked,
-              })
-            : deleteReferenceAsset(),
-        );
+        .then(() => (snapshot ? saveReferenceAsset(snapshot) : deleteReferenceAsset()));
       void queue.current.then(
         () => setStorageError(false),
         () => setStorageError(true),
       );
     };
-    const timer = window.setTimeout(persist, blob ? 700 : 0);
+    // Persist new/deleted photos promptly; debounce only presentation changes.
+    const photoChanged = previousBlob.current !== blob;
+    previousBlob.current = blob;
+    const timer = window.setTimeout(persist, photoChanged ? 0 : 700);
     // A fast reload must not discard a newly selected photo before debounce ends.
     const checkpoint = () => {
       window.clearTimeout(timer);
@@ -82,6 +90,7 @@ export function useReferenceAsset() {
   }, [
     hydrated,
     blob,
+    assetId,
     name,
     width,
     height,

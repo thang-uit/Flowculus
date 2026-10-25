@@ -15,16 +15,22 @@ export function useWorkspaceImport(fallbackName: string) {
   useEffect(() => () => current.current?.abort(), []);
 
   return useCallback(
-    async (files: File[]): Promise<boolean> => {
+    async (files: File[], externalSignal?: AbortSignal): Promise<boolean> => {
       if (files.length === 0) return false;
       current.current?.abort();
       const controller = new AbortController();
       current.current = controller;
       const { signal } = controller;
+      const abort = () => controller.abort();
+      externalSignal?.addEventListener('abort', abort, { once: true });
+      if (externalSignal?.aborted) controller.abort();
+      let imageRequestId: number | undefined;
       try {
         const imported = await importWorkspaceFiles(files, fallbackName, signal);
         signal.throwIfAborted();
         if (imported.kind === 'image') {
+          const requestId = useImageReferenceStore.getState().beginUpload();
+          imageRequestId = requestId;
           let bitmap: ImageBitmap;
           try {
             bitmap = await createImageBitmap(imported.file);
@@ -34,6 +40,7 @@ export function useWorkspaceImport(fallbackName: string) {
           const { width, height } = bitmap;
           bitmap.close();
           signal.throwIfAborted();
+          if (requestId !== useImageReferenceStore.getState().requestId) return false;
           if (width < 32 || height < 32 || width * height > MAX_IMAGE_PIXELS)
             throw new Error('invalid-dimensions');
           const reference = useImageReferenceStore.getState();
@@ -66,9 +73,15 @@ export function useWorkspaceImport(fallbackName: string) {
         state.setMode('model');
         return true;
       } catch (error) {
-        if (signal.aborted) return false;
+        if (
+          signal.aborted ||
+          (imageRequestId !== undefined &&
+            imageRequestId !== useImageReferenceStore.getState().requestId)
+        )
+          return false;
         throw error;
       } finally {
+        externalSignal?.removeEventListener('abort', abort);
         if (current.current === controller) current.current = null;
       }
     },

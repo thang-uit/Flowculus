@@ -582,3 +582,67 @@
 .flow-canvas[data-tool='hand'] .flow-edge-label {
   pointer-events: none;
 }
+
+.image-reference-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  max-width: min(520px, calc(100% - 5rem));
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+  font-size: 12px;
+}
+.image-reference-toolbar__name {
+  display: flex;
+  flex: 1 1 120px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.image-reference-toolbar__name svg {
+  flex: none;
+  color: var(--accent-strong);
+}
+.image-reference-toolbar__name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.image-reference-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.image-reference-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  font-weight: 600;
+}
+.image-reference-toolbar button:hover {
+  background: var(--surface-raised);
+}
+.image-reference-toolbar__remove {
+  color: var(--danger);
+}
+.image-reference-toolbar p {
+  margin: 0;
+  max-width: 36ch;
+  color: var(--danger);
+  line-height: 1.5;
+}

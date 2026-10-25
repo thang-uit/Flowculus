@@ -153,6 +153,9 @@ path, params }`. Packages never return user-facing sentences; the web app
   to 1600 px, terminate after 45 seconds or on cancel, and release every Mat.
   The reference photo is a separate IndexedDB asset, never a ProcessModel field
   or implicit export payload. Inferred nodes and flows require semantic review.
+  Await the OpenCV runtime before calling Mat APIs. A visible canvas toolbar must
+  expose image settings/removal at every viewport. Removal/replacement checkpoints
+  invalidate stale persisted photos, pending decodes and detection results.
 - Explicit edge attachment sides are optional presentation fields (`routing.sourceSide`,
   `routing.targetSide`); absent means automatic. Cardinal ports must survive JSON,
   CSV, clipboard, drafts and native draw.io entry/exit constraints. Geometry-only

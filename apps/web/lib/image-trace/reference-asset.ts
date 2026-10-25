@@ -1,19 +1,22 @@
+import {
+  readReferenceSelection,
+  referenceSelectionMatches,
+  REMOVED_REFERENCE,
+  restoreReferencePresentation,
+  type ReferencePresentation,
+} from './reference-selection';
+
 const DATABASE = 'flowculus-reference-image';
 const STORE = 'assets';
 const KEY = 'current';
 const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_PIXELS = 100_000_000;
 
-export interface ReferenceAsset {
+export interface ReferenceAsset extends ReferencePresentation {
   blob: Blob;
   name: string;
   width: number;
   height: number;
-  x: number;
-  y: number;
-  opacity: number;
-  rotation: number;
-  locked: boolean;
 }
 
 const isReferenceAsset = (value: unknown): value is ReferenceAsset => {
@@ -21,6 +24,7 @@ const isReferenceAsset = (value: unknown): value is ReferenceAsset => {
   const asset = value as Partial<ReferenceAsset>;
   return (
     asset.blob instanceof Blob &&
+    (asset.assetId == null || typeof asset.assetId === 'string') &&
     asset.blob.size > 0 &&
     asset.blob.size <= MAX_BYTES &&
     ['image/png', 'image/jpeg', 'image/webp'].includes(asset.blob.type) &&
@@ -53,6 +57,7 @@ const open = () =>
     request.onsuccess = () => resolve(request.result);
     request.onerror = () =>
       reject(request.error ?? new Error('Image storage unavailable.'));
+    request.onblocked = () => reject(new Error('Image storage is blocked.'));
   });
 
 const transaction = async <T>(
@@ -77,7 +82,11 @@ export async function loadReferenceAsset(): Promise<ReferenceAsset | null> {
     const request = store.get(KEY);
     request.onsuccess = () => {
       const value: unknown = request.result;
-      resolve(isReferenceAsset(value) ? value : null);
+      resolve(
+        isReferenceAsset(value) && referenceSelectionMatches(value.assetId)
+          ? { ...value, ...restoreReferencePresentation(value) }
+          : null,
+      );
     };
   });
 }
@@ -85,6 +94,10 @@ export async function loadReferenceAsset(): Promise<ReferenceAsset | null> {
 export async function saveReferenceAsset(asset: ReferenceAsset): Promise<void> {
   if (!isReferenceAsset(asset)) throw new Error('Invalid reference image asset.');
   await transaction<void>('readwrite', (store, resolve) => {
+    if (!referenceSelectionMatches(asset.assetId)) {
+      resolve();
+      return;
+    }
     store.put(asset, KEY);
     store.transaction.oncomplete = () => resolve();
   });
@@ -92,6 +105,11 @@ export async function saveReferenceAsset(asset: ReferenceAsset): Promise<void> {
 
 export async function deleteReferenceAsset(): Promise<void> {
   await transaction<void>('readwrite', (store, resolve) => {
+    const selected = readReferenceSelection();
+    if (selected !== null && selected !== REMOVED_REFERENCE) {
+      resolve();
+      return;
+    }
     store.delete(KEY);
     store.transaction.oncomplete = () => resolve();
   });

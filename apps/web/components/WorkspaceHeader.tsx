@@ -3,6 +3,7 @@
 import {
   FileArrowDown,
   FileArrowUp,
+  ImageSquare,
   ShareNetwork,
   SidebarSimple,
 } from '@phosphor-icons/react';
@@ -11,7 +12,7 @@ import { useRef, type ChangeEvent } from 'react';
 import { WorkspaceProjectMenu } from '@/components/header/WorkspaceProjectMenu';
 import { HeaderKpiBadge } from '@/components/header/HeaderKpiBadge';
 import { ModeSwitch } from '@/components/header/ModeSwitch';
-import { ImageReferencePanel } from '@/components/ImageReferencePanel';
+import { useImageReferenceStore } from '@/lib/use-image-reference-store';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { WorkspaceExportMenu } from '@/components/WorkspaceExportMenu';
@@ -142,9 +143,17 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
                   <ShareNetwork size={15} aria-hidden="true" />
                 </button>
               </Tooltip>
-              <span className="hidden xl:inline-flex">
-                <ImageReferencePanel />
-              </span>
+              <Tooltip content={copy.openImage}>
+                <button
+                  type="button"
+                  aria-label={copy.openImage}
+                  title={copy.openImage}
+                  className="focus-ring tb-btn tb-btn--idle"
+                  onClick={() => useImageReferenceStore.getState().setOpen(true)}
+                >
+                  <ImageSquare size={15} aria-hidden="true" />
+                </button>
+              </Tooltip>
               <WorkspaceExportMenu
                 copy={copy}
                 onOpenFile={() => fileInputRef.current?.click()}

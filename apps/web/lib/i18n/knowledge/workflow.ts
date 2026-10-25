@@ -197,7 +197,8 @@ export const WORKFLOW: KnowledgeEntry[] = [
           {
             kind: 'list',
             items: [
-              'Use a sharp, evenly lit, straight-on photo with clear edges.',
+              'Use a sharp, evenly lit, straight-on photo with clear edges. Crop out unrelated tables and text.',
+              'Use Image settings or Remove image on the canvas toolbar; replacing/removing the photo keeps the model shapes.',
               'Review shape types, labels, arrow direction and disconnected connectors.',
               'Enter times, probabilities and explicit split/join semantics yourself.',
               'Confirm inferred elements before exporting or sharing.',
@@ -221,7 +222,8 @@ export const WORKFLOW: KnowledgeEntry[] = [
           {
             kind: 'list',
             items: [
-              'Chụp rõ nét, đủ sáng, vuông góc và đường viền dễ phân biệt.',
+              'Chụp rõ nét, đủ sáng, vuông góc; cắt bỏ bảng biểu và chữ không thuộc sơ đồ.',
+              'Dùng Tùy chỉnh ảnh hoặc Xóa ảnh ngay trên canvas. Thay/xóa ảnh vẫn giữ các hình đã vẽ.',
               'Kiểm tra loại hình, nhãn, chiều mũi tên và các đầu nối bị rời.',
               'Tự nhập thời gian, xác suất và ngữ nghĩa split/join rõ ràng.',
               'Xác nhận các phần suy luận trước khi xuất hoặc chia sẻ.',
