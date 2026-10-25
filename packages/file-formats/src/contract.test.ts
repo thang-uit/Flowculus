@@ -7,6 +7,7 @@ import {
   parseFlowculusFile,
   parseProcessCsv,
   processModelToNodesCsv,
+  processModelToCsv,
   processModelToSvg,
   serializeFlowculusFile,
 } from './index';
@@ -55,6 +56,48 @@ const model: ProcessModel = {
 };
 
 describe('cycle-time contract in exports', () => {
+  it('round-trips explicit attachment sides in JSON and CSV and rejects invalid external sides', () => {
+    const routed: ProcessModel = {
+      ...model,
+      edges: {
+        ...model.edges,
+        e2: {
+          ...model.edges.e2,
+          routing: {
+            style: 'orthogonal',
+            sourceSide: 'bottom',
+            targetSide: 'top',
+            waypoints: [{ x: 310, y: 140 }],
+          },
+        },
+      },
+    };
+    const file = parseFlowculusFile(
+      serializeFlowculusFile({ schemaVersion: 1, model: routed }),
+    );
+    expect(file.model.edges.e2.routing).toEqual(routed.edges.e2.routing);
+    const csv = processModelToCsv(routed);
+    expect(parseProcessCsv(csv).edges.e2.routing).toEqual(routed.edges.e2.routing);
+    expect(() => parseProcessCsv(csv.replace('bottom,top', 'diagonal,top'))).toThrow(
+      'attachment side',
+    );
+  });
+  it('keeps formula-looking labels inert in CSV and restores them on import', () => {
+    const risky = {
+      ...model,
+      nodes: {
+        ...model.nodes,
+        observed: { ...model.nodes.observed, label: '=SUM(A1:A2)' },
+        derived: { ...model.nodes.derived, label: "'=literal" },
+      },
+    };
+    const csv = processModelToNodesCsv(risky);
+    expect(csv).toContain("'=SUM(A1:A2)");
+    expect(csv).toContain("''=literal");
+    const restored = parseProcessCsv(csv, 'Again');
+    expect(restored.nodes.observed.label).toBe('=SUM(A1:A2)');
+    expect(restored.nodes.derived.label).toBe("'=literal");
+  });
   it('writes the observed D, the effective CT and its source to nodes.csv', () => {
     const csv = processModelToNodesCsv(model).split('\n');
     const header = csv[0].split(',');
@@ -92,7 +135,7 @@ describe('cycle-time contract in exports', () => {
     expect(svg).toContain('T 6m · Wq 12m');
   });
 
-  it('draws an assumption-quality highlight dashed', () => {
+  it('keeps semantic outlines and sequence flows solid for estimated highlights', () => {
     const exact = processModelToSvg(model, {
       highlightEdgeIds: ['e1'],
       highlightQuality: 'exact',
@@ -102,7 +145,10 @@ describe('cycle-time contract in exports', () => {
       highlightQuality: 'assumption',
     }).svg;
     expect(exact).not.toContain('stroke-dasharray="7 5"');
-    expect(estimated).toContain('stroke-dasharray="7 5"');
+    expect(estimated).not.toContain('stroke-dasharray="7 5"');
+    expect(estimated).not.toContain('stroke-dasharray="6 4"');
+    expect(estimated).toContain('data-analysis-quality="assumption"');
+    expect(estimated).toContain('≈');
   });
 });
 
@@ -123,4 +169,38 @@ describe('analysis snapshot in .flowculus.json', () => {
     expect(report.cycleTimeEfficiency).toBeGreaterThan(0);
     expect(report.cycleTimeEfficiency).toBeLessThanOrEqual(1);
   });
+});
+
+it('preserves solid end/gateway outlines and sequence flows under estimated highlighting', () => {
+  const diagram: ProcessModel = {
+    ...model,
+    nodes: {
+      ...model.nodes,
+      decision: {
+        id: 'decision',
+        kind: 'gateway',
+        gatewayKind: 'xor',
+        label: 'Decision',
+      },
+    },
+  };
+  const { svg } = processModelToSvg(diagram, {
+    highlightNodeIds: Object.keys(diagram.nodes),
+    highlightEdgeIds: Object.keys(diagram.edges),
+    highlightQuality: 'assumption',
+  });
+  expect(svg).not.toContain('stroke-dasharray');
+  expect(svg).toContain('data-analysis-quality="assumption"');
+  expect(svg).toContain('stroke-width="3.5"');
+});
+
+it('draws a message flow with an open origin circle and dashed line', () => {
+  const diagram = {
+    ...model,
+    edges: { ...model.edges, e1: { ...model.edges.e1, kind: 'message' as const } },
+  };
+  const { svg } = processModelToSvg(diagram);
+  expect(svg).toContain('r="3"');
+  expect(svg).toContain('stroke-dasharray="8 4"');
+  expect(svg).toContain('marker-end="url(#fc-open)"');
 });

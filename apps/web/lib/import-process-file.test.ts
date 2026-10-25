@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { ProcessModel } from '@flowculus/process-model';
 
@@ -23,6 +23,49 @@ const model: ProcessModel = {
 };
 
 describe('importWorkspaceFiles', () => {
+  it('does not read an already cancelled import', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const text = vi.fn(async () => 'invalid');
+    await expect(
+      importWorkspaceFiles(
+        [{ ...file('old.json', ''), text }],
+        undefined,
+        controller.signal,
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(text).not.toHaveBeenCalled();
+  });
+
+  it('discards a cancelled text read before parsing its stale contents', async () => {
+    const controller = new AbortController();
+    let finish!: (source: string) => void;
+    const source = new Promise<string>((resolve) => {
+      finish = resolve;
+    });
+    const reading = importWorkspaceFiles(
+      [{ ...file('old.json', ''), text: () => source }],
+      undefined,
+      controller.signal,
+    );
+    controller.abort();
+    finish('invalid JSON that must never be parsed');
+    await expect(reading).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('routes a validated local image to Image Trace without decoding it as text', async () => {
+    const image = { name: 'board.png', type: 'image/png', size: 128 } as File;
+    await expect(importWorkspaceFiles([image])).resolves.toEqual({
+      kind: 'image',
+      file: image,
+    });
+    await expect(
+      importWorkspaceFiles([{ ...image, size: 21 * 1024 * 1024 } as File]),
+    ).rejects.toThrow('invalid-size');
+    await expect(
+      importWorkspaceFiles([{ ...image, type: 'text/plain' } as File]),
+    ).rejects.toThrow('invalid-type');
+  });
   it('restores a Flowculus JSON model and lays out nodes without geometry', async () => {
     const result = await importWorkspaceFiles([
       file('request.flowculus.json', JSON.stringify({ schemaVersion: 1, model })),
@@ -48,6 +91,25 @@ describe('importWorkspaceFiles', () => {
     expect(Object.keys(result.model.nodes)).toEqual(['start', 'task', 'end']);
     expect(Object.keys(result.model.edges)).toEqual(['first', 'last']);
     expect(result.modelName).toBe('request');
+    const reversed = await importWorkspaceFiles([edges, nodes]);
+    expect(reversed.kind).toBe('model');
+    if (reversed.kind !== 'model') throw new Error('expected a model');
+    expect(Object.keys(reversed.model.edges)).toEqual(['first', 'last']);
+  });
+
+  it('rejects an orphan edges CSV instead of sending it to Mining', async () => {
+    await expect(
+      importWorkspaceFiles([file('request.edges.csv', 'id,source,target\ne1,a,b')]),
+    ).rejects.toThrow('missing-node-table');
+  });
+
+  it('rejects a structurally invalid process CSV before loading the canvas', async () => {
+    await expect(
+      importWorkspaceFiles([
+        file('request.nodes.csv', 'id,label,kind\na,A,task'),
+        file('request.edges.csv', 'id,source,target\ne1,a,missing'),
+      ]),
+    ).rejects.toThrow('invalid-model-csv');
   });
 
   it('keeps the original draw.io XML so export can patch it', async () => {
@@ -81,5 +143,20 @@ describe('importWorkspaceFiles', () => {
   it('rejects an oversized file before reading its contents', async () => {
     const oversized = file('huge.drawio', '<mxfile />', 50 * 1024 * 1024 + 1);
     await expect(importWorkspaceFiles([oversized])).rejects.toThrow('file-too-large');
+  });
+
+  it('rejects a Flowculus file with an invalid model instead of loading it', async () => {
+    const broken = {
+      ...model,
+      edges: { broken: { id: 'broken', source: 'missing', target: 'task' } },
+    };
+    await expect(
+      importWorkspaceFiles([
+        file(
+          'broken.flowculus.json',
+          JSON.stringify({ schemaVersion: 1, model: broken }),
+        ),
+      ]),
+    ).rejects.toThrow('invalid-model');
   });
 });

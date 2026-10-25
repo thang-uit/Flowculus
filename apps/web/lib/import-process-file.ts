@@ -7,8 +7,11 @@ import {
   withAutoLayout,
 } from '@flowculus/file-formats';
 import type { ProcessModel } from '@flowculus/process-model';
+import { validateModelStructure } from '@flowculus/validation';
 
 import type { DrawioSource } from '@/lib/workspace-store';
+import { readEventLogFile } from '@/lib/read-event-log-file';
+import { isTraceImage, validateTraceFile } from '@/lib/image-trace/file-validation';
 
 export const MAX_IMPORT_FILE_BYTES = 50 * 1024 * 1024;
 
@@ -20,11 +23,12 @@ export type ImportedWorkspaceFile =
       analysisOptions: AnalysisOptions;
       modelName: string;
     }
-  | { kind: 'event-log'; fileName: string; source: string };
+  | { kind: 'event-log'; fileName: string; source: string }
+  | { kind: 'image'; file: File };
 
 const stripKnownExtension = (filename: string, fallback: string): string => {
   const stem = filename
-    .replace(/\.(flowculus\.json|drawio|xml|json|csv|xes)$/i, '')
+    .replace(/\.(flowculus\.json|drawio|xml|json|csv|tsv|xes)$/i, '')
     .replace(/\.(nodes|edges)$/i, '')
     .trim();
   return stem || fallback;
@@ -52,6 +56,18 @@ const isProcessModelCsv = (source: string): boolean => {
   return (
     headers.includes('id') &&
     ['label', 'nodename', 'name'].some((key) => headers.includes(key))
+  );
+};
+
+const isProcessEdgeCsv = (source: string): boolean => {
+  const firstRow =
+    parseCsvTable(
+      source.split(/\r?\n/).find((line) => line.trim() && !line.startsWith('#')) ?? '',
+    ).rows[0] ?? [];
+  const headers = firstRow.map(normalizeHeader);
+  return (
+    headers.includes('source') &&
+    ['target', 'tail', 'destination', 'to'].some((key) => headers.includes(key))
   );
 };
 
@@ -98,13 +114,28 @@ const drawioSourceFor = async (xml: string | undefined): Promise<DrawioSource | 
 export const importWorkspaceFiles = async (
   files: File[],
   fallbackName = 'Untitled process',
+  signal?: AbortSignal,
 ): Promise<ImportedWorkspaceFile> => {
+  signal?.throwIfAborted();
   const [file] = files;
   if (!file) throw new Error('file-empty');
   assertFileSize(files);
+  if (isTraceImage(file) || /\.(png|jpe?g|webp)$/i.test(file.name)) {
+    const error = validateTraceFile(file);
+    if (error) throw new Error(error);
+    return { kind: 'image', file };
+  }
 
-  const source = await file.text();
   const filename = file.name.toLowerCase();
+  if (filename.endsWith('.xlsx')) {
+    return {
+      kind: 'event-log',
+      fileName: file.name,
+      source: await readEventLogFile(file, signal),
+    };
+  }
+  const source = await file.text();
+  signal?.throwIfAborted();
   const modelName = stripKnownExtension(file.name, fallbackName);
 
   if (filename.endsWith('.xes'))
@@ -120,6 +151,13 @@ export const importWorkspaceFiles = async (
       'schemaVersion' in parsed;
     if (!isFlowculus) return { kind: 'event-log', fileName: file.name, source };
     const flowculus = parseFlowculusFile(source);
+    const validated = validateModelStructure(flowculus.model);
+    if (
+      !validated.model ||
+      validated.diagnostics.some((item) => item.severity === 'error')
+    ) {
+      throw new Error('invalid-model');
+    }
     if (
       flowculus.analysisOptions != null &&
       !isAnalysisOptions(flowculus.analysisOptions)
@@ -128,7 +166,7 @@ export const importWorkspaceFiles = async (
     }
     return {
       kind: 'model',
-      model: await restoreBounds(flowculus.model, flowculus.drawioXml),
+      model: await restoreBounds(validated.model, flowculus.drawioXml),
       drawioSource: await drawioSourceFor(flowculus.drawioXml),
       analysisOptions: flowculus.analysisOptions ?? {},
       modelName: flowculus.model.name || modelName,
@@ -137,15 +175,38 @@ export const importWorkspaceFiles = async (
 
   if (filename.endsWith('.csv') || filename.endsWith('.tsv')) {
     const csvFiles = files.filter((candidate) => /\.(csv|tsv)$/i.test(candidate.name));
-    if (!isProcessModelCsv(source))
+    const csvSources = await Promise.all(
+      csvFiles.map(async (candidate) => ({
+        fileName: candidate.name,
+        source: candidate === file ? source : await candidate.text(),
+      })),
+    );
+    signal?.throwIfAborted();
+    const nodesFile = csvSources.find((candidate) => isProcessModelCsv(candidate.source));
+    if (!nodesFile) {
+      if (csvSources.some((candidate) => isProcessEdgeCsv(candidate.source)))
+        throw new Error('missing-node-table');
       return { kind: 'event-log', fileName: file.name, source };
-    const csvSources = await Promise.all(csvFiles.map((candidate) => candidate.text()));
+    }
+    const edgeFiles = csvSources.filter((candidate) =>
+      isProcessEdgeCsv(candidate.source),
+    );
+    const parsed = parseProcessCsv(
+      [nodesFile.source, ...edgeFiles.map((candidate) => candidate.source)].join('\n'),
+      stripKnownExtension(nodesFile.fileName, fallbackName),
+    );
+    const validated = validateModelStructure(parsed);
+    if (
+      !validated.model ||
+      validated.diagnostics.some((item) => item.severity === 'error')
+    )
+      throw new Error('invalid-model-csv');
     return {
       kind: 'model',
-      model: withAutoLayout(parseProcessCsv(csvSources.join('\n'), modelName)),
+      model: withAutoLayout(validated.model),
       drawioSource: null,
       analysisOptions: {},
-      modelName,
+      modelName: parsed.name,
     };
   }
 

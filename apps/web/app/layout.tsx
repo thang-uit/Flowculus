@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import { GeistMono } from 'geist/font/mono';
-import { GeistSans } from 'geist/font/sans';
+
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
 
 import '@xyflow/react/dist/base.css';
 
@@ -8,7 +8,7 @@ import { Providers } from './providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Flowculus | Process analysis workspace',
+  title: 'Canvas | Flowculus',
   applicationName: 'Flowculus',
   description:
     'Draw process models, calculate cycle time and explain every formula. Vẽ quy trình, tính thời gian chu trình và giải thích công thức.',
@@ -40,7 +40,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>

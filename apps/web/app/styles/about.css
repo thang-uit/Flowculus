@@ -1,0 +1,337 @@
+.about-main {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 76px 24px 72px;
+}
+.about-intro {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  align-items: center;
+  gap: 64px;
+}
+.about-intro h1 {
+  font-size: 51px;
+  line-height: 1.15;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  white-space: pre-line;
+}
+.about-intro p {
+  color: var(--muted-strong);
+  font-size: 13px;
+  line-height: 1.95;
+  margin-top: 16px;
+  max-width: 66ch;
+}
+.about-intro .about-lead {
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.8;
+  margin-top: 24px;
+}
+.about-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-top: 28px;
+}
+.about-process {
+  padding: 20px;
+  background: var(--canvas);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+.about-process figcaption {
+  font-size: 11px;
+  padding: 4px 10px 18px;
+}
+.about-equation {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 20px;
+  border-top: 1px solid var(--border);
+  padding: 20px 12px 5px;
+}
+.about-equation > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted-strong);
+}
+.about-equation code {
+  grid-column: 1;
+  font: 500 13px/1.6 var(--app-font);
+}
+.about-equation strong {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  font-size: 30px;
+  color: var(--accent-strong);
+  letter-spacing: -0.025em;
+}
+.about-equation small {
+  font-size: 11px;
+  font-weight: 500;
+}
+.about-developers {
+  margin-top: 88px;
+}
+.about-developers h2,
+.about-principles > h2 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-bottom: 28px;
+}
+.about-developer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.about-developer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.about-initials {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 72px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 24px;
+  font-weight: 700;
+}
+.about-developer:nth-child(2) .about-initials {
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+}
+.about-developer h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.about-developer p {
+  font-size: 12px;
+  color: var(--muted-strong);
+  margin-top: 4px;
+}
+.about-handle {
+  font-size: 11px;
+  display: block;
+  color: var(--muted);
+  margin-top: 7px;
+}
+.about-developer > a {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+  justify-content: center;
+}
+.about-developer > a:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.about-principles {
+  margin-top: 76px;
+}
+.about-principles > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+.about-principles h3 {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.about-principles p {
+  font-size: 12px;
+  line-height: 1.95;
+  margin-top: 12px;
+  color: var(--muted-strong);
+}
+.about-demo {
+  margin-top: 64px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--canvas);
+}
+.about-demo-window {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.about-demo-window > span:not(:last-child) {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.about-demo-window > span:last-child {
+  margin-left: 10px;
+  font-size: 10px;
+  color: var(--muted-strong);
+}
+.about-demo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.about-demo .demo-image-dark {
+  display: none;
+}
+.dark .about-demo .demo-image-light {
+  display: none;
+}
+.dark .about-demo .demo-image-dark {
+  display: block;
+}
+.about-demo figcaption {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--muted-strong);
+}
+.about-repository {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 64px;
+  padding: 32px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+.about-repository > div {
+  flex: 1;
+  min-width: 220px;
+}
+.about-repository h2 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.about-repository p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin-top: 9px;
+  max-width: 62ch;
+}
+
+@media (max-width: 1100px) {
+  .about-intro {
+    gap: 28px;
+  }
+  .about-intro h1 {
+    font-size: 42px;
+  }
+  .about-equation {
+    padding-inline: 0;
+  }
+}
+@media (max-width: 960px) {
+  .about-intro {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .about-process {
+    max-width: 650px;
+    width: 100%;
+  }
+  .about-main {
+    max-width: 800px;
+    padding-top: 48px;
+  }
+  .about-developer-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .about-developer + .about-developer {
+    border-top: 0;
+  }
+  .about-principles > div {
+    gap: 24px;
+  }
+}
+@media (max-width: 640px) {
+  .about-main {
+    padding: 38px 18px 48px;
+  }
+  .about-intro h1 {
+    font-size: 37px;
+  }
+  .about-intro .about-lead {
+    font-size: 15px;
+  }
+  .about-process {
+    padding: 14px;
+  }
+  .about-equation {
+    grid-template-columns: 1fr;
+  }
+  .about-equation strong {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 6px;
+  }
+  .about-developers {
+    margin-top: 52px;
+  }
+  .about-developer {
+    gap: 14px;
+  }
+  .about-initials {
+    width: 48px;
+    height: 58px;
+    font-size: 19px;
+  }
+  .about-developer h3 {
+    font-size: 18px;
+  }
+  .about-developers h2,
+  .about-principles > h2 {
+    font-size: 25px;
+    margin-bottom: 20px;
+  }
+  .about-principles {
+    margin-top: 48px;
+  }
+  .about-principles > div {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+  .about-demo {
+    margin-top: 40px;
+  }
+  .about-repository {
+    padding: 22px;
+    gap: 18px;
+    margin-top: 40px;
+  }
+  .about-repository > div {
+    min-width: 0;
+    flex-basis: calc(100% - 60px);
+  }
+  .about-repository h2 {
+    font-size: 20px;
+  }
+  .about-repository .reading-primary-link {
+    width: 100%;
+  }
+}

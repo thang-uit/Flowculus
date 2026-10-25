@@ -53,15 +53,36 @@ const edgeSchema = z.object({
   kind: z.enum(['sequence', 'message', 'association', 'unknown']).optional(),
   reworkProbability: z.number().finite().min(0).lt(1).optional(),
   drawioCellId: z.string().min(1).optional(),
+  routing: z
+    .object({
+      style: z.enum(['orthogonal', 'straight', 'curved']),
+      sourceSide: z.enum(['top', 'right', 'bottom', 'left']).optional(),
+      targetSide: z.enum(['top', 'right', 'bottom', 'left']).optional(),
+      waypoints: z
+        .array(z.object({ x: z.number().finite(), y: z.number().finite() }))
+        .max(32),
+    })
+    .optional(),
   metadata: metadataSchema,
 });
 
 /** Structural (serialization) schema of a `ProcessModel`, schema version 1. */
-export const processModelSchema = z.object({
-  schemaVersion: z.literal(1),
-  id: z.string().min(1),
-  name: z.string().min(1),
-  nodes: z.record(z.string(), nodeSchema),
-  edges: z.record(z.string(), edgeSchema),
-  metadata: metadataSchema,
-});
+export const processModelSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    id: z.string().min(1),
+    name: z.string().min(1),
+    nodes: z.record(z.string(), nodeSchema),
+    edges: z.record(z.string(), edgeSchema),
+    metadata: metadataSchema,
+  })
+  .superRefine((model, context) => {
+    for (const collection of ['nodes', 'edges'] as const)
+      for (const [key, element] of Object.entries(model[collection]))
+        if (key !== element.id)
+          context.addIssue({
+            code: 'custom',
+            path: [collection, key, 'id'],
+            message: 'Element ID must match its record key.',
+          });
+  });

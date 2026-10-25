@@ -4,6 +4,19 @@ import type { ProcessModel } from '@flowculus/process-model';
 import { validateProcessModel } from './index';
 
 describe('validateProcessModel', () => {
+  it('rejects mismatched record keys and element IDs before canvas consumers use them', () => {
+    const model: ProcessModel = {
+      schemaVersion: 1,
+      id: 'identity',
+      name: 'Identity',
+      nodes: { a: { id: 'different', label: 'A', kind: 'task' } },
+      edges: {},
+    };
+    expect(validateProcessModel(model).valid).toBe(false);
+    model.nodes.a.id = 'a';
+    model.edges.e = { id: 'different-edge', source: 'a', target: 'a' };
+    expect(validateProcessModel(model).valid).toBe(false);
+  });
   it('accepts an empty model with the current schema', () => {
     const result = validateProcessModel({
       schemaVersion: 1,

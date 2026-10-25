@@ -3,8 +3,17 @@
 @import './styles/formula.css';
 @import './styles/process-canvas.css';
 @import './styles/mining-map.css';
+@import './styles/theme-switch.css';
+@import './styles/form-controls.css';
+@import './styles/project-navigation.css';
+
+@theme inline {
+  --font-sans: var(--app-font);
+  --font-mono: var(--app-font);
+}
 
 :root {
+  --app-font: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', Arial, sans-serif;
   color-scheme: light;
   --canvas: #f3f5f7;
   --surface: #ffffff;
@@ -20,6 +29,9 @@
   --accent-strong: #a87300;
   --accent-soft: #fff3c7;
   --accent-ink: #211b0a;
+  --brand-mark: #e5b52f;
+  --brand-mark-border: #9f791b;
+  --brand-mark-ink: #211a07;
   --success: #287a55;
   --danger: #b54545;
   --grid-line: rgb(33 45 58 / 0.065);
@@ -69,7 +81,7 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--text);
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: var(--app-font);
   text-rendering: optimizeLegibility;
 }
 
@@ -109,9 +121,9 @@ nextjs-portal {
 }
 
 /* Theme changes are a token swap, not an animation. */
-html[data-theme-switching='true'] *,
-html[data-theme-switching='true'] *::before,
-html[data-theme-switching='true'] *::after {
+html[data-theme-switching='true'] :not(.u021, .u021 *),
+html[data-theme-switching='true'] :not(.u021, .u021 *)::before,
+html[data-theme-switching='true'] :not(.u021, .u021 *)::after {
   transition: none !important;
   animation: none !important;
 }

@@ -2,7 +2,7 @@ import type { AnalysisReport } from '@flowculus/analysis-engine';
 import type { ProcessModel } from '@flowculus/process-model';
 
 import { downloadDataUriFile } from '@/lib/browser-file-actions';
-import { drawLines, drawRoundedRect, wrapText } from '@/lib/canvas-text';
+import { REPORT_FONT, drawLines, drawRoundedRect, wrapText } from '@/lib/canvas-text';
 import type { Locale, WorkspaceCopy } from '@/lib/i18n';
 import { buildReportContent } from '@/lib/report-content';
 
@@ -36,6 +36,7 @@ export async function downloadAnalysisReportImage({
   image.decoding = 'async';
   image.src = imageDataUri;
   await image.decode();
+  await document.fonts.ready;
 
   const width = 1600;
   const padding = 64;
@@ -67,18 +68,18 @@ export async function downloadAnalysisReportImage({
     }, 0);
   const formulaLineCount = countLines(
     formulaLines,
-    '400 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    `400 22px ${REPORT_FONT}`,
     contentWidth - 44,
   );
   const listLineCount = Math.max(
     countLines(
       notes.map((line) => `• ${line}`),
-      '400 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      `400 22px ${REPORT_FONT}`,
       (contentWidth - 24) / 2,
     ),
     countLines(
       info.map((line) => `• ${line}`),
-      '400 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      `400 22px ${REPORT_FONT}`,
       (contentWidth - 24) / 2,
     ),
   );
@@ -95,10 +96,10 @@ export async function downloadAnalysisReportImage({
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, width, height);
   context.fillStyle = '#17202a';
-  context.font = '700 36px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.font = `700 36px ${REPORT_FONT}`;
   context.fillText(title, padding, 72);
   context.fillStyle = '#65717d';
-  context.font = '400 18px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.font = `400 18px ${REPORT_FONT}`;
   context.fillText(`${copy.subtitle} / ${copy.workspace}`, padding, 102);
 
   const diagramX = Math.round((width - diagramWidth) / 2);
@@ -125,13 +126,13 @@ export async function downloadAnalysisReportImage({
     context.strokeStyle = '#d8dee5';
     drawRoundedRect(context, x, metricsTop, metricWidth, 112, 12);
     context.fillStyle = '#65717d';
-    context.font = '600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    context.font = `600 15px ${REPORT_FONT}`;
     context.fillText(label.toUpperCase(), x + 18, metricsTop + 30);
     context.fillStyle = '#17202a';
-    context.font = '700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    context.font = `700 24px ${REPORT_FONT}`;
     context.fillText(value, x + 18, metricsTop + 66);
     context.fillStyle = '#65717d';
-    context.font = '400 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    context.font = `400 15px ${REPORT_FONT}`;
     context.fillText(quality, x + 18, metricsTop + 94);
   });
 
@@ -147,7 +148,7 @@ export async function downloadAnalysisReportImage({
     12,
   );
   context.fillStyle = '#17202a';
-  context.font = '700 21px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.font = `700 21px ${REPORT_FONT}`;
   context.fillText(`${copy.formula} · ${content.quality}`, padding + 22, formulaTop + 32);
   drawLines(
     context,
@@ -167,7 +168,7 @@ export async function downloadAnalysisReportImage({
     color: string,
   ) => {
     context.fillStyle = '#17202a';
-    context.font = '700 21px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    context.font = `700 21px ${REPORT_FONT}`;
     context.fillText(heading, x, notesTop);
     drawLines(
       context,
@@ -194,7 +195,7 @@ export async function downloadAnalysisReportImage({
   );
 
   context.fillStyle = '#65717d';
-  context.font = '400 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.font = `400 15px ${REPORT_FONT}`;
   context.fillText('Flowculus', padding, height - 28);
 
   const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';

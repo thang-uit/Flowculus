@@ -4,19 +4,10 @@
  * deterministic so the canvas and every exported file draw the same picture.
  */
 
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export interface Rect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export type RectSide = 'top' | 'right' | 'bottom' | 'left';
+import { routeAttachedPoints } from './attached-route';
+import type { Point, Rect, RectSide } from './geometry-types';
+export type { Point, Rect, RectSide } from './geometry-types';
+export { attachmentPoint, attachmentLead } from './attached-route';
 
 export interface LayoutNodeInput {
   id: string;
@@ -317,7 +308,7 @@ const LOOP_CLEARANCE = 36;
 const SIDE_GAP = 6;
 
 /**
- * Deterministic orthogonal routing between two rectangles. BPMN convention:
+ * Deterministic default orthogonal routing between two rectangles:
  * gateways split through their top/bottom corner and joins are entered from
  * above/below; backward edges (rework loops) are routed underneath both shapes.
  */
@@ -449,7 +440,7 @@ const outward = (point: Point, side: RectSide, distance: number): Point => {
 };
 
 /**
- * Deterministic orthogonal routing between two rectangles. BPMN convention:
+ * Deterministic default orthogonal routing between two rectangles:
  * gateways split through their top/bottom corner and joins are entered from
  * above/below; backward edges (rework loops) are routed underneath both shapes.
  * With `obstacles`, a route that would cross another shape takes a lane beside
@@ -458,10 +449,21 @@ const outward = (point: Point, side: RectSide, distance: number): Point => {
 export const routeOrthogonalEdge = (
   source: Rect,
   target: Rect,
-  hints: { source?: RouteShapeHint; target?: RouteShapeHint } = {},
+  hints: {
+    source?: RouteShapeHint;
+    target?: RouteShapeHint;
+    sourceSide?: RectSide;
+    targetSide?: RectSide;
+  } = {},
   obstacles: Rect[] = [],
 ): OrthogonalRoute => {
   const route = routeBetween(source, target, hints);
+  if (hints.sourceSide || hints.targetSide) {
+    const sourceSide = hints.sourceSide ?? route.sourceSide;
+    const targetSide = hints.targetSide ?? route.targetSide;
+    const points = routeAttachedPoints(source, target, sourceSide, targetSide, obstacles);
+    return { points, sourceSide, targetSide, labelPoint: polylineLabelPoint(points) };
+  }
   if (obstacles.length === 0) return route;
   const others = obstacles.filter(
     (rect) => !rectsOverlap(rect, source) && !rectsOverlap(rect, target),

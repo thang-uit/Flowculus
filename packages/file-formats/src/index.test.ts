@@ -29,6 +29,37 @@ describe('Flowculus file format', () => {
     expect(parseFlowculusFile(serializeFlowculusFile(validFile))).toEqual(validFile);
   });
 
+  it('preserves connector geometry and semantic flags through CSV', () => {
+    const model: ProcessModel = {
+      schemaVersion: 1,
+      id: 'route',
+      name: 'Route',
+      nodes: {
+        a: {
+          id: 'a',
+          label: 'A',
+          kind: 'start',
+          metadata: { 'flowculus-inferred-kind': true },
+        },
+        b: { id: 'b', label: 'B', kind: 'end' },
+      },
+      edges: {
+        e: {
+          id: 'e',
+          source: 'a',
+          target: 'b',
+          kind: 'sequence',
+          routing: { style: 'curved', waypoints: [{ x: 40, y: 60 }] },
+          metadata: { 'flowculus-inferred-edge-kind': true },
+        },
+      },
+    };
+    const parsed = parseProcessCsv(processModelToCsv(model), 'Route');
+    expect(parsed.edges.e.routing).toEqual(model.edges.e.routing);
+    expect(parsed.nodes.a.metadata?.['flowculus-inferred-kind']).toBe(true);
+    expect(parsed.edges.e.metadata?.['flowculus-inferred-edge-kind']).toBe(true);
+  });
+
   it('rejects a malformed model before it reaches the workspace store', () => {
     expect(() =>
       parseFlowculusFile(
@@ -79,6 +110,7 @@ describe('Flowculus file format', () => {
     expect(parsed.name).toBe(model.name);
     expect(parsed.nodes.task?.label).toBe('Review, request');
     expect(parsed.nodes.task?.processingMinutes).toBe(8);
+    expect(parsed.nodes.task?.cost?.currency).toBe('USD');
     expect(parsed.edges.first?.target).toBe('task');
   });
 
@@ -161,6 +193,18 @@ describe('Flowculus file format', () => {
       }),
     );
     expect(parsed.nodes.task?.bounds).toEqual({ x: 12.5, y: 40, width: 176, height: 84 });
+  });
+
+  it('rejects invalid numeric cells instead of silently dropping them', () => {
+    expect(() =>
+      parseProcessCsv('id,label,kind,processing_minutes\na,Approve,task,abc'),
+    ).toThrow('Invalid number in nodes row 1, column processingMinutes');
+    expect(() =>
+      parseProcessCsv('id,label\na,Approve\n\nid,source,target,probability\ne1,a,a,nope'),
+    ).toThrow('Invalid number in edges row 1, column probability');
+    expect(() =>
+      parseProcessCsv('id,label,kind,processing_minutes\na,Approve,task,50%'),
+    ).toThrow('Invalid number in nodes row 1, column processingMinutes');
   });
 });
 

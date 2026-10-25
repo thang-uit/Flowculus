@@ -1,0 +1,274 @@
+/* Lucian UX/UI Prompt #021 · MIT License (c) 2026 Seokwoooo · https://lucianlabs.dev/uxui-prompt/#021 */
+/* The original 224 × 94 sky is scaled into the 48 px workspace header. */
+.u021,
+.u021 *,
+.u021 *::before,
+.u021 *::after {
+  box-sizing: border-box;
+}
+
+.u021 {
+  --u021-scale: 0.25;
+  --ux-accent: var(--accent-strong);
+  --ux-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ux-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  position: relative;
+  display: block;
+  flex: none;
+  width: 56px;
+  height: 44px;
+  overflow: visible;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.u021:focus-visible {
+  outline: 2px solid var(--ux-accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+.u021-sky {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  display: block;
+  width: 224px;
+  height: 94px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5db7ff, #9ed8ff);
+  box-shadow:
+    inset 0 4px 10px rgb(0 30 80 / 28%),
+    inset 0 -2px 4px rgb(255 255 255 / 40%),
+    0 18px 34px -18px rgb(40 110 200 / 70%);
+  pointer-events: none;
+  transform: scale(var(--u021-scale));
+  transform-origin: top left;
+}
+
+.u021-sky::before {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(180deg, #141a3a, #232c5c);
+  content: '';
+  opacity: 0;
+  transition: opacity 0.8s var(--ux-ease);
+}
+
+.u021.is-night .u021-sky::before {
+  opacity: 1;
+}
+
+.u021-halo {
+  position: absolute;
+  z-index: 1;
+  top: 47px;
+  left: 47px;
+  width: 0;
+  height: 0;
+  transition: transform 0.9s var(--ux-spring);
+}
+
+.u021-halo i {
+  position: absolute;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 12%);
+}
+
+.u021-halo i:nth-child(1) {
+  width: 130px;
+  height: 130px;
+  margin: -65px;
+}
+
+.u021-halo i:nth-child(2) {
+  width: 176px;
+  height: 176px;
+  margin: -88px;
+}
+
+.u021-halo i:nth-child(3) {
+  width: 222px;
+  height: 222px;
+  margin: -111px;
+}
+
+.u021.is-night .u021-halo {
+  transform: translateX(130px);
+}
+
+.u021-knob {
+  position: absolute;
+  z-index: 3;
+  top: 8px;
+  left: 8px;
+  width: 78px;
+  height: 78px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff1a8, #ffd23f 45%, #f8a91e);
+  box-shadow:
+    0 6px 14px -4px rgb(140 80 0 / 50%),
+    inset -4px -6px 10px rgb(200 110 0 / 35%),
+    inset 4px 4px 8px rgb(255 255 255 / 50%);
+  transition: transform 0.9s var(--ux-spring);
+}
+
+.u021-moon {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4f6fb, #c9cfdd 60%, #a9b0c2);
+  opacity: 0;
+  transform: translateX(100%);
+  transition:
+    transform 0.8s var(--ux-ease),
+    opacity 0.4s var(--ux-ease);
+}
+
+.u021-moon i {
+  position: absolute;
+  border-radius: 50%;
+  background: #a3aabc;
+  box-shadow: inset 1px 2px 2px rgb(0 0 0 / 18%);
+}
+
+.u021-moon i:nth-child(1) {
+  top: 16px;
+  left: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.u021-moon i:nth-child(2) {
+  top: 40px;
+  left: 46px;
+  width: 14px;
+  height: 14px;
+}
+
+.u021-moon i:nth-child(3) {
+  top: 48px;
+  left: 24px;
+  width: 9px;
+  height: 9px;
+}
+
+.u021.is-night .u021-knob {
+  transform: translateX(130px) rotate(200deg);
+}
+
+.u021.is-night .u021-moon {
+  opacity: 1;
+  transform: none;
+}
+
+.u021-clouds {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  transition:
+    transform 0.8s var(--ux-ease),
+    opacity 0.6s var(--ux-ease);
+}
+
+.u021-clouds i {
+  position: absolute;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.u021-clouds i:nth-child(1) {
+  right: -10px;
+  bottom: -18px;
+  width: 120px;
+  height: 56px;
+  box-shadow:
+    -46px 8px 0 -6px #fff,
+    -80px 18px 0 -10px #fff;
+}
+
+.u021-clouds i:nth-child(2) {
+  z-index: -1;
+  right: 20px;
+  bottom: -30px;
+  width: 96px;
+  height: 52px;
+  background: #e3f1ff;
+  box-shadow: -44px 6px 0 -8px #e3f1ff;
+}
+
+.u021.is-night .u021-clouds {
+  opacity: 0;
+  transform: translateY(80px);
+}
+
+.u021-stars {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(-30px);
+  transition:
+    transform 0.8s var(--ux-ease),
+    opacity 0.6s var(--ux-ease);
+}
+
+.u021-stars i {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px #fff;
+  animation: u021-tw 2.4s ease-in-out infinite;
+}
+
+.u021.is-night .u021-stars {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes u021-tw {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
+}
+
+@media (max-width: 639px) {
+  .u021 {
+    --u021-scale: 0.22;
+    width: 50px;
+  }
+
+  .u021-sky {
+    top: 12px;
+  }
+}
+
+@media (max-width: 359px) {
+  .u021 {
+    --u021-scale: 0.2;
+    width: 45px;
+  }
+
+  .u021-sky {
+    top: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u021 *,
+  .u021 *::before,
+  .u021 *::after {
+    animation: none;
+    transition: none;
+  }
+}

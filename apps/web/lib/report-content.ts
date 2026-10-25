@@ -56,34 +56,43 @@ export const buildReportContent = ({
   currency?: string;
 }): ReportContent => {
   const empty = copy.emptyValue;
+  const noAnalysis = report.status === 'empty';
   const minutes = ` ${copy.minutes}`;
   const metrics: ReportMetric[] = [
     {
       label: copy.cycleTime,
       value: number(report.cycleTimeMinutes, minutes, empty),
-      quality: qualityLabel(report.metricQuality.cycleTime, copy),
+      quality: noAnalysis
+        ? copy.emptyAnalysis
+        : qualityLabel(report.metricQuality.cycleTime, copy),
     },
     {
       label: copy.theoreticalTime,
       value: number(report.theoreticalCycleTimeMinutes, minutes, empty),
-      quality: qualityLabel(report.metricQuality.theoreticalCycleTime, copy),
+      quality: noAnalysis
+        ? copy.emptyAnalysis
+        : qualityLabel(report.metricQuality.theoreticalCycleTime, copy),
     },
     {
       label: copy.cte,
       value: formatPercent(report.cycleTimeEfficiency) ?? empty,
-      quality: qualityLabel(report.metricQuality.cycleTimeEfficiency, copy),
+      quality: noAnalysis
+        ? copy.emptyAnalysis
+        : qualityLabel(report.metricQuality.cycleTimeEfficiency, copy),
     },
     {
       label: copy.cost,
       value: formatCost(report.costPerExecution, currency, locale) ?? empty,
-      quality: qualityLabel(report.metricQuality.cost, copy),
+      quality: noAnalysis
+        ? copy.emptyAnalysis
+        : qualityLabel(report.metricQuality.cost, copy),
     },
   ];
 
   const formulaLines = [
     report.formula
       ? `${copy.cycleFormulaLabel} = ${report.formula}`
-      : `${copy.cycleFormulaLabel}: ${copy.quality.simulationNoNumber}`,
+      : `${copy.cycleFormulaLabel}: ${noAnalysis ? copy.emptyAnalysis : copy.quality.simulationNoNumber}`,
     report.theoreticalFormula
       ? `${copy.theoreticalFormulaLabel} = ${report.theoreticalFormula}`
       : '',
@@ -124,7 +133,7 @@ export const buildReportContent = ({
     issues.map((issue) => formatDiagnostic(issue, locale));
 
   return {
-    quality: qualityLabel(report.quality, copy),
+    quality: noAnalysis ? copy.emptyAnalysis : qualityLabel(report.quality, copy),
     metrics,
     formulaLines,
     activities,

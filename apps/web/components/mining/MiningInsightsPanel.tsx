@@ -1,32 +1,68 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 
 import { BottleneckList } from '@/components/mining/BottleneckList';
+import { AlphaPetriPanel } from '@/components/mining/AlphaPetriPanel';
+import { ModelConformancePanel } from '@/components/mining/ModelConformancePanel';
+import { ResourceCentralityTable } from '@/components/mining/ResourceCentralityTable';
 import { VariantExplorer } from '@/components/mining/VariantExplorer';
 import { cn } from '@/lib/cn';
 import { formatDurationMs } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-type SideTab = 'variants' | 'bottlenecks';
+const TABS = ['variants', 'bottlenecks', 'resources', 'alpha', 'conformance'] as const;
+type SideTab = (typeof TABS)[number];
 
 /** Variants and bottlenecks of the current discovery, as tabs. */
-export function MiningInsightsPanel() {
-  const locale = useWorkspaceStore((state) => state.locale);
+export function MiningInsightsPanel({
+  onCheckConformance,
+}: Readonly<{ onCheckConformance: () => void }>) {
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const discovery = useMiningStore((state) => state.result?.discovery);
+  const socialNetwork = useMiningStore((state) => state.result?.socialNetwork);
+  const alpha = useMiningStore((state) => state.result?.alpha);
+  const conformance = useMiningStore((state) => state.conformance);
+  const conformanceError = useMiningStore((state) => state.conformanceError);
+  const checkingConformance = useMiningStore((state) => state.checkingConformance);
+  const processModel = useWorkspaceStore((state) => state.processModel);
   const [tab, setTab] = useState<SideTab>('variants');
+  const tabListRef = useRef<HTMLDivElement>(null);
+
+  const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const index = TABS.indexOf(tab);
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? TABS.length - 1
+          : event.key === 'ArrowRight'
+            ? (index + 1) % TABS.length
+            : event.key === 'ArrowLeft'
+              ? (index - 1 + TABS.length) % TABS.length
+              : null;
+    if (next == null) return;
+    event.preventDefault();
+    setTab(TABS[next]);
+    tabListRef.current
+      ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      [next]?.focus();
+  };
 
   return (
-    <aside className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)] lg:w-[340px] lg:overflow-y-auto lg:border-l lg:border-t-0 scrollbar-thin">
+    <aside className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)] lg:w-[var(--mining-insights-width,340px)] lg:overflow-y-auto lg:border-t-0 scrollbar-thin">
       <div
+        ref={tabListRef}
         role="tablist"
         aria-label={copy.miningInsights}
-        className="flex border-b border-[var(--border)]"
+        onKeyDown={onTabKeyDown}
+        className="flex overflow-x-auto border-b border-[var(--border)] scrollbar-thin"
       >
-        {(['variants', 'bottlenecks'] as const).map((item) => (
+        {TABS.map((item) => (
           <button
             key={item}
             type="button"
@@ -34,15 +70,24 @@ export function MiningInsightsPanel() {
             aria-selected={tab === item}
             aria-controls={`mining-tab-${item}`}
             id={`mining-tab-button-${item}`}
+            tabIndex={tab === item ? 0 : -1}
             onClick={() => setTab(item)}
             className={cn(
-              'focus-ring relative flex-1 cursor-pointer px-3 py-2.5 text-xs font-semibold transition-colors',
+              'focus-ring relative min-w-max flex-1 cursor-pointer px-3 py-2.5 text-xs font-semibold transition-colors',
               tab === item
                 ? 'text-[var(--text)]'
                 : 'text-[var(--muted)] hover:text-[var(--text)]',
             )}
           >
-            {item === 'variants' ? copy.miningVariants : copy.miningBottlenecks}
+            {item === 'variants'
+              ? copy.miningVariants
+              : item === 'bottlenecks'
+                ? copy.miningBottlenecks
+                : item === 'resources'
+                  ? copy.miningResource
+                  : item === 'alpha'
+                    ? copy.miningAlpha
+                    : copy.miningConformance}
             {tab === item ? (
               <span
                 className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[var(--accent)]"
@@ -66,15 +111,26 @@ export function MiningInsightsPanel() {
               </p>
               <VariantExplorer variants={discovery.variants} />
             </>
-          ) : (
+          ) : tab === 'bottlenecks' ? (
             <>
               <p className="mb-2 text-[11px] leading-4 text-[var(--muted)]">
                 {copy.miningBottlenecksHint}
-                {discovery.stats.hasStartTimes ? '' : ` ${copy.miningNoStartTimes}`}
+                {` ${copy.miningNoStartTimes}`}
               </p>
               <BottleneckList bottlenecks={discovery.bottlenecks} />
             </>
-          )
+          ) : tab === 'resources' && socialNetwork ? (
+            <ResourceCentralityTable network={socialNetwork} />
+          ) : tab === 'alpha' && alpha ? (
+            <AlphaPetriPanel result={alpha} />
+          ) : tab === 'conformance' ? (
+            <ModelConformancePanel
+              result={conformance?.model === processModel ? conformance.result : null}
+              error={conformanceError}
+              checking={checkingConformance}
+              onCheck={onCheckConformance}
+            />
+          ) : null
         ) : null}
         {discovery ? (
           <p className="mt-3 text-[10.5px] text-[var(--muted)]">

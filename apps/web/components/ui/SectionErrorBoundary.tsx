@@ -4,7 +4,7 @@ import { ArrowClockwise, WarningOctagon } from '@phosphor-icons/react';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 type SectionKey = 'canvas' | 'mining' | 'analysis' | 'inspector';
 
@@ -13,7 +13,7 @@ function SectionErrorFallback({
   error,
   onRetry,
 }: Readonly<{ section: SectionKey; error: Error; onRetry: () => void }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale).resilience;
   return (
     <div

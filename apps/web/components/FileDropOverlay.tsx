@@ -4,10 +4,11 @@ import { UploadSimple } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { WorkspaceCopy } from '@/lib/i18n';
+import { describeImportError } from '@/lib/import-error';
 
 interface FileDropOverlayProps {
-  copy: Pick<WorkspaceCopy, 'dropFiles' | 'dropFilesHint' | 'fileError' | 'fileTooLarge'>;
-  onImportFiles: (files: File[]) => Promise<void>;
+  copy: WorkspaceCopy;
+  onImportFiles: (files: File[]) => Promise<boolean>;
 }
 
 const carriesFiles = (event: DragEvent): boolean =>
@@ -23,11 +24,7 @@ export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
   const importDroppedFiles = useCallback(
     (files: File[]) => {
       void onImportFiles(files).catch((reason: unknown) => {
-        setError(
-          reason instanceof Error && reason.message === 'file-too-large'
-            ? copy.fileTooLarge
-            : copy.fileError,
-        );
+        setError(describeImportError(reason, copy));
         if (errorTimerRef.current != null) window.clearTimeout(errorTimerRef.current);
         errorTimerRef.current = window.setTimeout(() => {
           errorTimerRef.current = null;
@@ -35,7 +32,7 @@ export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
         }, 3200);
       });
     },
-    [copy.fileError, copy.fileTooLarge, onImportFiles],
+    [copy, onImportFiles],
   );
 
   useEffect(() => {

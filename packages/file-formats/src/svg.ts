@@ -1,28 +1,30 @@
 import { activityTimeTerms } from '@flowculus/analysis-engine';
 import {
-  roundedPolylinePath,
-  routeOrthogonalEdge,
   unionRects,
   type Point,
   type Rect,
   type RouteShapeHint,
 } from '@flowculus/graph-layout';
 import {
+  BPMN_GATEWAY_MARKERS,
   getNodeBounds,
   type ProcessEdge,
   type ProcessModel,
   type ProcessNode,
 } from '@flowculus/process-model';
+import { routeProcessEdge } from './edge-geometry';
 
 export interface ProcessSvgOptions {
   /** Nodes and edges to stroke with the accent colour (for example the critical chain). */
   highlightNodeIds?: Iterable<string>;
   highlightEdgeIds?: Iterable<string>;
   /**
-   * `exact` draws a solid accent stroke; `assumption` draws a dashed one so an
-   * estimated chain never looks as certain as a proven one.
+   * Both states keep BPMN solid strokes. Quality is exposed as SVG data and
+   * must be named in the surrounding report or canvas legend.
    */
   highlightQuality?: 'exact' | 'assumption';
+  /** Localized analysis legend, outside semantic geometry. */
+  highlightLabel?: string;
   padding?: number;
   theme?: 'light' | 'dark';
 }
@@ -67,8 +69,7 @@ const PALETTES: Record<'light' | 'dark', SvgPalette> = {
   },
 };
 
-const FONT =
-  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const FONT = "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', Arial, sans-serif";
 
 const escapeText = (value: string): string =>
   value
@@ -150,27 +151,22 @@ const taskDetail = (node: ProcessNode): string => {
 };
 
 const gatewayGlyph = (node: ProcessNode, rect: Rect, colour: string): string => {
-  const cx = rect.x + rect.width / 2;
-  const cy = rect.y + rect.height / 2;
-  const size = Math.min(rect.width, rect.height) * 0.2;
-  const stroke = `stroke="${colour}" stroke-width="${fixed(Math.max(2, size * 0.32))}" stroke-linecap="round" fill="none"`;
-  switch (node.gatewayKind) {
-    case 'and':
-      return `<path d="M ${fixed(cx - size)} ${fixed(cy)} H ${fixed(cx + size)} M ${fixed(cx)} ${fixed(cy - size)} V ${fixed(cy + size)}" ${stroke} />`;
-    case 'or':
-      return `<circle cx="${fixed(cx)}" cy="${fixed(cy)}" r="${fixed(size * 0.95)}" ${stroke} />`;
-    case 'complex':
-      return `<path d="M ${fixed(cx - size)} ${fixed(cy)} H ${fixed(cx + size)} M ${fixed(cx)} ${fixed(cy - size)} V ${fixed(cy + size)} M ${fixed(cx - size * 0.72)} ${fixed(cy - size * 0.72)} L ${fixed(cx + size * 0.72)} ${fixed(cy + size * 0.72)} M ${fixed(cx + size * 0.72)} ${fixed(cy - size * 0.72)} L ${fixed(cx - size * 0.72)} ${fixed(cy + size * 0.72)}" ${stroke} />`;
-    case 'eventBased': {
-      const points = Array.from({ length: 5 }, (_, index) => {
-        const angle = -Math.PI / 2 + (index * 2 * Math.PI) / 5;
-        return `${fixed(cx + Math.cos(angle) * size * 0.62)},${fixed(cy + Math.sin(angle) * size * 0.62)}`;
-      }).join(' ');
-      return `<circle cx="${fixed(cx)}" cy="${fixed(cy)}" r="${fixed(size * 1.1)}" stroke="${colour}" stroke-width="1.2" fill="none" /><circle cx="${fixed(cx)}" cy="${fixed(cy)}" r="${fixed(size * 0.92)}" stroke="${colour}" stroke-width="1.2" fill="none" /><polygon points="${points}" stroke="${colour}" stroke-width="1.2" fill="none" />`;
-    }
-    default:
-      return `<path d="M ${fixed(cx - size * 0.75)} ${fixed(cy - size * 0.75)} L ${fixed(cx + size * 0.75)} ${fixed(cy + size * 0.75)} M ${fixed(cx + size * 0.75)} ${fixed(cy - size * 0.75)} L ${fixed(cx - size * 0.75)} ${fixed(cy + size * 0.75)}" ${stroke} />`;
-  }
+  const scale = Math.min(rect.width, rect.height) / 100;
+  const x = rect.x + rect.width / 2 - 50 * scale;
+  const y = rect.y + rect.height / 2 - 50 * scale;
+  const elements = BPMN_GATEWAY_MARKERS[node.gatewayKind ?? 'xor']
+    .map((element) => {
+      switch (element.tag) {
+        case 'path':
+          return `<path d="${element.d}" stroke-width="${element.strokeWidth}" />`;
+        case 'circle':
+          return `<circle cx="${element.cx}" cy="${element.cy}" r="${element.r}" stroke-width="${element.strokeWidth}" />`;
+        case 'polygon':
+          return `<polygon points="${element.points}" stroke-width="${element.strokeWidth}" />`;
+      }
+    })
+    .join('');
+  return `<g transform="translate(${fixed(x)} ${fixed(y)}) scale(${fixed(scale)})" fill="none" stroke="${colour}" stroke-linecap="round" stroke-linejoin="round">${elements}</g>`;
 };
 
 /** Centred under the shape on a background chip, so a branch leaving the
@@ -189,10 +185,12 @@ const renderNode = (
   node: ProcessNode,
   highlighted: boolean,
   palette: SvgPalette,
-  dashed = false,
+  estimated = false,
 ): string => {
   const rect = getNodeBounds(node);
-  const dash = highlighted && dashed ? ' stroke-dasharray="6 4"' : '';
+  const quality = highlighted
+    ? ` data-analysis-quality="${estimated ? 'assumption' : 'exact'}"`
+    : '';
   const stroke = highlighted ? palette.accent : palette.border;
   const strokeWidth = highlighted ? 2.5 : 1.25;
   const cx = rect.x + rect.width / 2;
@@ -209,7 +207,7 @@ const renderNode = (
           : '';
       const fill = node.kind === 'start' ? palette.accentSoft : palette.surface;
       const width = node.kind === 'end' ? Math.max(3.5, strokeWidth) : strokeWidth + 0.5;
-      return `<g><circle cx="${fixed(cx)}" cy="${fixed(cy)}" r="${fixed(radius)}" fill="${fill}" stroke="${node.kind === 'start' ? palette.accentStrong : stroke}" stroke-width="${fixed(width)}"${dash} />${ring}${captionBelow(node.label, rect, palette)}</g>`;
+      return `<g><circle cx="${fixed(cx)}" cy="${fixed(cy)}" r="${fixed(radius)}" fill="${fill}" stroke="${node.kind === 'start' ? palette.accentStrong : stroke}" stroke-width="${fixed(width)}"${quality} />${ring}${captionBelow(node.label, rect, palette)}</g>`;
     }
     case 'gateway': {
       const points = [
@@ -218,7 +216,7 @@ const renderNode = (
         `${fixed(cx)},${fixed(rect.y + rect.height)}`,
         `${fixed(rect.x)},${fixed(cy)}`,
       ].join(' ');
-      return `<g><polygon points="${points}" fill="${palette.accentSoft}" stroke="${highlighted ? palette.accent : palette.accentStrong}" stroke-width="${fixed(strokeWidth + 0.25)}" stroke-linejoin="round"${dash} />${gatewayGlyph(node, rect, palette.accentStrong)}${captionBelow(node.label, rect, palette)}</g>`;
+      return `<g><polygon points="${points}" fill="${palette.accentSoft}" stroke="${highlighted ? palette.accent : palette.accentStrong}" stroke-width="${fixed(strokeWidth + 0.25)}" stroke-linejoin="round"${quality} />${gatewayGlyph(node, rect, palette.accentStrong)}${captionBelow(node.label, rect, palette)}</g>`;
     }
     case 'data': {
       const fold = Math.min(14, rect.width * 0.3);
@@ -245,7 +243,7 @@ const renderNode = (
         node.kind === 'subprocess'
           ? `<rect x="${fixed(cx - 7)}" y="${fixed(rect.y + rect.height - 17)}" width="14" height="14" rx="2" fill="none" stroke="${stroke}" stroke-width="1.1" /><path d="M ${fixed(cx - 4)} ${fixed(rect.y + rect.height - 10)} H ${fixed(cx + 4)} M ${fixed(cx)} ${fixed(rect.y + rect.height - 14)} V ${fixed(rect.y + rect.height - 6)}" stroke="${stroke}" stroke-width="1.1" />`
           : '';
-      return `<g><rect x="${fixed(rect.x)}" y="${fixed(rect.y)}" width="${fixed(rect.width)}" height="${fixed(rect.height)}" rx="10" fill="${palette.surface}" stroke="${stroke}" stroke-width="${fixed(strokeWidth)}"${dash} />${textBlock(labelLines, labelCentre, 13, palette.text, 600)}${detail ? textBlock([detail], { x: cx, y: rect.y + rect.height - (node.kind === 'subprocess' ? 26 : 16) }, 10.5, palette.muted) : ''}${marker}</g>`;
+      return `<g><rect x="${fixed(rect.x)}" y="${fixed(rect.y)}" width="${fixed(rect.width)}" height="${fixed(rect.height)}" rx="10" fill="${palette.surface}" stroke="${stroke}" stroke-width="${fixed(strokeWidth)}"${quality} />${textBlock(labelLines, labelCentre, 13, palette.text, 600)}${detail ? textBlock([detail], { x: cx, y: rect.y + rect.height - (node.kind === 'subprocess' ? 26 : 16) }, 10.5, palette.muted) : ''}${marker}</g>`;
     }
   }
 };
@@ -274,7 +272,8 @@ const renderEdge = (
   const source = model.nodes[edge.source];
   const target = model.nodes[edge.target];
   if (!source || !target) return '';
-  const route = routeOrthogonalEdge(
+  const route = routeProcessEdge(
+    edge,
     getNodeBounds(source),
     getNodeBounds(target),
     { source: routeHintForNode(source), target: routeHintForNode(target) },
@@ -286,14 +285,17 @@ const renderEdge = (
       ? ' stroke-dasharray="8 4"'
       : edge.kind === 'association'
         ? ' stroke-dasharray="2 4"'
-        : highlighted && dashed
-          ? ' stroke-dasharray="7 5"'
-          : '';
+        : '';
   const marker =
     edge.kind === 'association'
       ? ''
       : ` marker-end="url(#${edge.kind === 'message' ? 'fc-open' : highlighted ? 'fc-arrow-accent' : 'fc-arrow'})"`;
-  const path = `<path d="${roundedPolylinePath(route.points, 10)}" fill="none" stroke="${colour}" stroke-width="${highlighted ? 2.5 : 1.4}" stroke-linejoin="round"${dash}${marker} />`;
+  const origin = route.points[0];
+  const startMarker =
+    edge.kind === 'message'
+      ? `<circle cx="${fixed(origin.x)}" cy="${fixed(origin.y)}" r="3" fill="${palette.surface}" stroke="${colour}" stroke-width="1.4" />`
+      : '';
+  const path = `<path d="${route.path}" fill="none" stroke="${colour}" stroke-width="${highlighted ? 2.5 : 1.4}" stroke-linejoin="round"${dash}${highlighted ? ` data-analysis-quality="${dashed ? 'assumption' : 'exact'}"` : ''}${marker} />${startMarker}`;
   const text = edgeLabel(edge);
   if (!text) return `<g>${path}</g>`;
   const width = text.length * 10.5 * 0.56 + 12;
@@ -321,7 +323,8 @@ export const processModelToSvg = (
     const source = model.nodes[edge.source];
     const target = model.nodes[edge.target];
     if (!source || !target) return [];
-    return routeOrthogonalEdge(
+    return routeProcessEdge(
+      edge,
       getNodeBounds(source),
       getNodeBounds(target),
       { source: routeHintForNode(source), target: routeHintForNode(target) },
@@ -348,9 +351,13 @@ export const processModelToSvg = (
     height: 160,
   };
   const minX = content.x - padding;
-  const minY = content.y - padding;
+  const showLegend =
+    (highlightNodes.size > 0 || highlightEdges.size > 0) &&
+    (options.highlightLabel || dashedHighlight);
+  const legendHeight = showLegend ? 24 : 0;
+  const minY = content.y - padding - legendHeight;
   const width = Math.ceil(content.width + padding * 2);
-  const height = Math.ceil(content.height + padding * 2);
+  const height = Math.ceil(content.height + padding * 2 + legendHeight);
 
   const defs = `<defs><marker id="fc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${palette.muted}" /></marker><marker id="fc-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="${palette.accent}" /></marker><marker id="fc-open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="${palette.muted}" stroke-width="1.4" /></marker></defs>`;
   const edgesSvg = Object.values(model.edges)
@@ -364,10 +371,19 @@ export const processModelToSvg = (
     )
     .join('');
   const title = `<title>${escapeText(model.name)}</title>`;
+  const legend = showLegend
+    ? textBlock(
+        [`${dashedHighlight ? '≈ ' : ''}${options.highlightLabel ?? ''}`.trim()],
+        { x: content.x + content.width / 2, y: minY + 14 },
+        11,
+        palette.text,
+        600,
+      )
+    : '';
 
   return {
     width,
     height,
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${fixed(minX)} ${fixed(minY)} ${width} ${height}" role="img">${title}${defs}<rect x="${fixed(minX)}" y="${fixed(minY)}" width="${width}" height="${height}" fill="${palette.background}" />${edgesSvg}${nodesSvg}</svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${fixed(minX)} ${fixed(minY)} ${width} ${height}" role="img">${title}${defs}<rect x="${fixed(minX)}" y="${fixed(minY)}" width="${width}" height="${height}" fill="${palette.background}" />${legend}${edgesSvg}${nodesSvg}</svg>`,
   };
 };

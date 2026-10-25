@@ -64,6 +64,24 @@
   stroke-dasharray: 2 4;
 }
 
+.flow-waypoint {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--accent-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--text) 18%, transparent);
+  cursor: grab;
+  pointer-events: all;
+  touch-action: none;
+}
+
+.flow-waypoint:active {
+  cursor: grabbing;
+}
+
 /* Critical path: a static glow plus a travelling dash (stroke-dashoffset only). */
 .flow-edge-glow {
   fill: none;
@@ -109,7 +127,7 @@
   background: var(--surface);
   padding: 1px 7px;
   color: var(--muted-strong);
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--app-font);
   font-size: 10.5px;
   font-weight: 600;
   line-height: 16px;
@@ -170,6 +188,48 @@
 
 .flow-canvas .flow-handle.valid::after {
   background: var(--accent);
+}
+
+.flow-canvas .flow-handle.connectingto:not(.valid)::after {
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: none;
+}
+
+.flow-endpoint-handle {
+  position: absolute;
+  z-index: 6;
+  width: 28px;
+  height: 28px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  pointer-events: all;
+  touch-action: none;
+  cursor: grab;
+}
+.flow-endpoint-handle::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border: 1.5px solid var(--accent-strong);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.flow-endpoint-handle:hover::after,
+.flow-endpoint-handle[data-snapped='true']::after {
+  background: var(--accent);
+}
+.flow-endpoint-handle:active {
+  cursor: grabbing;
+}
+.flow-endpoint-preview {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  pointer-events: none;
+}
+.flow-endpoint-preview[data-valid='true'] {
+  stroke: var(--accent-strong);
 }
 
 /* Nodes */
@@ -233,7 +293,10 @@
   display: flex;
   flex-wrap: nowrap;
   gap: 4px;
-  overflow: hidden;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .flow-chip {
@@ -242,7 +305,7 @@
   background: var(--surface-soft);
   padding: 1px 5px;
   color: var(--muted-strong);
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--app-font);
   font-size: 10px;
   font-weight: 600;
   line-height: 15px;
@@ -310,6 +373,7 @@
 .flow-shape__glyph {
   fill: none;
   stroke: var(--accent-strong);
+  color: var(--accent-strong);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -460,34 +524,61 @@
   display: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .flow-canvas .react-flow__minimap {
-    display: none;
+    margin-bottom: 64px;
   }
 }
-
-/* An estimated critical chain (expected-time heuristic or assumption-quality
-   cycle time) is dashed and does not travel, so it never looks as certain as
-   an exact one. The legend names both states. */
-.flow-canvas[data-critical-quality='estimate'] .flow-edge-path--critical {
-  stroke-dasharray: 7 5;
+.canvas-overview-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted-strong);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+}
+.canvas-overview-toggle[aria-pressed='true'] {
+  color: var(--accent-strong);
+  background: var(--accent-soft);
 }
 
+/* Analysis quality never changes BPMN boundary or sequence-flow line styles. */
 .flow-canvas[data-critical-quality='estimate'] .flow-edge-flow {
   display: none;
 }
-
 .flow-canvas[data-critical-quality='estimate'] .flow-edge-glow {
   opacity: 0.12;
 }
 
-.flow-canvas[data-critical-quality='estimate'] .flow-task[data-critical='true'] {
-  border-style: dashed;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent);
+.flow-segment-handle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 7px;
+  pointer-events: all;
+  touch-action: none;
+  cursor: ew-resize;
+}
+.flow-segment-handle[data-horizontal='true'] {
+  cursor: ns-resize;
+}
+.flow-segment-handle::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 1.5px solid var(--accent-strong);
+  border-radius: 3px;
+  background: var(--accent-soft);
+}
+.flow-segment-handle:hover::after {
+  background: var(--accent);
 }
 
-.flow-canvas[data-critical-quality='estimate']
-  .flow-node[data-critical='true']
-  .flow-shape__body {
-  stroke-dasharray: 6 4;
+.flow-canvas[data-tool='hand'] .flow-edge-label {
+  pointer-events: none;
 }

@@ -17,7 +17,7 @@ import { MINING_PRESETS, type MiningPresetId } from '@flowculus/process-mining';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const PRESET_ICONS: Record<MiningPresetId, typeof ShoppingCart> = {
   'order-to-cash': ShoppingCart,
@@ -38,7 +38,7 @@ export function MiningSourcePanel({
   onDownloadLog: () => void;
   onCancel: () => void;
 }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const status = useMiningStore((state) => state.status);
   const error = useMiningStore((state) => state.error);
@@ -125,7 +125,7 @@ export function MiningSourcePanel({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".csv,.tsv,.json,.xes,.xml,.txt"
+        accept=".csv,.tsv,.json,.xes,.xml,.txt,.xlsx"
         className="sr-only"
         aria-label={copy.miningUpload}
         onChange={onFile}
@@ -157,9 +157,16 @@ export function MiningSourcePanel({
           {error}
         </p>
       ) : null}
-      {result && (result.skippedRows > 0 || result.invalidTimestamps > 0) ? (
+      {result &&
+      (result.skippedRows > 0 ||
+        result.invalidTimestamps > 0 ||
+        result.invalidStartTimes > 0) ? (
         <p className="text-[11px] text-[var(--muted)]">
-          {copy.miningSkipped(result.skippedRows, result.invalidTimestamps)}
+          {copy.miningSkipped(
+            result.skippedRows,
+            result.invalidTimestamps,
+            result.invalidStartTimes,
+          )}
         </p>
       ) : null}
     </section>

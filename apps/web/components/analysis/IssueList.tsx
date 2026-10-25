@@ -1,5 +1,7 @@
 'use client';
 
+import { usePreferencesStore } from '@/lib/use-preferences-store';
+
 import { Crosshair, Info, Warning, WarningOctagon } from '@phosphor-icons/react';
 import type { Diagnostic, DiagnosticSeverity } from '@flowculus/validation';
 
@@ -28,7 +30,7 @@ export const elementFromPath = (path: string | undefined): ElementReference | nu
  * impact and a "Show" action that selects the element on the canvas.
  */
 export function IssueList({ issues }: Readonly<{ issues: Diagnostic[] }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const focusElement = useWorkspaceStore((state) => state.focusElement);
   const groups = groupDiagnostics(issues);

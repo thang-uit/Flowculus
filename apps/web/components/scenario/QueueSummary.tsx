@@ -6,10 +6,11 @@ import { formatDiagnostic } from '@/lib/diagnostic-messages';
 import { formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Little's Law read-out and the single-station queue result. */
 export function QueueSummary() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const report = useWorkspaceStore((state) => state.analysisReport);
   const queue = report.queue;

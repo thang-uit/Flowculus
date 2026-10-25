@@ -2,7 +2,7 @@
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Google Translate icon SVG (Material / Google Translate) */
 function GoogleTranslateIcon({ className }: Readonly<{ className?: string }>) {
@@ -21,8 +21,8 @@ function GoogleTranslateIcon({ className }: Readonly<{ className?: string }>) {
 }
 
 export function LanguageToggle() {
-  const locale = useWorkspaceStore((state) => state.locale);
-  const setLocale = useWorkspaceStore((state) => state.setLocale);
+  const locale = usePreferencesStore((state) => state.locale);
+  const setLocale = usePreferencesStore((state) => state.setLocale);
   const copy = getWorkspaceCopy(locale);
 
   return (

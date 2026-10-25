@@ -1,37 +1,20 @@
 'use client';
 
-import type { ComponentType } from 'react';
-import {
-  Asterisk,
-  ArrowsClockwise,
-  Broadcast,
-  CaretLeft,
-  CaretRight,
-  Circle,
-  CircleDashed,
-  Database,
-  Note,
-  Plus,
-  PlayCircle,
-  Square,
-  Stack,
-  X,
-} from '@phosphor-icons/react';
-import type { IconProps } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight } from '@phosphor-icons/react';
 
+import { ShapePaletteGlyph } from '@/components/palette/ShapePaletteGlyph';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { SHAPE_DRAG_MIME, type SemanticShapeTool } from '@/lib/shape-tools';
 import { useCanvasCommands } from '@/lib/use-canvas-commands';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-type PaletteIcon = ComponentType<IconProps>;
 interface PaletteItem {
   id: SemanticShapeTool;
   label: string;
   hint: string;
-  icon: PaletteIcon;
 }
 
 function ShapePaletteButton({
@@ -47,7 +30,6 @@ function ShapePaletteButton({
   onSelect: () => void;
   addShapeLabel: string;
 }>) {
-  const Icon = item.icon;
   return (
     <Tooltip content={`${item.label} / ${item.hint}`}>
       <button
@@ -63,7 +45,7 @@ function ShapePaletteButton({
         className={cn(
           'focus-ring group cursor-pointer transition-[background-color,border-color,box-shadow,transform] duration-150 hover:-translate-y-px',
           collapsed
-            ? 'flex size-10 shrink-0 items-center justify-center rounded-lg border'
+            ? 'flex size-11 shrink-0 items-center justify-center rounded-lg border'
             : compact
               ? 'flex min-w-[76px] shrink-0 flex-col items-center gap-1 rounded-lg border px-2 py-1.5 text-center'
               : 'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left',
@@ -77,7 +59,7 @@ function ShapePaletteButton({
             'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted-strong)] group-hover:border-[var(--accent)] group-hover:text-[var(--accent-strong)]',
           )}
         >
-          <Icon size={collapsed || compact ? 15 : 17} aria-hidden="true" />
+          <ShapePaletteGlyph tool={item.id} />
         </span>
         {!collapsed ? (
           <span className={cn('min-w-0', compact && 'w-full')}>
@@ -90,7 +72,7 @@ function ShapePaletteButton({
               {item.label}
             </span>
             {!compact ? (
-              <span className="mt-0.5 block truncate text-[10px] text-[var(--muted)]">
+              <span className="mt-0.5 block text-[10px] leading-4 text-[var(--muted)]">
                 {item.hint}
               </span>
             ) : null}
@@ -102,44 +84,40 @@ function ShapePaletteButton({
 }
 
 export function WorkspaceRail() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const paletteOpen = useWorkspaceStore((state) => state.paletteOpen);
   const togglePalette = useWorkspaceStore((state) => state.togglePalette);
   const { insertShapeAtCentre } = useCanvasCommands();
   const items: PaletteItem[] = [
-    { id: 'start', label: copy.entryPoint, hint: copy.startEventHint, icon: PlayCircle },
-    { id: 'task', label: copy.workActivity, hint: copy.taskActivityHint, icon: Square },
-    { id: 'xor', label: copy.xorGateway, hint: copy.onePath, icon: X },
-    { id: 'and', label: copy.andGateway, hint: copy.parallelPaths, icon: Plus },
-    { id: 'or', label: copy.orGateway, hint: copy.inclusivePaths, icon: Circle },
+    { id: 'start', label: copy.entryPoint, hint: copy.startEventHint },
+    { id: 'task', label: copy.workActivity, hint: copy.taskActivityHint },
+    { id: 'xor', label: copy.xorGateway, hint: copy.onePath },
+    { id: 'and', label: copy.andGateway, hint: copy.parallelPaths },
+    { id: 'or', label: copy.orGateway, hint: copy.inclusivePaths },
     {
       id: 'eventBased',
       label: copy.eventBasedGateway,
       hint: copy.eventChoice,
-      icon: Broadcast,
     },
     {
       id: 'complex',
       label: copy.complexGateway,
       hint: copy.complexChoice,
-      icon: Asterisk,
     },
-    { id: 'end', label: copy.exitPoint, hint: copy.endEventHint, icon: Circle },
+    { id: 'end', label: copy.exitPoint, hint: copy.endEventHint },
     {
       id: 'event',
       label: copy.intermediateEvent,
       hint: copy.intermediateEventHint,
-      icon: CircleDashed,
     },
-    { id: 'subprocess', label: copy.subprocess, hint: copy.subprocessHint, icon: Stack },
-    { id: 'data', label: copy.dataObject, hint: copy.dataObjectHint, icon: Database },
-    { id: 'annotation', label: copy.annotation, hint: copy.annotationHint, icon: Note },
+    { id: 'subprocess', label: copy.subprocess, hint: copy.subprocessHint },
+    { id: 'data', label: copy.dataObject, hint: copy.dataObjectHint },
+    { id: 'annotation', label: copy.annotation, hint: copy.annotationHint },
     {
       id: 'rework',
       label: copy.repeatBlock,
       hint: copy.reworkHint,
-      icon: ArrowsClockwise,
     },
   ];
 
@@ -182,7 +160,7 @@ export function WorkspaceRail() {
                 onClick={togglePalette}
                 aria-label={paletteOpen ? copy.collapsePalette : copy.expandPalette}
                 title={paletteOpen ? copy.collapsePalette : copy.expandPalette}
-                className="focus-ring inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted-strong)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] active:scale-[0.97]"
+                className="focus-ring inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted-strong)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] active:scale-[0.97]"
               >
                 {paletteOpen ? (
                   <CaretLeft size={15} aria-hidden="true" />

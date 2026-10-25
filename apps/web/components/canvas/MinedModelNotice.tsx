@@ -6,10 +6,11 @@ import { getWorkspaceCopy } from '@/lib/i18n';
 import { formatMiningWarning } from '@/lib/diagnostic-messages';
 import { useMiningStore } from '@/lib/mining-store';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Caveats from the DFG → BPMN conversion, shown over the mined model. */
 export function MinedModelNotice() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const mined = useWorkspaceStore(
     (state) => state.processModel.metadata?.source === 'process-mining',

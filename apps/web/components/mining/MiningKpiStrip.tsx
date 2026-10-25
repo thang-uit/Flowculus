@@ -4,10 +4,10 @@ import type { EventLogStats } from '@flowculus/process-mining';
 
 import { formatDurationMs, formatInteger, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 export function MiningKpiStrip({ stats }: Readonly<{ stats: EventLogStats }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const items: Array<{ label: string; value: string; hint?: string; accent?: boolean }> =
     [

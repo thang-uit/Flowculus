@@ -18,6 +18,7 @@ import { ActivityTimeSummary } from '@/components/inspector/ActivityTimeSummary'
 import { GatewaySection } from '@/components/inspector/GatewaySection';
 import { changeNodeKind, removeElements, replaceNode } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const NODE_KINDS: Array<ProcessNode['kind']> = [
   'task',
@@ -31,7 +32,7 @@ const NODE_KINDS: Array<ProcessNode['kind']> = [
 ];
 
 export function NodeInspector({ node }: Readonly<{ node: ProcessNode }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
 
   const commit = (next: ProcessNode) => {

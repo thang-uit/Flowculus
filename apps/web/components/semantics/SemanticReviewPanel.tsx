@@ -9,12 +9,13 @@ import {
 
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const buttonClass =
   'focus-ring inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md px-2 text-[11px] font-semibold disabled:cursor-not-allowed disabled:opacity-60';
 
 function SemanticItemRow({ item }: Readonly<{ item: UnconfirmedSemantic }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale).semantics;
   const focusElement = useWorkspaceStore((state) => state.focusElement);
   const confirmSemanticItems = useWorkspaceStore((state) => state.confirmSemanticItems);
@@ -71,7 +72,7 @@ function SemanticItemRow({ item }: Readonly<{ item: UnconfirmedSemantic }>) {
  * confirmation and a deliberate two-step "confirm all remaining".
  */
 export function SemanticReviewPanel() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale).semantics;
   const model = useWorkspaceStore((state) => state.processModel);
   const confirmSemanticItems = useWorkspaceStore((state) => state.confirmSemanticItems);

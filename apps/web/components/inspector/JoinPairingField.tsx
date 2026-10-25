@@ -6,6 +6,7 @@ import { SelectField } from '@/components/inspector/InspectorFields';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { replaceNode } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const AUTO = '';
 
@@ -15,7 +16,7 @@ const AUTO = '';
  * verified by the engine and rejected if it does not close the block.
  */
 export function JoinPairingField({ node }: Readonly<{ node: ProcessNode }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const nodes = useWorkspaceStore((state) => state.processModel.nodes);
   const current = node.metadata?.[SEMANTIC_METADATA_KEYS.joinId];

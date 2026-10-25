@@ -111,6 +111,43 @@ const nativeFile = async () => {
 };
 
 describe('semantic-preserving draw.io round trip', () => {
+  it('patches one attachment without losing custom edge styles and supports automatic reset', async () => {
+    const source = (await nativeFile()).replace(
+      'target="call" style="',
+      'target="call" style="strokeColor=#ff9900;strokeWidth=3;customFlag=keep;entryX=0.5;entryY=0;exitX=1;exitY=0.5;',
+    );
+    const { model } = await importDrawioXml(source);
+    const edge = model.edges.f3;
+    expect(edge.routing).toMatchObject({ sourceSide: 'right', targetSide: 'top' });
+    edge.routing = { ...edge.routing!, targetSide: 'bottom' };
+    const exported = await exportDrawioXml(confirmSemantics(model), source);
+    expect(exported).toContain('strokeColor=#ff9900;strokeWidth=3;customFlag=keep;');
+    expect(exported).toContain(
+      'entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;',
+    );
+    const again = await importDrawioXml(exported);
+    expect(again.model.edges.f3.routing).toEqual(edge.routing);
+    again.model.edges.f3.routing!.targetSide = undefined;
+    const automatic = await exportDrawioXml(confirmSemantics(again.model), exported);
+    expect(
+      (await importDrawioXml(automatic)).model.edges.f3.routing?.targetSide,
+    ).toBeUndefined();
+    expect(automatic).toContain('customFlag=keep;');
+  });
+  it('round-trips edited curved routes and waypoints', async () => {
+    const source = await nativeFile();
+    const { model } = await importDrawioXml(source);
+    model.edges.f3.routing = {
+      style: 'curved',
+      waypoints: [
+        { x: 310, y: 45 },
+        { x: 365, y: 75 },
+      ],
+    };
+    const exported = await exportDrawioXml(confirmSemantics(model), source);
+    const again = await importDrawioXml(exported);
+    expect(again.model.edges.f3.routing).toEqual(model.edges.f3.routing);
+  });
   it('imports a native file without Flowculus metadata and flags every guess', async () => {
     const { model, pages } = await importDrawioXml(await nativeFile());
     expect(pages.map((page) => page.name)).toEqual(['Orders', 'Archive']);

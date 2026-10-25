@@ -8,7 +8,9 @@ import {
   type DiscoveryFilter,
   type MiningConversionWarning,
   type MiningPresetId,
+  type ModelConformance,
 } from '@flowculus/process-mining';
+import type { ProcessModel } from '@flowculus/process-model';
 
 import type { MiningDiscoveryResponse, MiningTableResponse } from '@/lib/mining-engine';
 
@@ -34,6 +36,9 @@ interface MiningState {
   /** The uploaded file waiting for its column mapping. */
   mappingTable: (MiningTableResponse & { source: string }) | null;
   result: MiningDiscoveryResponse | null;
+  conformance: { result: ModelConformance; model: ProcessModel } | null;
+  conformanceError: string | null;
+  checkingConformance: boolean;
   filter: DiscoveryFilter;
   selectedVariantId: string | null;
   edgeMetric: DfgEdgeMetric;
@@ -43,6 +48,9 @@ interface MiningState {
   setStatus: (status: MiningStatus, error?: string | null) => void;
   setMappingTable: (table: MiningState['mappingTable']) => void;
   setResult: (result: MiningDiscoveryResponse, replay?: MiningReplay) => void;
+  setConformance: (result: ModelConformance, model: ProcessModel) => void;
+  setConformanceError: (message: string | null) => void;
+  startConformance: () => void;
   setFilter: (filter: Partial<DiscoveryFilter>) => void;
   resetFilter: () => void;
   setSelectedVariantId: (id: string | null) => void;
@@ -59,6 +67,9 @@ export const useMiningStore = create<MiningState>((set, get) => ({
   pendingUpload: null,
   mappingTable: null,
   result: null,
+  conformance: null,
+  conformanceError: null,
+  checkingConformance: false,
   filter: DEFAULT_DISCOVERY_FILTER,
   selectedVariantId: null,
   edgeMetric: 'frequency',
@@ -74,6 +85,9 @@ export const useMiningStore = create<MiningState>((set, get) => ({
   setResult: (result, replay) =>
     set((state) => ({
       result,
+      conformance: replay ? null : state.conformance,
+      conformanceError: null,
+      checkingConformance: false,
       replay: replay ?? state.replay,
       status: 'ready',
       error: null,
@@ -85,6 +99,15 @@ export const useMiningStore = create<MiningState>((set, get) => ({
           ? null
           : state.selectedVariantId,
     })),
+  setConformance: (result, model) =>
+    set({
+      conformance: { result, model },
+      conformanceError: null,
+      checkingConformance: false,
+    }),
+  setConformanceError: (conformanceError) =>
+    set({ conformanceError, checkingConformance: false }),
+  startConformance: () => set({ conformanceError: null, checkingConformance: true }),
   setFilter: (filter) => set((state) => ({ filter: { ...state.filter, ...filter } })),
   resetFilter: () => set({ filter: DEFAULT_DISCOVERY_FILTER }),
   setSelectedVariantId: (selectedVariantId) => set({ selectedVariantId }),
@@ -95,6 +118,9 @@ export const useMiningStore = create<MiningState>((set, get) => ({
       status: error ? 'error' : 'idle',
       error,
       result: null,
+      conformance: null,
+      conformanceError: null,
+      checkingConformance: false,
       replay: null,
       mappingTable: null,
       selectedVariantId: null,

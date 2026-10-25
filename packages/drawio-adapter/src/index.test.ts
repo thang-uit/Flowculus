@@ -277,3 +277,18 @@ describe('parseFlowLabel', () => {
     expect(parseFlowLabel('needs <b>review</b>')).toEqual({ condition: 'needs review' });
   });
 });
+
+it('exports a collapsed subprocess using the native boxed-plus BPMN style', async () => {
+  const model: ProcessModel = {
+    schemaVersion: 1,
+    id: 'subprocess-style',
+    name: 'Subprocess',
+    nodes: { sub: { id: 'sub', kind: 'subprocess', label: 'Collapsed' } },
+    edges: {},
+  };
+  const xml = await exportDrawioXml(model);
+  expect(xml).toContain('shape=mxgraph.bpmn.task2;');
+  expect(xml).toContain('isLoopSub=1;');
+  const parsed = await importDrawioXml(xml);
+  expect(parsed.model.nodes.sub.kind).toBe('subprocess');
+});

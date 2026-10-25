@@ -1,4 +1,4 @@
-export type EventLogFormat = 'csv' | 'json' | 'xes';
+export type EventLogFormat = 'csv' | 'xlsx' | 'json' | 'xes';
 
 /** A raw, column-oriented view of an uploaded log before the user maps columns. */
 export interface EventTable {
@@ -41,6 +41,7 @@ export interface EventLogBuildResult {
   log: EventLog;
   skippedRows: number;
   invalidTimestamps: number;
+  invalidStartTimes: number;
 }
 
 export interface Trace {
@@ -74,6 +75,8 @@ export interface DfgActivity {
   caseFrequency: number;
   /** Mean complete − start, when the log has start times. */
   meanServiceMs: number | null;
+  /** Executions with measured start and completion times. */
+  serviceSampleCount: number;
   meanCost: number | null;
   /** Most frequent resource and its share of the activity's executions. */
   mainResource: string | null;
@@ -122,7 +125,7 @@ export interface Bottleneck {
   activity?: string;
   frequency: number;
   meanDurationMs: number;
-  /** Mean duration × frequency: the total delay this element causes. */
+  /** Mean duration × frequency: observed cumulative time for this element. */
   totalDurationMs: number;
   /** Share of all transition (or service) time in the log. */
   share: number;

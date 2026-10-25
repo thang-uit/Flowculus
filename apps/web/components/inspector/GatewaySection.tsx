@@ -11,10 +11,11 @@ import { JoinPairingField } from '@/components/inspector/JoinPairingField';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { changeNodeKind, replaceEdge, replaceNode } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Gateway kind, explicit join pairing and branch probabilities. */
 export function GatewaySection({ node }: Readonly<{ node: ProcessNode }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const edges = useWorkspaceStore((state) => state.processModel.edges);
   const nodes = useWorkspaceStore((state) => state.processModel.nodes);

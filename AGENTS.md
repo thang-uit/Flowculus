@@ -45,7 +45,9 @@ apps/web            composition, presentation, browser adapters, workers
   - `drawio-adapter`: the draw.io protocol (decode, classify, patch export).
   - `file-formats`: `.flowculus.json`, CSV, SVG rendering, auto layout.
   - `process-mining`: event-log parsing, DFG, variants, bottlenecks,
-    DFG → BPMN conversion.
+    resource handoff centrality, classical Alpha Miner/Petri candidates,
+    bounded conformance replay against the current BPMN model, DFG → BPMN
+    conversion.
   - `graph-layout`, `xml-tree`: dependency-free geometry and XML.
 
 ## 3. Naming, files and component boundaries
@@ -126,6 +128,13 @@ path, params }`. Packages never return user-facing sentences; the web app
   and bottom sheet. Respect `prefers-reduced-motion`; animate only `transform`
   and `opacity`.
 
+- Preserve BPMN semantic line styles when highlighting analysis: event/gateway
+  outlines and sequence flows remain solid; use the quality legend rather than
+  dashed semantic strokes. Message flows and associations keep their own line
+  styles. Shared gateway marker geometry lives in `process-model/bpmn-symbols`;
+  palette, canvas, lessons and SVG must use it. Re-capture demo images after
+  visible editor changes, including each documented locale and theme.
+
 ## 8. Performance, workers and persistence
 
 - Analysis runs in `workers/analysis.worker.ts` under `createWorkerSupervisor`
@@ -134,17 +143,36 @@ path, params }`. Packages never return user-facing sentences; the web app
 - Mining runs in `workers/mining.worker.ts` through `useMiningClient`
   (timeout, cancel, bounded restart). The worker holds the log, so an abort
   clears the mining session.
-- Pointer movement and drag frames stay inside React Flow; the store receives
+- XLSX extraction runs in `workers/xlsx-log.worker.ts` on the first worksheet
+  only, with a 10 MB file limit. Mining conformance must use the current
+  confirmed BPMN model as its reference; the graph discovered from the log
+  is not a normative reference. Unsupported semantics or exceeded replay
+  bounds must withhold a conformance score.
+- Image Trace runs OpenCV.js only in `workers/image-trace.worker.ts`, loaded on
+  demand. Bound source images to 20 MB and 100 megapixels, downsample processing
+  to 1600 px, terminate after 45 seconds or on cancel, and release every Mat.
+  The reference photo is a separate IndexedDB asset, never a ProcessModel field
+  or implicit export payload. Inferred nodes and flows require semantic review.
+- Explicit edge attachment sides are optional presentation fields (`routing.sourceSide`,
+  `routing.targetSide`); absent means automatic. Cardinal ports must survive JSON,
+  CSV, clipboard, drafts and native draw.io entry/exit constraints. Geometry-only
+  reattachment must preserve probabilities and waypoints. Invalid/cancelled drops
+  keep the original edge; completed pointer gestures commit one undo entry.
+- Pointer movement and drag frames stay inside React Flow or local gesture state; the store receives
   committed changes only (`commitModel`, with undo history).
 - One local draft is stored in IndexedDB (localStorage fallback), debounced.
+  Store schema-valid work-in-progress even when graph/time diagnostics prevent
+  analysis. Checkpoint synchronously on pagehide; restore the newest copy.
+  Data-only exports remain available while analysis is pending or unavailable;
+  generated analysis reports require a current result.
   Clean up timers, workers, listeners and object URLs on unmount.
 - Event logs are capped at `MAX_EVENT_ROWS` (500,000) and OR enumeration at 12
   branches; keep every new loop or enumeration bounded.
 
 ## 9. Security and secrets
 
-- Never put secrets in source, logs, tests, README or committed config. Only
-  `.env.example` (no values) is tracked; every other `.env.*` is ignored.
+- Never put secrets in source, logs, tests, README or committed config.
+  The app needs no environment files; all `.env` and `.env.*` files are ignored.
 - Treat imported files as untrusted: parse with the bounded parsers, never
   `eval`, never inject imported text as HTML.
 - Do not add a dependency without checking existing packages first and stating
@@ -181,3 +209,21 @@ check passed unless you ran it.
   pushes, and never delete or overwrite changes you did not make.
 - Do not commit or push unless the user explicitly asks. Keep unrelated
   changes out of your diff.
+
+## 13. GitNexus code review
+
+- GitNexus is optional developer tooling, never a browser/runtime dependency.
+- Run `pnpm graph:index` before relying on graph results after code changes;
+  `pnpm graph:check` must report no circular file imports. Indexing uses
+  `--index-only --pdg` to preserve this file and avoid injecting other agent files.
+- Keep `.gitnexus/` ignored. Never index local drafts, imported user logs, build
+  output, caches or generated media. See `.gitnexusignore`.
+- Use query/context/impact for execution paths and change scope, and PDG queries
+  for guards/data flow. Verify every suspected issue in actual source and tests;
+  unresolved dynamic/aliased references are not evidence of unused code.
+- Preserve public package exports when extracting shared types. Packages must
+  not import their own barrel when that barrel exports the importing module.
+- Local draft hydration cannot overwrite edits/imports made while storage loads.
+  File extraction must terminate on cancellation and ignore superseded results.
+  Header and dropped-file imports share one latest-request lifecycle; cancelled
+  reads must not apply a model or display a success message.

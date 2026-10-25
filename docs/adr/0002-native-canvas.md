@@ -32,8 +32,11 @@ The process-mining features also need to send discovered models to the canvas an
 
 ## Later updates
 
-- A comment-only `.env.example` was added back to document that the app reads
-  no environment variables; it contains no values.
+- A comment-only `.env.example` was temporarily added back. The subsequent
+  repository cleanup removed it together with the obsolete iframe environment
+  files, `dotenv-cli` and the environment-specific command variants. The app
+  requires no environment configuration; use `pnpm dev`, `pnpm build` and
+  `pnpm start`.
 - Analysis honesty and the export gate are described in
   [ADR 0003](0003-honest-analysis-and-semantic-gate.md); worker bundling in
   [ADR 0004](0004-webpack-for-module-workers.md).

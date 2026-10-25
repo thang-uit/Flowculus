@@ -5,6 +5,7 @@ import { validateProcessModel } from '@flowculus/validation';
 
 import {
   MINING_PRESETS,
+  MAX_EVENT_ROWS,
   buildEventLog,
   createEventLog,
   dfgToProcessModel,
@@ -35,6 +36,26 @@ describe('parseTimestamp', () => {
 });
 
 describe('event log parsing and column mapping', () => {
+  it('enforces the event limit at the mapping boundary too', () => {
+    expect(() =>
+      buildEventLog(
+        {
+          format: 'csv',
+          headers: ['caseId', 'activity', 'timestamp'],
+          rows: new Array(MAX_EVENT_ROWS + 1),
+        },
+        { caseId: 'caseId', activity: 'activity', timestamp: 'timestamp' },
+      ),
+    ).toThrow(/more than/);
+  });
+  it('rejects ambiguous CSV column names', () => {
+    expect(() => parseEventTable('log.csv', 'case,activity,activity\n1,A,B')).toThrow(
+      /duplicate/,
+    );
+    expect(() => parseEventTable('log.csv', 'case,,timestamp\n1,A,2026-10-01')).toThrow(
+      /empty/,
+    );
+  });
   it('suggests a mapping for Vietnamese report headers and builds the log', () => {
     const table = parseEventTable(
       'log.csv',
@@ -59,12 +80,38 @@ describe('event log parsing and column mapping', () => {
     const result = buildEventLog(table, mapping as Parameters<typeof buildEventLog>[1]);
     expect(result.skippedRows).toBe(1);
     expect(result.invalidTimestamps).toBe(1);
+    expect(result.invalidStartTimes).toBe(0);
     expect(result.log.hasStartTimes).toBe(true);
     expect(result.log.events[1]).toMatchObject({
       activity: 'Lập trình',
       startTime: Date.UTC(2026, 9, 2, 8),
       completeTime: Date.UTC(2026, 9, 5, 17),
       cost: 900.5,
+    });
+  });
+
+  it('rejects duplicate optional mappings and reports invalid start times', () => {
+    const table = parseEventTable(
+      'log.csv',
+      [
+        'caseId,activity,timestamp,startTimestamp',
+        'c1,A,2026-10-01T09:00:00Z,2026-10-01T10:00:00Z',
+        'c1,B,2026-10-01T11:00:00Z,not-a-time',
+      ].join('\n'),
+    );
+    const mapping = {
+      caseId: 'caseId',
+      activity: 'activity',
+      timestamp: 'timestamp',
+      startTimestamp: 'startTimestamp',
+    };
+    expect(isCompleteMapping({ ...mapping, resource: 'activity' })).toBe(false);
+    expect(() => buildEventLog(table, { ...mapping, resource: 'activity' })).toThrow(
+      /distinct/,
+    );
+    expect(buildEventLog(table, mapping)).toMatchObject({
+      invalidStartTimes: 2,
+      log: { events: [{ startTime: undefined }, { startTime: undefined }] },
     });
   });
 
@@ -123,6 +170,24 @@ describe('event log parsing and column mapping', () => {
   });
 });
 
+describe('event log CSV export', () => {
+  it('neutralizes spreadsheet formula prefixes from uploaded values', () => {
+    const csv = eventLogToCsv(
+      createEventLog('unsafe', [
+        {
+          caseId: '=1+1',
+          activity: ' +SUM(A1:A2)',
+          completeTime: at(1),
+          resource: '@CALL',
+        },
+      ]),
+    );
+    expect(csv).toContain("'=1+1");
+    expect(csv).toContain("' +SUM(A1:A2)");
+    expect(csv).toContain("'@CALL");
+  });
+});
+
 const sampleEvents = (): MiningEvent[] => {
   const events: MiningEvent[] = [];
   // 3 happy cases: A → B → C; 1 rework case: A → B → B → C; 1 shortcut: A → C.
@@ -163,6 +228,34 @@ const sampleEvents = (): MiningEvent[] => {
 describe('discoverProcess', () => {
   const log = createEventLog('sample', sampleEvents());
   const discovery = discoverProcess(log);
+
+  it('uses measured executions when ranking service totals from partial start times', () => {
+    const partial = discoverProcess(
+      createEventLog('partial', [
+        { caseId: '1', activity: 'A', startTime: 0, completeTime: 10 },
+        { caseId: '2', activity: 'A', completeTime: 20 },
+        { caseId: '3', activity: 'B', startTime: 0, completeTime: 10 },
+      ]),
+    );
+    expect(partial.bottlenecks.filter((item) => item.kind === 'activity')).toEqual([
+      expect.objectContaining({
+        activity: 'A',
+        frequency: 1,
+        totalDurationMs: 10,
+        share: 0.5,
+      }),
+      expect.objectContaining({
+        activity: 'B',
+        frequency: 1,
+        totalDurationMs: 10,
+        share: 0.5,
+      }),
+    ]);
+    expect(partial.dfg.activities.find((activity) => activity.id === 'A')).toMatchObject({
+      frequency: 2,
+      serviceSampleCount: 1,
+    });
+  });
 
   it('reports cases, events, lead time and the happy path share', () => {
     expect(discovery.stats).toMatchObject({

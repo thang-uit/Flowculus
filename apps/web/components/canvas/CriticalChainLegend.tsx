@@ -5,13 +5,13 @@ import { Info } from '@phosphor-icons/react';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /**
- * Names the highlighted chain and its quality next to the canvas. An exact
- * chain is drawn solid; an estimate (expected-time heuristic) is dashed.
+ * Names the highlighted chain and its quality next to the canvas. Both chains keep BPMN solid strokes; an approximation symbol and text name estimates.
  */
 export function CriticalChainLegend() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale).quality;
   const chain = useWorkspaceStore((state) => state.analysisReport.criticalChain);
   if (!chain || chain.status !== 'ready' || chain.edgeIds.length === 0) return null;
@@ -19,7 +19,7 @@ export function CriticalChainLegend() {
   const title = exact ? copy.criticalChainExact : copy.criticalChainHeuristic;
 
   return (
-    <div className="pointer-events-auto absolute bottom-3 left-3 z-[5] hidden max-w-[min(320px,calc(100%-1.5rem))] items-center gap-2 rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_94%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--muted-strong)] shadow-[var(--shadow-soft)] sm:flex">
+    <div className="pointer-events-auto absolute top-3 left-3 z-[5] flex max-w-[calc(100%-4.5rem)] sm:top-auto sm:bottom-3 sm:max-w-[min(320px,calc(100%-1.5rem))] items-center gap-2 rounded-lg border border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_94%,transparent)] px-2.5 py-1.5 text-[11px] text-[var(--muted-strong)] shadow-[var(--shadow-soft)]">
       <svg
         width="28"
         height="8"
@@ -35,9 +35,9 @@ export function CriticalChainLegend() {
           stroke="var(--accent)"
           strokeWidth="3"
           strokeLinecap="round"
-          strokeDasharray={exact ? undefined : '6 4'}
         />
       </svg>
+      {!exact ? <span aria-hidden="true">≈</span> : null}
       <span className="truncate font-medium">
         {exact ? copy.legendExact : copy.legendEstimate}
       </span>

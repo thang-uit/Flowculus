@@ -3,6 +3,7 @@
 import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
+import { AppSelect } from '@/components/ui/AppSelect';
 
 export const inspectorInputClass =
   'focus-ring h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-2.5 text-sm text-[var(--text)]';
@@ -174,18 +175,12 @@ export function SelectField<T extends string>({
   return (
     <div className="min-w-0 space-y-1.5">
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <select
+      <AppSelect
         id={id}
         value={value}
-        onChange={(event) => onChange(event.target.value as T)}
-        className={inspectorInputClass}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        options={options}
+        onValueChange={(next) => onChange(next as T)}
+      />
     </div>
   );
 }

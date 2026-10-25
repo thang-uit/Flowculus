@@ -1,6 +1,7 @@
 import { resolveActivityTime } from '@flowculus/analysis-engine';
 import {
   SEMANTIC_METADATA_KEYS,
+  isEdgeAttachmentSide,
   type ProcessEdge,
   type ProcessModel,
   type ProcessNode,
@@ -8,7 +9,13 @@ import {
 
 import { escapeCsvValue, parseCsvTable } from './csv-table';
 
-const escapeCsv = (value: unknown): string => escapeCsvValue(value);
+const escapeCsv = (value: unknown): string => {
+  const text = value == null ? '' : String(value);
+  // Spreadsheet apps can execute formula-looking text even when a CSV field is quoted.
+  // Double a leading apostrophe too, so an exported value round-trips on import.
+  const safe = /^(?:[\s\uFEFF]*[=+\-@]|'[=+\-@])/u.test(text) ? `'${text}` : text;
+  return escapeCsvValue(safe);
+};
 
 const csvValue = (value: unknown): string => (value == null ? '' : String(value));
 
@@ -38,6 +45,7 @@ const nodeToCsvRow = (node: ProcessNode): string[] => {
     csvValue(time?.cycleTimeSource),
     csvValue(node.reworkProbability),
     csvValue(node.cost?.resourceRatePerHour),
+    csvValue(node.cost?.currency),
     csvValue(node.cost?.otherCostPerExecution),
     csvValue(node.cost?.resourcePoolId),
     csvValue(node.cost?.resourceCount),
@@ -45,6 +53,7 @@ const nodeToCsvRow = (node: ProcessNode): string[] => {
     csvValue(node.bounds?.y),
     csvValue(node.bounds?.width),
     csvValue(node.bounds?.height),
+    csvValue(node.metadata ? JSON.stringify(node.metadata) : undefined),
   ];
 };
 
@@ -56,6 +65,11 @@ const edgeToCsvRow = (edge: ProcessEdge): string[] => [
   csvValue(edge.probability),
   csvValue(edge.condition),
   csvValue(edge.reworkProbability),
+  csvValue(edge.routing?.style),
+  csvValue(edge.routing ? JSON.stringify(edge.routing.waypoints) : undefined),
+  csvValue(edge.metadata ? JSON.stringify(edge.metadata) : undefined),
+  csvValue(edge.routing?.sourceSide),
+  csvValue(edge.routing?.targetSide),
 ];
 
 export const processModelToNodesCsv = (model: ProcessModel): string => {
@@ -72,6 +86,7 @@ export const processModelToNodesCsv = (model: ProcessModel): string => {
       'cycle_time_source',
       'rework_probability',
       'resource_rate_per_hour',
+      'currency',
       'other_cost_per_execution',
       'resource_pool_id',
       'resource_count',
@@ -79,6 +94,7 @@ export const processModelToNodesCsv = (model: ProcessModel): string => {
       'y',
       'width',
       'height',
+      'metadata_json',
     ],
     ...Object.values(model.nodes).map(nodeToCsvRow),
   ];
@@ -87,7 +103,20 @@ export const processModelToNodesCsv = (model: ProcessModel): string => {
 
 export const processModelToEdgesCsv = (model: ProcessModel): string => {
   const rows = [
-    ['id', 'source', 'target', 'kind', 'probability', 'condition', 'rework_probability'],
+    [
+      'id',
+      'source',
+      'target',
+      'kind',
+      'probability',
+      'condition',
+      'rework_probability',
+      'route_style',
+      'waypoints_json',
+      'metadata_json',
+      'source_side',
+      'target_side',
+    ],
     ...Object.values(model.edges).map(edgeToCsvRow),
   ];
   return rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
@@ -104,6 +133,80 @@ export const processModelToCsv = (model: ProcessModel): string =>
 
 type CsvRecord = Record<string, string>;
 
+const parseMetadata = (
+  value: string | undefined,
+): Record<string, string | number | boolean> => {
+  if (!value) return {};
+  if (value.length > 20_000) throw new Error('CSV metadata is too large.');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error('CSV metadata is malformed.');
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+    throw new Error('CSV metadata must be an object.');
+  const entries = Object.entries(parsed);
+  if (
+    entries.length > 100 ||
+    entries.some(
+      ([key, item]) =>
+        ['__proto__', 'prototype', 'constructor'].includes(key) ||
+        key.length > 100 ||
+        !(
+          typeof item === 'string' ||
+          typeof item === 'boolean' ||
+          (typeof item === 'number' && Number.isFinite(item))
+        ),
+    )
+  )
+    throw new Error('CSV metadata contains unsupported values.');
+  return Object.fromEntries(entries) as Record<string, string | number | boolean>;
+};
+
+const parseRouting = (
+  style: string | undefined,
+  rawPoints: string | undefined,
+  sourceSide: string | undefined,
+  targetSide: string | undefined,
+): ProcessEdge['routing'] => {
+  if (!style && !rawPoints && !sourceSide && !targetSide) return undefined;
+  if (
+    (sourceSide && !isEdgeAttachmentSide(sourceSide)) ||
+    (targetSide && !isEdgeAttachmentSide(targetSide))
+  )
+    throw new Error('CSV attachment side is invalid.');
+  if (style && !['orthogonal', 'straight', 'curved'].includes(style))
+    throw new Error('CSV route style is invalid.');
+  let parsed: unknown = [];
+  if (rawPoints) {
+    if (rawPoints.length > 4000) throw new Error('CSV waypoints are too large.');
+    try {
+      parsed = JSON.parse(rawPoints);
+    } catch {
+      throw new Error('CSV waypoints are malformed.');
+    }
+  }
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length > 32 ||
+    parsed.some(
+      (point) =>
+        !point ||
+        typeof point !== 'object' ||
+        !Number.isFinite(point.x) ||
+        !Number.isFinite(point.y),
+    )
+  )
+    throw new Error('CSV waypoints are invalid.');
+  return {
+    style: (style || 'orthogonal') as NonNullable<ProcessEdge['routing']>['style'],
+    waypoints: parsed.map((point) => ({ x: point.x, y: point.y })),
+    sourceSide: sourceSide as NonNullable<ProcessEdge['routing']>['sourceSide'],
+    targetSide: targetSide as NonNullable<ProcessEdge['routing']>['targetSide'],
+  };
+};
+
 const normalizeCsvHeader = (value: string): string =>
   value
     .replace(/^\uFEFF/, '')
@@ -117,7 +220,7 @@ const toCsvRecord = (headers: string[], row: string[]): CsvRecord =>
   Object.fromEntries(
     headers.map((header, index) => [
       normalizeCsvHeader(header),
-      row[index]?.trim() ?? '',
+      (row[index]?.trim() ?? '').replace(/^'(?='?[=+\-@])/u, ''),
     ]),
   );
 
@@ -129,12 +232,32 @@ const firstCsvValue = (record: CsvRecord, ...keys: string[]): string | undefined
   return undefined;
 };
 
-const csvNumber = (record: CsvRecord, ...keys: string[]): number | undefined => {
-  const raw = firstCsvValue(record, ...keys);
-  if (!raw) return undefined;
+export class ProcessCsvNumberError extends Error {
+  constructor(
+    readonly section: 'nodes' | 'edges',
+    readonly row: number,
+    readonly column: string,
+  ) {
+    super(`Invalid number in ${section} row ${row}, column ${column}.`);
+    this.name = 'ProcessCsvNumberError';
+  }
+}
+
+const csvNumber = (
+  record: CsvRecord,
+  section: 'nodes' | 'edges',
+  row: number,
+  ...keys: string[]
+): number | undefined => {
+  const column = keys.find((key) => firstCsvValue(record, key) != null);
+  if (!column) return undefined;
+  const raw = firstCsvValue(record, column)!;
+  const percent = raw.endsWith('%');
+  const probability = /probability|rework/i.test(column);
+  if (percent && !probability) throw new ProcessCsvNumberError(section, row, column);
   const value = Number(raw.replace(',', '.').replace(/%$/, ''));
-  if (!Number.isFinite(value)) return undefined;
-  return raw.endsWith('%') ? value / 100 : value;
+  if (!Number.isFinite(value)) throw new ProcessCsvNumberError(section, row, column);
+  return percent ? value / 100 : value;
 };
 
 const csvGatewayKind = (raw: string | undefined): ProcessNode['gatewayKind'] => {
@@ -251,8 +374,7 @@ const splitCsvSections = (rows: string[][]): CsvSection[] => {
 
 /**
  * Imports both Flowculus CSV exports and the classroom `nodes.csv` /
- * `edges.csv` convention. A CSV import is intentionally converted into a
- * native draw.io document by the browser adapter before it reaches the iframe.
+ * `edges.csv` convention into the native process model.
  */
 export const parseProcessCsv = (
   source: string,
@@ -266,35 +388,34 @@ export const parseProcessCsv = (
   }
 
   const nodes: ProcessModel['nodes'] = {};
-  for (const row of nodeSection.rows) {
+  for (const [index, row] of nodeSection.rows.entries()) {
     const record = toCsvRecord(nodeSection.headers, row);
     const id = firstCsvValue(record, 'id', 'nodeId');
     if (!id) continue;
+    if (nodes[id]) throw new Error(`Duplicate node id in CSV: ${id}`);
+    const number = (...keys: string[]) => csvNumber(record, 'nodes', index + 1, ...keys);
     const label = firstCsvValue(record, 'label', 'nodeName', 'name') ?? id;
     const gatewayKind = csvGatewayKind(
       firstCsvValue(record, 'gatewayKind', 'gatewayType'),
     );
-    const durationMinutes = csvNumber(
-      record,
+    const durationMinutes = number(
       'cycleTimeMinutes',
       'durationMinutes',
       'durationMin',
       'duration',
     );
-    const waitingMinutes = csvNumber(record, 'waitingMinutes', 'waitingMin', 'waiting');
+    const waitingMinutes = number('waitingMinutes', 'waitingMin', 'waiting');
     const processingMinutes =
-      csvNumber(record, 'processingMinutes', 'processingMin', 'processing') ??
+      number('processingMinutes', 'processingMin', 'processing') ??
       (durationMinutes != null && waitingMinutes != null
         ? Math.max(0, durationMinutes - waitingMinutes)
         : undefined);
-    const resourceRatePerHour = csvNumber(
-      record,
+    const resourceRatePerHour = number(
       'resourceRatePerHour',
       'hourlyRate',
       'resourceRate',
     );
-    const otherCostPerExecution = csvNumber(
-      record,
+    const otherCostPerExecution = number(
       'otherCostPerExecution',
       'costPerExecution',
       'fixedCost',
@@ -305,15 +426,15 @@ export const parseProcessCsv = (
       'resourcePool',
       'resource',
     );
-    const resourceCount = csvNumber(record, 'resourceCount', 'poolSize');
-    const reworkProbability = csvNumber(record, 'reworkProbability', 'rework');
+    const resourceCount = number('resourceCount', 'poolSize');
+    const reworkProbability = number('reworkProbability', 'rework');
     const rawKind = firstCsvValue(record, 'kind', 'nodeType', 'type');
     const kind = csvNodeKind(rawKind, label, gatewayKind);
     const notes = firstCsvValue(record, 'notes', 'note', 'description');
-    const x = csvNumber(record, 'x');
-    const y = csvNumber(record, 'y');
-    const width = csvNumber(record, 'width');
-    const height = csvNumber(record, 'height');
+    const x = number('x');
+    const y = number('y');
+    const width = number('width');
+    const height = number('height');
     nodes[id] = {
       id,
       label,
@@ -327,15 +448,13 @@ export const parseProcessCsv = (
         resourceRatePerHour != null ||
         otherCostPerExecution != null ||
         resourcePoolId ||
+        firstCsvValue(record, 'currency') ||
         resourceCount != null
           ? {
               resourceRatePerHour,
               otherCostPerExecution,
               resourcePoolId,
-              resourceCount:
-                resourceCount != null && Number.isInteger(resourceCount)
-                  ? resourceCount
-                  : undefined,
+              resourceCount,
               currency: firstCsvValue(record, 'currency'),
             }
           : undefined,
@@ -350,6 +469,7 @@ export const parseProcessCsv = (
           : undefined,
       metadata: {
         source: 'csv',
+        ...parseMetadata(firstCsvValue(record, 'metadataJson')),
         ...(notes ? { csvNotes: notes } : {}),
         // A type guessed from the label (no kind/type column) or a gateway
         // without a declared type must be confirmed before it is trusted.
@@ -366,14 +486,16 @@ export const parseProcessCsv = (
   }
 
   const edges: ProcessModel['edges'] = {};
-  for (const row of edgeSection?.rows ?? []) {
+  for (const [index, row] of (edgeSection?.rows ?? []).entries()) {
     const record = toCsvRecord(edgeSection?.headers ?? [], row);
     const id = firstCsvValue(record, 'id', 'edgeId');
     const source = firstCsvValue(record, 'source', 'from');
     const target = firstCsvValue(record, 'target', 'tail', 'destination', 'to');
     if (!id || !source || !target) continue;
-    const probability = csvNumber(record, 'probability', 'branchProbability');
-    const reworkProbability = csvNumber(record, 'reworkProbability', 'rework');
+    if (edges[id]) throw new Error(`Duplicate edge id in CSV: ${id}`);
+    const number = (...keys: string[]) => csvNumber(record, 'edges', index + 1, ...keys);
+    const probability = number('probability', 'branchProbability');
+    const reworkProbability = number('reworkProbability', 'rework');
     edges[id] = {
       id,
       source,
@@ -382,8 +504,15 @@ export const parseProcessCsv = (
       condition: firstCsvValue(record, 'condition', 'branchCondition'),
       kind: csvEdgeKind(firstCsvValue(record, 'kind', 'flowType', 'type')),
       reworkProbability,
+      routing: parseRouting(
+        firstCsvValue(record, 'routeStyle'),
+        firstCsvValue(record, 'waypointsJson'),
+        firstCsvValue(record, 'sourceSide'),
+        firstCsvValue(record, 'targetSide'),
+      ),
       metadata: {
         source: 'csv',
+        ...parseMetadata(firstCsvValue(record, 'metadataJson')),
         ...(firstCsvValue(record, 'flowType', 'type')
           ? { csvFlowType: firstCsvValue(record, 'flowType', 'type') as string }
           : {}),

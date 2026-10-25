@@ -12,6 +12,7 @@ import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 type ScenarioFieldKey =
   | 'arrivalRatePerHour'
@@ -46,7 +47,7 @@ const parseNumber = (raw: string): number | undefined => {
 };
 
 export function ScenarioSettings() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const options = useWorkspaceStore((state) => state.analysisOptions);
   const report = useWorkspaceStore((state) => state.analysisReport);

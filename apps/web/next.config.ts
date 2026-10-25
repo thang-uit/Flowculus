@@ -1,6 +1,15 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      // OpenCV's UMD build contains a Node-only fs branch; worker execution
+      // uses browser APIs and never reaches it.
+      config.resolve = config.resolve ?? {};
+      config.resolve.fallback = { ...config.resolve.fallback, fs: false };
+    }
+    return config;
+  },
   reactStrictMode: true,
   agentRules: false,
   // Keep the local review surface clean; production is unaffected.

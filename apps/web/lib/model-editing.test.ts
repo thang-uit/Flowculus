@@ -9,6 +9,8 @@ import {
   connectNodes,
   moveNodes,
   removeElements,
+  reconnectEdge,
+  isValidNodeConnection,
   replaceEdge,
 } from './model-editing';
 
@@ -47,6 +49,66 @@ const base: ProcessModel = {
 };
 
 describe('model editing', () => {
+  it('reattaches to another tip of the same gateway without changing semantics or bends', () => {
+    const model = connectNodes(base, 'split', 'a', {
+      sourceSide: 'right',
+      targetSide: 'top',
+    })!.model;
+    const edge = Object.values(model.edges).find((edge) => edge.source === 'split')!;
+    edge.routing!.waypoints = [{ x: 200, y: 180 }];
+    const changed = reconnectEdge(model, edge.id, 'split', 'a', {
+      sourceSide: 'bottom',
+    })!;
+    expect(changed.edges[edge.id]).toEqual({
+      ...edge,
+      routing: { ...edge.routing, sourceSide: 'bottom' },
+    });
+    expect(changed.edges.e1).toBe(model.edges.e1);
+    expect(changed.nodes).toBe(model.nodes);
+    expect(reconnectEdge(changed, edge.id, 'split', 'a', { sourceSide: 'bottom' })).toBe(
+      changed,
+    );
+    const auto = reconnectEdge(changed, edge.id, 'split', 'a', {
+      sourceSide: undefined,
+    })!;
+    expect(auto.edges[edge.id].routing?.sourceSide).toBeUndefined();
+    expect(auto.edges[edge.id].routing?.targetSide).toBe('top');
+  });
+
+  it('uses the same validation for drop previews and commits, ignoring only the edited edge', () => {
+    expect(isValidNodeConnection(base, 'start', 'split')).toBe(false);
+    expect(isValidNodeConnection(base, 'start', 'split', 'e1')).toBe(true);
+    expect(isValidNodeConnection(base, 'split', 'start', 'e1')).toBe(false);
+    expect(isValidNodeConnection(base, 'split', 'split', 'e1')).toBe(false);
+    expect(isValidNodeConnection(base, 'start', 'a', 'missing')).toBe(false);
+    const invalid = JSON.parse('{"targetSide":"diagonal"}');
+    expect(connectNodes(base, 'a', 'b', invalid)).toBeNull();
+    expect(reconnectEdge(base, 'e1', 'start', 'split', invalid)).toBeNull();
+  });
+
+  it('keeps the unchanged end pinned and resets only the changed node’s automatic end', () => {
+    const model: ProcessModel = {
+      ...base,
+      edges: {
+        e1: {
+          ...base.edges.e1,
+          routing: {
+            style: 'curved',
+            waypoints: [{ x: 50, y: 10 }],
+            sourceSide: 'right',
+            targetSide: 'bottom',
+          },
+        },
+      },
+    };
+    const changed = reconnectEdge(model, 'e1', 'start', 'a')!;
+    expect(changed.edges.e1.routing).toEqual({
+      style: 'curved',
+      waypoints: [],
+      sourceSide: 'right',
+      targetSide: undefined,
+    });
+  });
   it('centres a dropped node exactly on the requested point', () => {
     const { model, nodeId } = addNodeAt(base, 'task', 'New', { x: 500, y: 300 });
     expect(model.nodes[nodeId]?.bounds).toEqual({
@@ -85,6 +147,29 @@ describe('model editing', () => {
     expect(connectNodes(base, 'start', 'split')).toBeNull();
     expect(connectNodes(base, 'a', 'a')).toBeNull();
     expect(connectNodes(base, 'a', 'start')).toBeNull();
+  });
+
+  it('reconnects an edge with stable ID, clears stale bends and rejects invalid endpoints', () => {
+    const model = {
+      ...base,
+      edges: {
+        ...base.edges,
+        e1: {
+          ...base.edges.e1,
+          routing: { style: 'curved' as const, waypoints: [{ x: 90, y: 40 }] },
+        },
+      },
+    };
+    const moved = reconnectEdge(model, 'e1', 'start', 'a');
+    expect(moved?.edges.e1).toMatchObject({
+      id: 'e1',
+      source: 'start',
+      target: 'a',
+      routing: { style: 'curved', waypoints: [] },
+    });
+    expect(reconnectEdge(model, 'e1', 'a', 'start')).toBeNull();
+    expect(reconnectEdge(model, 'e1', 'a', 'a')).toBeNull();
+    expect(reconnectEdge(model, 'e1', 'missing', 'a')).toBeNull();
   });
 
   it('removes nodes with their edges and rebalances the remaining branches', () => {

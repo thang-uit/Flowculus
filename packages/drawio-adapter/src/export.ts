@@ -24,8 +24,15 @@ import {
   type DrawioPage,
 } from './document';
 import { classifyDrawioPage } from './import';
-import { formatFlowLabel, getStyleValue, parseFlowLabel, stripMarkup } from './semantics';
+import {
+  cellToProcessEdge,
+  formatFlowLabel,
+  getStyleValue,
+  parseFlowLabel,
+  stripMarkup,
+} from './semantics';
 import { drawioStyleForEdge, drawioStyleForNode } from './styles';
+import { patchEdgeAttachment, patchEdgeRouteStyle } from './edge-attachments';
 
 const escapeHtml = (value: string): string =>
   value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
@@ -189,7 +196,26 @@ const createEdgeElement = (
           source: sourceId,
           target: targetId,
         },
-        [createXmlElement('mxGeometry', { relative: '1', as: 'geometry' })],
+        [
+          createXmlElement(
+            'mxGeometry',
+            { relative: '1', as: 'geometry' },
+            edge.routing?.waypoints.length
+              ? [
+                  createXmlElement(
+                    'Array',
+                    { as: 'points' },
+                    edge.routing.waypoints.map((point) =>
+                      createXmlElement('mxPoint', {
+                        x: formatCoordinate(point.x),
+                        y: formatCoordinate(point.y),
+                      }),
+                    ),
+                  ),
+                ]
+              : [],
+          ),
+        ],
       ),
     ],
   );
@@ -336,12 +362,16 @@ const patchPage = (page: DrawioPage, model: ProcessModel): void => {
     }
     const owner = ensureOwner(root, existing);
     const endpointsChanged = existing.source !== sourceId || existing.target !== targetId;
+    const originalRouting = cellToProcessEdge(existing, undefined)?.routing;
+    const routingChanged =
+      JSON.stringify(edge.routing ?? null) !== JSON.stringify(originalRouting ?? null);
     setXmlAttribute(existing.cell, 'source', sourceId);
     setXmlAttribute(existing.cell, 'target', targetId);
     if (
       endpointsChanged ||
       movedNodeIds.has(edge.source) ||
-      movedNodeIds.has(edge.target)
+      movedNodeIds.has(edge.target) ||
+      routingChanged
     ) {
       // Manual waypoints were drawn for the old geometry; let draw.io re-route.
       const geometry = findGeometryElement(existing.cell);
@@ -349,6 +379,29 @@ const patchPage = (page: DrawioPage, model: ProcessModel): void => {
         geometry.children = geometry.children.filter(
           (child) =>
             child.kind !== 'element' || getXmlAttribute(child, 'as') !== 'points',
+        );
+      }
+    }
+    if (routingChanged || endpointsChanged) {
+      let style = patchEdgeRouteStyle(existing.style, edge, originalRouting);
+      if (existing.source !== sourceId)
+        style = patchEdgeAttachment(style, 'exit', edge.routing?.sourceSide);
+      if (existing.target !== targetId)
+        style = patchEdgeAttachment(style, 'entry', edge.routing?.targetSide);
+      setXmlAttribute(existing.cell, 'style', style);
+      if (edge.routing?.waypoints.length) {
+        const geometry = ensureGeometry(existing.cell, true);
+        geometry.children.push(
+          createXmlElement(
+            'Array',
+            { as: 'points' },
+            edge.routing.waypoints.map((point) =>
+              createXmlElement('mxPoint', {
+                x: formatCoordinate(point.x),
+                y: formatCoordinate(point.y),
+              }),
+            ),
+          ),
         );
       }
     }

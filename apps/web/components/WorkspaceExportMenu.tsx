@@ -217,7 +217,7 @@ export function WorkspaceExportMenu({
                 close(true);
                 action.run();
               }}
-              className="focus-ring flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-xs text-[var(--muted-strong)] transition-colors duration-100 hover:bg-[var(--surface-soft)] hover:text-[var(--text)] focus-visible:bg-[var(--surface-soft)]"
+              className="focus-ring flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 text-left text-xs text-[var(--muted-strong)] transition-colors duration-100 hover:bg-[var(--surface-soft)] hover:text-[var(--text)] focus-visible:bg-[var(--surface-soft)]"
             >
               {action.label}
             </button>

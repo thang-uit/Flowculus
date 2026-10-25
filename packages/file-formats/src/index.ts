@@ -14,7 +14,9 @@ export {
   type FlowculusFile,
 } from './flowculus-file';
 export { withAutoLayout } from './layout';
+export { insertEdgeWaypoint, routeProcessEdge, moveRouteSegment } from './edge-geometry';
 export {
+  ProcessCsvNumberError,
   parseProcessCsv,
   processModelToCsv,
   processModelToEdgesCsv,

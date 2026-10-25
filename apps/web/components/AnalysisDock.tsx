@@ -21,9 +21,10 @@ import { formatKpiMinutes, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { MAX_DOCK_HEIGHT, MIN_DOCK_HEIGHT, useDockResize } from '@/lib/use-dock-resize';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 export function AnalysisDock() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const report = useWorkspaceStore((state) => state.analysisReport);
   const analysisRevision = useWorkspaceStore((state) => state.analysisRevision);
@@ -36,9 +37,11 @@ export function AnalysisDock() {
   const isValid = report.status === 'ready';
   const statusLabel = isCalculating
     ? copy.analysisCalculating
-    : isValid
-      ? copy.analysisUpdated
-      : copy.error;
+    : report.status === 'empty'
+      ? copy.emptyAnalysis
+      : isValid
+        ? copy.analysisUpdated
+        : copy.error;
 
   return (
     <section

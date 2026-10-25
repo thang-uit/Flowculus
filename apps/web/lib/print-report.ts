@@ -7,6 +7,7 @@ import { buildReportContent } from '@/lib/report-content';
 interface PrintAnalysisReportOptions {
   imageDataUri: string;
   title: string;
+  filename?: string;
   report: AnalysisReport;
   model: ProcessModel;
   copy: WorkspaceCopy;
@@ -52,6 +53,7 @@ const appendTextList = (
 export function printAnalysisReport({
   imageDataUri,
   title,
+  filename,
   report,
   model,
   copy,
@@ -64,11 +66,12 @@ export function printAnalysisReport({
   printWindow.opener = null;
 
   const printDocument = printWindow.document;
-  printDocument.title = title;
+  printDocument.documentElement.lang = locale;
+  printDocument.title = filename?.replace(/\.pdf$/, '') ?? title;
 
   const style = printDocument.createElement('style');
   style.textContent = `
-    :root { color: #17202a; background: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root { color: #17202a; background: #fff; font-family: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", Arial, sans-serif; }
     body { margin: 0; padding: 32px; }
     main { max-width: 1080px; margin: 0 auto; }
     h1 { margin: 0; font-size: 24px; letter-spacing: -0.02em; }
@@ -85,7 +88,7 @@ export function printAnalysisReport({
     th { color: #65717d; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
     .error { color: #b42318; }
     section { margin-top: 18px; page-break-inside: avoid; }
-    .formula { margin: 0; padding: 12px; border-radius: 8px; background: #f3f5f7; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.7; white-space: pre-wrap; }
+    .formula { margin: 0; padding: 12px; border-radius: 8px; background: #f3f5f7; font-family: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", Arial, sans-serif; font-size: 11px; line-height: 1.7; white-space: pre-wrap; }
     ul { margin: 8px 0 0; padding-left: 20px; color: #46525e; font-size: 11px; line-height: 1.7; }
     .warning { color: #9b6500; }
     .footer { margin-top: 28px; color: #65717d; font-size: 10px; }

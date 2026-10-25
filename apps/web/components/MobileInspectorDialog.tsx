@@ -4,13 +4,13 @@ import * as Dialog from '@radix-ui/react-dialog';
 
 import { InspectorPanel } from '@/components/InspectorPanel';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 export function MobileInspectorDialog({
   open,
   onOpenChange,
 }: Readonly<{ open: boolean; onOpenChange: (open: boolean) => void }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>

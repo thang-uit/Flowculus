@@ -1,3 +1,4 @@
+import { readEdgeAttachment } from './edge-attachments';
 import {
   SEMANTIC_METADATA_KEYS,
   type GatewayKind,
@@ -8,6 +9,7 @@ import {
 } from '@flowculus/process-model';
 
 import type { DrawioCellRecord } from './document';
+import { getChildElements, getXmlAttribute } from '@flowculus/xml-tree';
 
 const NODE_KINDS = new Set<ProcessNodeKind>([
   'start',
@@ -535,6 +537,29 @@ export const cellToProcessEdge = (
   if (explicitProbability == null && parsedLabel.probability != null) {
     metadata[SEMANTIC_METADATA_KEYS.inferredProbability] = true;
   }
+  const geometry = getChildElements(cell.cell, 'mxGeometry')[0];
+  const pointsElement =
+    geometry &&
+    getChildElements(geometry, 'Array').find(
+      (element) => getXmlAttribute(element, 'as') === 'points',
+    );
+  const waypoints = pointsElement
+    ? getChildElements(pointsElement, 'mxPoint')
+        .flatMap((element) => {
+          const x = Number(getXmlAttribute(element, 'x'));
+          const y = Number(getXmlAttribute(element, 'y'));
+          return Number.isFinite(x) && Number.isFinite(y) ? [{ x, y }] : [];
+        })
+        .slice(0, 32)
+    : [];
+  const style: NonNullable<ProcessEdge['routing']>['style'] =
+    getStyleValue(cell.style, 'curved') === '1'
+      ? 'curved'
+      : getStyleValue(cell.style, 'edgeStyle') === 'none'
+        ? 'straight'
+        : 'orthogonal';
+  const sourceSide = readEdgeAttachment(cell.style, 'exit');
+  const targetSide = readEdgeAttachment(cell.style, 'entry');
   return {
     id: cell.id,
     drawioCellId: cell.id,
@@ -550,6 +575,10 @@ export const cellToProcessEdge = (
       getMetadataString(metadata, 'condition', 'branch-condition') ??
       parsedLabel.condition,
     kind: inferEdgeKind(metadata, cell.style),
+    routing:
+      waypoints.length || style !== 'orthogonal' || sourceSide || targetSide
+        ? { style, waypoints, sourceSide, targetSide }
+        : undefined,
     metadata,
   };
 };

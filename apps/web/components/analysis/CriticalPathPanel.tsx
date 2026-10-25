@@ -5,14 +5,14 @@ import type { AnalysisReport } from '@flowculus/analysis-engine';
 
 import { QualityBadge } from '@/components/ui/QualityBadge';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /**
  * Two distinct results, never mixed up: the book's CPM over processing time,
  * and the cycle-time critical chain (exact or an expected-time heuristic).
  */
 export function CriticalPathPanel({ report }: Readonly<{ report: AnalysisReport }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const cpm = report.criticalPath;
   const chain = report.criticalChain;

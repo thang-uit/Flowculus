@@ -11,7 +11,6 @@ import type { DrawioPageSummary } from '@flowculus/drawio-adapter';
 import type { ProcessModel } from '@flowculus/process-model';
 import { confirmSemantics, type SemanticTarget } from '@flowculus/validation';
 
-import type { Locale } from '@/lib/i18n';
 import { INITIAL_PROCESS_MODEL } from '@/lib/initial-process-model';
 
 export type WorkspaceMode = 'model' | 'mining';
@@ -67,7 +66,6 @@ interface WorkspaceState {
   paletteOpen: boolean;
   inspectorOpen: boolean;
   analysisDockOpen: boolean;
-  locale: Locale;
   processModel: ProcessModel;
   /** Increments when a different model is loaded (import, page switch, mining). */
   modelRevision: number;
@@ -89,7 +87,6 @@ interface WorkspaceState {
   toggleInspector: () => void;
   setInspectorOpen: (open: boolean) => void;
   toggleAnalysisDock: () => void;
-  setLocale: (locale: Locale) => void;
   /** Applies an edit; recorded in undo history unless `recordHistory` is false. */
   commitModel: (model: ProcessModel, options?: { recordHistory?: boolean }) => void;
   /** Replaces the whole model (import, draft restore) and clears history. */
@@ -129,7 +126,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   paletteOpen: true,
   inspectorOpen: false,
   analysisDockOpen: false,
-  locale: 'en',
   processModel: INITIAL_PROCESS_MODEL,
   modelRevision: 0,
   history: { past: [], future: [] },
@@ -155,13 +151,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setInspectorOpen: (inspectorOpen) => set({ inspectorOpen }),
   toggleAnalysisDock: () =>
     set((state) => ({ analysisDockOpen: !state.analysisDockOpen })),
-  setLocale: (locale) => set({ locale }),
   commitModel: (model, options) =>
     set((state) => {
       if (model === state.processModel) return state;
       const recordHistory = options?.recordHistory ?? true;
       return {
         processModel: model,
+        analysisRuntimeStatus: 'calculating',
         history: recordHistory
           ? {
               past: [...state.history.past, state.processModel].slice(-HISTORY_LIMIT),
@@ -180,6 +176,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   loadModel: (model, options = {}) =>
     set((state) => ({
       processModel: model,
+      analysisRuntimeStatus: 'calculating',
       modelRevision: state.modelRevision + 1,
       history: { past: [], future: [] },
       drawioSource:
@@ -199,6 +196,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!previous) return;
     set((state) => ({
       processModel: previous,
+      analysisRuntimeStatus: 'calculating',
       history: {
         past: history.past.slice(0, -1),
         future: [processModel, ...history.future].slice(0, HISTORY_LIMIT),
@@ -212,6 +210,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!next) return;
     set((state) => ({
       processModel: next,
+      analysisRuntimeStatus: 'calculating',
       history: {
         past: [...history.past, processModel].slice(-HISTORY_LIMIT),
         future: history.future.slice(1),
@@ -228,6 +227,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setAnalysisOptions: (analysisOptions) =>
     set((state) => ({
       analysisOptions,
+      analysisRuntimeStatus: 'calculating',
       analysisReport: isWorkerOwned(state.analysisRuntimeStatus)
         ? state.analysisReport
         : analyzeProcess(state.processModel, analysisOptions),

@@ -39,7 +39,7 @@ export function FlowculusMark({
           width="112"
           height="112"
           rx="34"
-          className="fill-[var(--accent)]"
+          className="fill-[var(--brand-mark)]"
         />
         {/* Border */}
         <rect
@@ -49,7 +49,7 @@ export function FlowculusMark({
           height="109"
           rx="32.5"
           fill="none"
-          className="stroke-[var(--accent-strong)]"
+          className="stroke-[var(--brand-mark-border)]"
           strokeOpacity="0.5"
           strokeWidth="3"
         />
@@ -57,7 +57,7 @@ export function FlowculusMark({
         {/* 3 Input branches & Output arrow & Diamond gateway */}
         <g
           fill="none"
-          className="stroke-[var(--accent-ink)]"
+          className="stroke-[var(--brand-mark-ink)]"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -75,7 +75,7 @@ export function FlowculusMark({
           {/* Center Diamond */}
           <path
             d="M64 37.2 90.8 64 64 90.8 37.2 64 64 37.2Z"
-            className="fill-[var(--accent)]"
+            className="fill-[var(--brand-mark)]"
             strokeWidth="5.7"
           />
 
@@ -88,7 +88,7 @@ export function FlowculusMark({
         </g>
 
         {/* Dots (3 input ports + left eye) */}
-        <g className="fill-[var(--accent-ink)]">
+        <g className="fill-[var(--brand-mark-ink)]">
           <circle cx="25" cy="35" r="4.7" />
           <circle cx="25" cy="64" r="4.7" />
           <circle cx="25" cy="93" r="4.7" />

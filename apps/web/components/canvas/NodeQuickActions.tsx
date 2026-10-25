@@ -7,6 +7,7 @@ import { getWorkspaceCopy } from '@/lib/i18n';
 import { appendNodeAfter, removeElements } from '@/lib/model-editing';
 import type { SemanticShapeTool } from '@/lib/shape-tools';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 interface NodeQuickActionsProps {
   nodeId: string;
@@ -28,7 +29,7 @@ export function NodeQuickActions({
   onPointerEnter,
   onPointerLeave,
 }: Readonly<NodeQuickActionsProps>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
 
   const append = (tool: SemanticShapeTool) => {

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "model": {
+    "schemaVersion": 1,
+    "id": "rework-at-most-once-example",
+    "name": "Rework at most once · Làm lại tối đa một lần",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "label": "Bắt đầu",
+        "kind": "start",
+        "bounds": { "x": 40, "y": 188, "width": 44, "height": 44 }
+      },
+      "first": {
+        "id": "first",
+        "label": "F · thực hiện lần đầu",
+        "kind": "task",
+        "processingMinutes": 120,
+        "bounds": { "x": 140, "y": 168, "width": 176, "height": 84 }
+      },
+      "decision": {
+        "id": "decision",
+        "label": "Cần làm lại?",
+        "kind": "gateway",
+        "gatewayKind": "xor",
+        "bounds": { "x": 370, "y": 182, "width": 56, "height": 56 },
+        "metadata": { "flowculus-join-id": "merge" }
+      },
+      "redo": {
+        "id": "redo",
+        "label": "F′ · làm lại một lần",
+        "kind": "task",
+        "processingMinutes": 120,
+        "bounds": { "x": 490, "y": 300, "width": 176, "height": 84 }
+      },
+      "merge": {
+        "id": "merge",
+        "label": "Nhập luồng",
+        "kind": "gateway",
+        "gatewayKind": "xor",
+        "bounds": { "x": 720, "y": 182, "width": 56, "height": 56 }
+      },
+      "end": {
+        "id": "end",
+        "label": "Kết thúc",
+        "kind": "end",
+        "bounds": { "x": 850, "y": 188, "width": 44, "height": 44 }
+      }
+    },
+    "edges": {
+      "e1": { "id": "e1", "source": "start", "target": "first" },
+      "e2": { "id": "e2", "source": "first", "target": "decision" },
+      "e3": {
+        "id": "e3",
+        "source": "decision",
+        "target": "merge",
+        "probability": 0.5,
+        "condition": "Không làm lại"
+      },
+      "e4": {
+        "id": "e4",
+        "source": "decision",
+        "target": "redo",
+        "probability": 0.5,
+        "condition": "Làm lại một lần"
+      },
+      "e5": { "id": "e5", "source": "redo", "target": "merge" },
+      "e6": { "id": "e6", "source": "merge", "target": "end" }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import type { ProcessEdge, ProcessNode } from '@flowculus/process-model';
+import { patchEdgeAttachment } from './edge-attachments';
 
 const EVENT_BASE =
   'shape=mxgraph.bpmn.event;html=1;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;perimeter=ellipsePerimeter;outlineConnect=0;aspect=fixed;';
@@ -25,7 +26,7 @@ export const drawioStyleForNode = (node: ProcessNode): string => {
     case 'gateway':
       return GATEWAY_STYLES[node.gatewayKind ?? 'xor'];
     case 'subprocess':
-      return 'rounded=1;whiteSpace=wrap;html=1;arcSize=10;container=0;dashed=0;strokeWidth=1;fillColor=#ffffff;strokeColor=#46525e;';
+      return 'shape=mxgraph.bpmn.task2;whiteSpace=wrap;rectStyle=rounded;size=10;html=1;container=1;expand=0;collapsible=0;taskMarker=abstract;isLoopSub=1;fillColor=#ffffff;strokeColor=#46525e;';
     case 'data':
       return 'shape=note;size=14;whiteSpace=wrap;html=1;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;fillColor=#ffffff;strokeColor=#46525e;';
     case 'annotation':
@@ -36,8 +37,16 @@ export const drawioStyleForNode = (node: ProcessNode): string => {
 };
 
 export const drawioStyleForEdge = (edge: ProcessEdge): string => {
-  const base =
-    'edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;';
+  let base =
+    edge.routing?.style === 'curved'
+      ? 'edgeStyle=none;curved=1;rounded=0;html=1;'
+      : edge.routing?.style === 'straight'
+        ? 'edgeStyle=none;rounded=0;html=1;'
+        : 'edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;';
+  if (edge.routing?.sourceSide)
+    base = patchEdgeAttachment(base, 'exit', edge.routing.sourceSide);
+  if (edge.routing?.targetSide)
+    base = patchEdgeAttachment(base, 'entry', edge.routing.targetSide);
   if (edge.kind === 'message')
     return `${base}dashed=1;dashPattern=8 4;endArrow=open;endFill=0;startArrow=oval;startFill=0;`;
   if (edge.kind === 'association')

@@ -20,11 +20,13 @@ import {
 } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 export function AnalysisSummary() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const report = useWorkspaceStore((state) => state.analysisReport);
+  const empty = report.status === 'empty';
   const analysisRevision = useWorkspaceStore((state) => state.analysisRevision);
   const model = useWorkspaceStore((state) => state.processModel);
   const gatewayCount = Object.values(model.nodes).filter(
@@ -109,12 +111,14 @@ export function AnalysisSummary() {
                 <p className="truncate text-[10px] sm:text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
                   {label}
                 </p>
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${QUALITY_DOT[quality]}`}
-                  title={qualityLabel(quality, copy)}
-                  aria-label={qualityLabel(quality, copy)}
-                  role="img"
-                />
+                {!empty ? (
+                  <span
+                    className={`size-1.5 shrink-0 rounded-full ${QUALITY_DOT[quality]}`}
+                    title={qualityLabel(quality, copy)}
+                    aria-label={qualityLabel(quality, copy)}
+                    role="img"
+                  />
+                ) : null}
               </div>
               <p className="mt-0.5 truncate font-mono text-base font-bold text-[var(--text)] sm:text-lg lg:text-xl">
                 <span
@@ -166,7 +170,11 @@ export function AnalysisSummary() {
           </span>
         </div>
 
-        <QualityBadge quality={report.quality} copy={copy} />
+        {empty ? (
+          <span className="text-xs text-[var(--muted-strong)]">{copy.emptyAnalysis}</span>
+        ) : (
+          <QualityBadge quality={report.quality} copy={copy} />
+        )}
       </div>
 
       {chain && chain.taskLabels.length > 0 ? (

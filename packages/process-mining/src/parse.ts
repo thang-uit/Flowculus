@@ -123,6 +123,7 @@ export const detectEventLogFormat = (
 ): EventLogFormat => {
   const lower = fileName.toLowerCase();
   if (lower.endsWith('.xes') || lower.endsWith('.xes.xml')) return 'xes';
+  if (lower.endsWith('.xlsx')) return 'xlsx';
   if (lower.endsWith('.json')) return 'json';
   if (lower.endsWith('.csv') || lower.endsWith('.tsv') || lower.endsWith('.txt'))
     return 'csv';
@@ -139,13 +140,21 @@ export const parseEventTable = (fileName: string, source: string): EventTable =>
       ? parseXesTable(source)
       : format === 'json'
         ? parseJsonTable(source)
-        : parseCsvEventTable(source);
+        : { ...parseCsvEventTable(source), format };
   if (table.rows.length > MAX_EVENT_ROWS) {
     throw new Error(`The event log has more than ${MAX_EVENT_ROWS} events.`);
   }
   if (table.headers.length < 3 || table.rows.length === 0) {
     throw new Error('The event log needs at least case, activity and timestamp columns.');
   }
+  const headers = table.headers.map((header) => header.trim());
+  if (
+    headers.some((header) => !header) ||
+    new Set(headers.map((header) => header.toLocaleLowerCase())).size !== headers.length
+  ) {
+    throw new Error('The event log has empty or duplicate column names.');
+  }
+  table.headers = headers;
   return table;
 };
 
@@ -268,13 +277,19 @@ export const suggestColumnMapping = (headers: string[]): Partial<ColumnMapping> 
 
 export const isCompleteMapping = (
   mapping: Partial<ColumnMapping>,
-): mapping is ColumnMapping =>
-  Boolean(mapping.caseId && mapping.activity && mapping.timestamp) &&
-  new Set([mapping.caseId, mapping.activity, mapping.timestamp]).size === 3;
+): mapping is ColumnMapping => {
+  const selected = Object.values(mapping).filter(Boolean);
+  return (
+    Boolean(mapping.caseId && mapping.activity && mapping.timestamp) &&
+    new Set(selected).size === selected.length
+  );
+};
 
 const parseNumber = (raw: string | undefined): number | undefined => {
   if (raw == null || raw.trim() === '') return undefined;
-  const value = Number(raw.replace(/[^0-9,.-]/g, '').replace(',', '.'));
+  const normalized = raw.replace(/[^0-9,.-]/g, '').replace(',', '.');
+  if (!normalized || normalized === '-' || normalized === '.') return undefined;
+  const value = Number(normalized);
   return Number.isFinite(value) ? value : undefined;
 };
 
@@ -288,6 +303,9 @@ export const buildEventLog = (
   mapping: ColumnMapping,
   name = 'Event log',
 ): EventLogBuildResult => {
+  if (table.rows.length > MAX_EVENT_ROWS) {
+    throw new Error(`The event log has more than ${MAX_EVENT_ROWS} events.`);
+  }
   const index = (column: string | undefined) =>
     column ? table.headers.indexOf(column) : -1;
   const caseIndex = index(mapping.caseId);
@@ -297,8 +315,13 @@ export const buildEventLog = (
   const lifecycleIndex = index(mapping.lifecycle);
   const resourceIndex = index(mapping.resource);
   const costIndex = index(mapping.cost);
-  if (caseIndex < 0 || activityIndex < 0 || timeIndex < 0) {
-    throw new Error('Case ID, activity and timestamp columns are required.');
+  if (
+    !isCompleteMapping(mapping) ||
+    Object.values(mapping).some((column) => column && index(column) < 0)
+  ) {
+    throw new Error(
+      'Choose distinct existing columns for case ID, activity and timestamp.',
+    );
   }
   const sample = table.rows.slice(0, 2000);
   const dayFirst = detectDayFirst([
@@ -307,9 +330,10 @@ export const buildEventLog = (
   ]);
 
   const events: MiningEvent[] = [];
-  const openStarts = new Map<string, number[]>();
+  const openStarts = new Map<string, { times: number[]; head: number }>();
   let skippedRows = 0;
   let invalidTimestamps = 0;
+  let invalidStartTimes = 0;
 
   table.rows.forEach((row) => {
     const caseId = row[caseIndex]?.trim();
@@ -327,18 +351,23 @@ export const buildEventLog = (
       lifecycleIndex >= 0 ? row[lifecycleIndex]?.trim().toLowerCase() : undefined;
     const pairKey = `${caseId}\u0000${activity}`;
     if (lifecycle === 'start') {
-      const queue = openStarts.get(pairKey) ?? [];
-      queue.push(time);
+      const queue = openStarts.get(pairKey) ?? { times: [], head: 0 };
+      queue.times.push(time);
       openStarts.set(pairKey, queue);
       return;
     }
     if (lifecycle && lifecycle !== 'complete' && lifecycle !== 'completed') return;
-    const explicitStart =
-      startIndex >= 0
-        ? (parseTimestamp(row[startIndex] ?? '', dayFirst) ?? undefined)
-        : undefined;
-    const pairedStart = openStarts.get(pairKey)?.shift();
+    const startRaw = startIndex >= 0 ? row[startIndex]?.trim() : undefined;
+    const explicitStart = startRaw
+      ? (parseTimestamp(startRaw, dayFirst) ?? undefined)
+      : undefined;
+    const queue = openStarts.get(pairKey);
+    const pairedStart = queue ? queue.times[queue.head++] : undefined;
+    if (queue && queue.head >= queue.times.length) openStarts.delete(pairKey);
     const startTime = explicitStart ?? pairedStart;
+    if ((startRaw && explicitStart == null) || (startTime != null && startTime > time)) {
+      invalidStartTimes += 1;
+    }
     events.push({
       caseId,
       activity,
@@ -353,6 +382,7 @@ export const buildEventLog = (
     log: createEventLog(name, events),
     skippedRows,
     invalidTimestamps,
+    invalidStartTimes,
   };
 };
 

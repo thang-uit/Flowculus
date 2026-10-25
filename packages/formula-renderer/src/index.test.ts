@@ -41,4 +41,50 @@ describe('formulaToText', () => {
     expect(formulaToText(formula)).toBe('(T_A + T_B) - (T_join)');
     expect(formulaToLatex(formula)).toContain('T_join');
   });
+
+  it('groups an entire branch after its XOR probability', () => {
+    const branch = {
+      kind: 'weighted' as const,
+      probability: { kind: 'literal' as const, value: '0.7' },
+      term: {
+        kind: 'sum' as const,
+        terms: [
+          { kind: 'literal' as const, value: '180' },
+          {
+            kind: 'maximum' as const,
+            terms: [
+              { kind: 'literal' as const, value: '600' },
+              { kind: 'literal' as const, value: '1320' },
+            ],
+          },
+        ],
+      },
+    };
+    expect(formulaToText(branch)).toBe('(0.7 × (180 + max(600, 1320)))');
+    expect(formulaToLatex(branch)).toContain('\\left(180 + \\max');
+  });
+});
+
+it('preserves product grouping when copying a sum as a factor', () => {
+  const product = {
+    kind: 'product',
+    factors: [
+      {
+        kind: 'sum',
+        terms: [
+          { kind: 'literal', value: 'a' },
+          { kind: 'literal', value: 'b' },
+        ],
+      },
+      { kind: 'literal', value: 'c' },
+    ],
+  } as const;
+  expect(
+    formulaToText({
+      ...product,
+      factors: [...product.factors].map((factor) =>
+        factor.kind === 'sum' ? { ...factor, terms: [...factor.terms] } : factor,
+      ),
+    }),
+  ).toBe('(a + b) × c');
 });

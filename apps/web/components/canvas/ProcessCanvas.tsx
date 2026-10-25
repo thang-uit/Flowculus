@@ -4,24 +4,37 @@ import {
   Background,
   BackgroundVariant,
   ConnectionMode,
-  MiniMap,
   ReactFlow,
   applyEdgeChanges,
   applyNodeChanges,
   useReactFlow,
-  type Connection,
   type EdgeChange,
   type NodeChange,
   type OnSelectionChangeParams,
   type Viewport,
 } from '@xyflow/react';
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type MouseEvent,
+} from 'react';
 
 import { unionRects } from '@flowculus/graph-layout';
+import { insertEdgeWaypoint } from '@flowculus/file-formats';
 import { getNodeBounds } from '@flowculus/process-model';
 
+import { CanvasOverview } from '@/components/canvas/CanvasOverview';
 import { CriticalChainLegend } from '@/components/canvas/CriticalChainLegend';
+import {
+  CanvasContextMenu,
+  type CanvasMenuPosition,
+} from '@/components/canvas/CanvasContextMenu';
 import { FlowMarkers } from '@/components/canvas/FlowMarkers';
+import { ImageReferenceLayer } from '@/components/canvas/ImageReferenceLayer';
 import { ProcessNodeView } from '@/components/canvas/ProcessNodeView';
 import { SequenceFlowEdge } from '@/components/canvas/SequenceFlowEdge';
 import {
@@ -32,11 +45,14 @@ import {
   type ProcessFlowNode,
 } from '@/lib/canvas-flow';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { addNodeAt, connectNodes, moveNodes, removeElements } from '@/lib/model-editing';
+import { addNodeAt, moveNodes, removeElements, replaceEdge } from '@/lib/model-editing';
 import { SHAPE_DRAG_MIME, isSemanticShapeTool } from '@/lib/shape-tools';
 import { useFocusRequest, useHistoryShortcuts } from '@/lib/use-canvas-shortcuts';
+import { useCanvasClipboard } from '@/lib/use-canvas-clipboard';
+import { useCanvasConnections } from '@/lib/use-canvas-connections';
 import { useMediaQuery } from '@/lib/use-media-query';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const nodeTypes = { process: ProcessNodeView };
 const edgeTypes = { flow: SequenceFlowEdge };
@@ -52,7 +68,7 @@ const sameIds = (left: string[], right: string[]): boolean =>
  * model is committed once per gesture (drag stop, connect, delete, drop).
  */
 export function ProcessCanvas() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const model = useWorkspaceStore((state) => state.processModel);
   const modelRevision = useWorkspaceStore((state) => state.modelRevision);
@@ -67,14 +83,29 @@ export function ProcessCanvas() {
   >();
   const coarsePointer = useMediaQuery('(pointer: coarse)');
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const connections = useCanvasConnections(wrapperRef);
+  const [contextMenu, setContextMenu] = useState<CanvasMenuPosition | null>(null);
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
+  const openContextMenu = useCallback(
+    (event: MouseEvent, selection: { nodeIds: string[]; edgeId: string | null }) => {
+      event.preventDefault();
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      useWorkspaceStore.getState().setSelection(selection);
+      setContextMenu({
+        x: Math.max(4, Math.min(event.clientX - rect.left, rect.width - 216)),
+        y: Math.max(4, Math.min(event.clientY - rect.top, rect.height - 390)),
+      });
+    },
+    [],
+  );
   // A restored viewport (returning from Mining) is kept as is; every other
   // mount and every new revision (imports, page switches, mined models) is
   // framed by the effect below.
   const fittedRevisionRef = useRef<number | null>(initialViewport ? modelRevision : null);
 
-  // The highlight is solid only for an exact chain; an estimated chain is
-  // dashed and explained by the legend, so it never looks more certain than
-  // the cycle time it explains.
+  // Quality is explained by the legend; analysis never changes the BPMN
+  // boundary or sequence-flow line style.
   const criticalQuality =
     criticalChain?.status === 'ready'
       ? criticalChain.quality === 'exact'
@@ -94,8 +125,8 @@ export function ProcessCanvas() {
     [critical.nodes, model, selectedSet],
   );
   const derivedEdges = useMemo(
-    () => toFlowEdges(model, critical.edges, selectedEdgeId),
-    [critical.edges, model, selectedEdgeId],
+    () => toFlowEdges(model, critical.edges, selectedEdgeId, copy.edgeAccessibleName),
+    [critical.edges, model, selectedEdgeId, copy.edgeAccessibleName],
   );
 
   // Store → React Flow synchronisation without effects (derived-state pattern).
@@ -146,6 +177,7 @@ export function ProcessCanvas() {
 
   useHistoryShortcuts();
   useFocusRequest(wrapperRef);
+  const clipboardStatus = useCanvasClipboard(wrapperRef);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<ProcessFlowNode>[]) =>
@@ -189,11 +221,37 @@ export function ProcessCanvas() {
     [],
   );
 
-  const onConnect = useCallback((connection: Connection) => {
-    const state = useWorkspaceStore.getState();
-    const result = connectNodes(state.processModel, connection.source, connection.target);
-    if (result) state.commitModel(result.model);
-  }, []);
+  const onEdgeDoubleClick = useCallback(
+    (event: MouseEvent, flowEdge: ProcessFlowEdge) => {
+      const state = useWorkspaceStore.getState();
+      if (state.activeTool === 'hand') return;
+      const edge = state.processModel.edges[flowEdge.id];
+      if (!edge || (edge.routing?.waypoints.length ?? 0) >= 32) return;
+      const source = state.processModel.nodes[edge.source];
+      const target = state.processModel.nodes[edge.target];
+      if (!source || !target) return;
+      const from = getNodeBounds(source);
+      const to = getNodeBounds(target);
+      const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      state.commitModel(
+        replaceEdge(state.processModel, {
+          ...edge,
+          routing: {
+            ...edge.routing,
+            style: edge.routing?.style ?? 'orthogonal',
+            waypoints: insertEdgeWaypoint(
+              edge.routing?.waypoints ?? [],
+              point,
+              { x: from.x + from.width / 2, y: from.y + from.height / 2 },
+              { x: to.x + to.width / 2, y: to.y + to.height / 2 },
+            ),
+          },
+        }),
+      );
+      state.setSelection({ nodeIds: [], edgeId: edge.id });
+    },
+    [screenToFlowPosition],
+  );
 
   const onDelete = useCallback(
     ({
@@ -229,6 +287,8 @@ export function ProcessCanvas() {
     const tool = event.dataTransfer.getData(SHAPE_DRAG_MIME);
     if (!isSemanticShapeTool(tool)) return;
     event.preventDefault();
+    // Adding a shape returns to Select so the new element is immediately editable.
+    useWorkspaceStore.getState().setActiveTool('select');
     // The node centre lands exactly under the pointer at any zoom or pan.
     const centre = screenToFlowPosition({ x: event.clientX, y: event.clientY });
     const state = useWorkspaceStore.getState();
@@ -248,6 +308,7 @@ export function ProcessCanvas() {
   return (
     <div
       ref={wrapperRef}
+      tabIndex={0}
       className="flow-canvas relative min-h-0 flex-1"
       data-tool={activeTool}
       data-critical-quality={criticalQuality}
@@ -264,11 +325,24 @@ export function ProcessCanvas() {
         onEdgesChange={onEdgesChange}
         onSelectionChange={onSelectionChange}
         onNodeDragStop={onNodeDragStop}
-        onConnect={onConnect}
-        onConnectStart={() => wrapperRef.current?.setAttribute('data-connecting', 'true')}
-        onConnectEnd={() => wrapperRef.current?.removeAttribute('data-connecting')}
+        {...connections}
+        onNodeContextMenu={(event, node) => {
+          const selected = useWorkspaceStore.getState().selectedNodeIds;
+          openContextMenu(event, {
+            nodeIds: selected.includes(node.id) ? selected : [node.id],
+            edgeId: null,
+          });
+        }}
+        onEdgeContextMenu={(event, edge) =>
+          openContextMenu(event, { nodeIds: [], edgeId: edge.id })
+        }
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onDelete={onDelete}
         onMoveEnd={onMoveEnd}
+        onPaneClick={() => {
+          closeContextMenu();
+          wrapperRef.current?.focus();
+        }}
         defaultViewport={initialViewport ?? undefined}
         connectionMode={ConnectionMode.Loose}
         connectionRadius={36}
@@ -276,6 +350,7 @@ export function ProcessCanvas() {
         maxZoom={2.5}
         nodesDraggable={!isHand}
         nodesConnectable={!isHand}
+        edgesReconnectable={false}
         elementsSelectable={!isHand}
         selectionOnDrag={!touchPan}
         panOnDrag={touchPan ? true : [1, 2]}
@@ -288,21 +363,27 @@ export function ProcessCanvas() {
         // Absolute fill: percentage heights collapse inside the mobile flex column.
         className="!absolute inset-0"
       >
+        <ImageReferenceLayer />
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.25}
           color="var(--flow-grid)"
         />
-        <MiniMap
-          pannable
-          zoomable
-          ariaLabel={copy.minimap}
-          nodeBorderRadius={6}
-          position="bottom-right"
-        />
+        <CanvasOverview />
       </ReactFlow>
+      {contextMenu ? (
+        <CanvasContextMenu position={contextMenu} onClose={closeContextMenu} />
+      ) : null}
       <CriticalChainLegend />
+      {clipboardStatus ? (
+        <div
+          role="status"
+          className="pointer-events-none absolute bottom-4 left-4 z-10 max-w-[min(22rem,calc(100%-2rem))] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-medium text-[var(--text)] shadow-[var(--shadow-soft)]"
+        >
+          {clipboardStatus}
+        </div>
+      ) : null}
     </div>
   );
 }

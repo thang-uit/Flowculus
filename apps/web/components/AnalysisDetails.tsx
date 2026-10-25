@@ -10,17 +10,19 @@ import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { QualityBadge } from '@/components/ui/QualityBadge';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /**
  * Formula ASTs (CT, TCT, cost), the CPM and critical-chain results and every
  * finding of the engine. A missing AST is stated, never faked.
  */
 export function AnalysisDetails() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const report = useWorkspaceStore((state) => state.analysisReport);
   const [isOpen, setIsOpen] = useState(true);
-  const unavailable = copy.quality.simulationNoNumber;
+  const unavailable =
+    report.status === 'empty' ? copy.emptyAnalysis : copy.quality.simulationNoNumber;
 
   return (
     <CollapsibleSection
@@ -29,7 +31,11 @@ export function AnalysisDetails() {
       title={copy.formula}
       description={copy.analysisQualityHint}
       icon={<Function size={16} aria-hidden="true" />}
-      badge={<QualityBadge quality={report.quality} copy={copy} size="sm" />}
+      badge={
+        report.status === 'empty' ? null : (
+          <QualityBadge quality={report.quality} copy={copy} size="sm" />
+        )
+      }
       className="border-t border-[var(--border)] bg-[var(--surface)]"
       headerClassName="px-4 sm:px-6 py-3"
       contentClassName="grid gap-4 border-t border-[var(--border)] bg-[var(--surface-raised)] p-4 sm:p-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(300px,1fr)]"

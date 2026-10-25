@@ -1,0 +1,61 @@
+/* Shared native-input skin for browser controls that cannot use AppSelect. */
+input.flow-range {
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  cursor: pointer;
+}
+
+input.flow-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 5px rgb(0 0 0 / 0.18);
+}
+
+input.flow-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 5px rgb(0 0 0 / 0.18);
+}
+
+input.flow-range:focus-visible,
+input.flow-checkbox:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 3px;
+}
+
+input.flow-checkbox {
+  appearance: none;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface-raised);
+  cursor: pointer;
+}
+
+input.flow-checkbox:checked {
+  border-color: var(--accent-strong);
+  background: var(--accent);
+}
+
+input.flow-checkbox:checked::before {
+  width: 10px;
+  height: 7px;
+  content: '';
+  background: var(--accent-ink);
+  clip-path: polygon(0 45%, 20% 25%, 42% 53%, 85% 0, 100% 17%, 43% 100%);
+}

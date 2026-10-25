@@ -1,5 +1,7 @@
 'use client';
 
+import { usePreferencesStore } from '@/lib/use-preferences-store';
+
 import { FlowArrow, Graph } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/cn';
@@ -8,7 +10,7 @@ import { useWorkspaceStore, type WorkspaceMode } from '@/lib/workspace-store';
 
 /** Switches between the BPMN model canvas and the process-mining view. */
 export function ModeSwitch({ compact = false }: Readonly<{ compact?: boolean }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const mode = useWorkspaceStore((state) => state.mode);
   const setMode = useWorkspaceStore((state) => state.setMode);
@@ -34,10 +36,10 @@ export function ModeSwitch({ compact = false }: Readonly<{ compact?: boolean }>)
             title={label}
             onClick={() => setMode(id)}
             className={cn(
-              'focus-ring flex h-full cursor-pointer items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors',
+              'focus-ring flex h-full cursor-pointer items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors',
               active
-                ? 'bg-[var(--surface)] text-[var(--text)] shadow-[0_1px_2px_rgb(0_0_0_/_0.08)]'
-                : 'text-[var(--muted)] hover:text-[var(--text)]',
+                ? 'border-[var(--accent)] bg-[var(--accent-soft)] font-semibold text-[var(--accent-strong)]'
+                : 'border-transparent text-[var(--muted-strong)] hover:bg-[var(--surface-soft)] hover:text-[var(--text)]',
             )}
           >
             <Icon

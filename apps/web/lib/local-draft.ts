@@ -1,6 +1,6 @@
 import { isAnalysisOptions, type AnalysisOptions } from '@flowculus/analysis-engine';
 import type { ProcessModel } from '@flowculus/process-model';
-import { validateProcessModel } from '@flowculus/validation';
+import { processModelSchema } from '@flowculus/validation';
 
 import type { DrawioSource } from '@/lib/workspace-store';
 
@@ -24,8 +24,7 @@ export interface LocalDraftSnapshot {
   updatedAt: number;
 }
 
-const isBrowser = (): boolean =>
-  typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
+const isBrowser = (): boolean => typeof window !== 'undefined';
 
 const isDrawioSource = (value: unknown): value is DrawioSource => {
   if (value == null || typeof value !== 'object') return false;
@@ -52,14 +51,16 @@ const isLocalDraftSnapshot = (value: unknown): value is LocalDraftSnapshot => {
     return false;
   }
   return (
-    validateProcessModel(candidate.model).valid &&
+    // A draft is allowed to contain unfinished branching or inconsistent time
+    // inputs. Those are analysis diagnostics, not a reason to discard work.
+    processModelSchema.safeParse(candidate.model).success &&
     (candidate.analysisOptions == null || isAnalysisOptions(candidate.analysisOptions))
   );
 };
 
 const openDatabase = (): Promise<IDBDatabase> =>
   new Promise((resolve, reject) => {
-    if (!isBrowser()) {
+    if (!isBrowser() || typeof window.indexedDB === 'undefined') {
       reject(new Error('IndexedDB is not available in this browser.'));
       return;
     }
@@ -139,13 +140,24 @@ const writeFallbackDraft = (snapshot: LocalDraftSnapshot): void => {
 
 export const loadLocalDraft = async (): Promise<LocalDraftSnapshot | null> => {
   if (!isBrowser()) return null;
+  let indexedDbDraft: LocalDraftSnapshot | null = null;
   try {
-    const indexedDbDraft = await readIndexedDbDraft();
-    if (indexedDbDraft) return indexedDbDraft;
+    indexedDbDraft = await readIndexedDbDraft();
   } catch {
     // Safari private mode and embedded browsers can deny IndexedDB. Fall back below.
   }
-  return readFallbackDraft();
+  const fallbackDraft = readFallbackDraft();
+  if (!fallbackDraft) return indexedDbDraft;
+  if (!indexedDbDraft) return fallbackDraft;
+  return fallbackDraft.updatedAt > indexedDbDraft.updatedAt
+    ? fallbackDraft
+    : indexedDbDraft;
+};
+
+/** A synchronous best-effort checkpoint for the browser's pagehide boundary. */
+export const checkpointLocalDraft = (snapshot: LocalDraftSnapshot): void => {
+  if (!isBrowser() || !isLocalDraftSnapshot(snapshot)) return;
+  writeFallbackDraft(snapshot);
 };
 
 export const saveLocalDraft = async (snapshot: LocalDraftSnapshot): Promise<void> => {

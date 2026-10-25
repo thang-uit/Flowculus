@@ -7,11 +7,29 @@ export {
   buildDirectlyFollowsGraph,
   buildTraces,
   buildVariants,
-  discoverProcess,
   filterDirectlyFollowsGraph,
   findBottlenecks,
 } from './discover';
+export { createProcessDiscovery, discoverProcess } from './discovery-session';
 export { eventLogToCsv } from './export';
+export {
+  checkModelConformance,
+  type ModelConformance,
+  type ConformanceExample,
+  type ConformanceIssueKind,
+} from './model-conformance';
+export {
+  mineAlpha,
+  type AlphaMiningResult,
+  type AlphaPlace,
+  type AlphaReplay,
+} from './alpha-miner';
+export {
+  buildSocialNetwork,
+  type SocialNetwork,
+  type ResourceCentrality,
+  type ResourceHandoff,
+} from './social-network';
 export {
   buildEventLog,
   createEventLog,
@@ -19,6 +37,7 @@ export {
   isCompleteMapping,
   parseEventTable,
   suggestColumnMapping,
+  MAX_EVENT_ROWS,
 } from './parse';
 export {
   MINING_PRESETS,

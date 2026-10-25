@@ -8,12 +8,13 @@ import { collectUnconfirmedSemantics } from '@flowculus/validation';
 import { IconButton } from '@/components/ui/IconButton';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const PREVIEW_LIMIT = 5;
 
 /** Explains why an export or share was refused and leads to the Inspector. */
 export function SemanticGateDialog() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const reason = useWorkspaceStore((state) => state.semanticGateReason);
   const setReason = useWorkspaceStore((state) => state.setSemanticGateReason);

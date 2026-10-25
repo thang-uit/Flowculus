@@ -4,6 +4,7 @@ import {
   SEMANTIC_METADATA_KEYS,
   getNodeBounds,
   isSequenceFlowEdge,
+  isEdgeAttachmentSide,
   type ProcessEdge,
   type ProcessModel,
   type ProcessNode,
@@ -177,25 +178,56 @@ export const rebalanceBranchProbabilities = (
   return { ...model, edges };
 };
 
+/** Shared by snapping previews, new connections and committed reconnections. */
+export const isValidNodeConnection = (
+  model: ProcessModel,
+  sourceId: string,
+  targetId: string,
+  edgeId?: string,
+): boolean => {
+  const source = model.nodes[sourceId];
+  const target = model.nodes[targetId];
+  const edge = edgeId ? model.edges[edgeId] : undefined;
+  if (!source || !target || sourceId === targetId || (edgeId && !edge)) return false;
+  if (target.kind === 'start' || (source.kind === 'end' && !isArtifact(target)))
+    return false;
+  if (edge && isSequenceFlowEdge(edge) && (isArtifact(source) || isArtifact(target)))
+    return false;
+  return !Object.values(model.edges).some(
+    (other) =>
+      other.id !== edgeId && other.source === sourceId && other.target === targetId,
+  );
+};
+
+type EdgeAttachments = Pick<
+  NonNullable<ProcessEdge['routing']>,
+  'sourceSide' | 'targetSide'
+>;
+const validAttachments = (value?: EdgeAttachments): boolean =>
+  !value ||
+  [value.sourceSide, value.targetSide].every(
+    (side) => side === undefined || isEdgeAttachmentSide(side),
+  );
+
 export const connectNodes = (
   model: ProcessModel,
   sourceId: string,
   targetId: string,
+  attachments?: EdgeAttachments,
 ): { model: ProcessModel; edgeId: string } | null => {
   const source = model.nodes[sourceId];
   const target = model.nodes[targetId];
-  if (!source || !target || sourceId === targetId) return null;
-  if (target.kind === 'start' || (source.kind === 'end' && !isArtifact(target)))
+  if (!validAttachments(attachments) || !isValidNodeConnection(model, sourceId, targetId))
     return null;
-  const duplicate = Object.values(model.edges).some(
-    (edge) => edge.source === sourceId && edge.target === targetId,
-  );
-  if (duplicate) return null;
   const edge: ProcessEdge = {
     id: createElementId('flow', model.edges),
     source: sourceId,
     target: targetId,
     kind: isArtifact(source) || isArtifact(target) ? 'association' : 'sequence',
+    routing:
+      attachments?.sourceSide || attachments?.targetSide
+        ? { style: 'orthogonal', waypoints: [], ...attachments }
+        : undefined,
   };
   const next = { ...model, edges: { ...model.edges, [edge.id]: edge } };
   return { model: rebalanceBranchProbabilities(next, sourceId), edgeId: edge.id };
@@ -294,6 +326,68 @@ export const replaceEdge = (model: ProcessModel, edge: ProcessEdge): ProcessMode
       },
     },
   };
+};
+
+/** Reconnects an existing flow while keeping its ID and rebalancing affected gateways. */
+export const reconnectEdge = (
+  model: ProcessModel,
+  edgeId: string,
+  sourceId: string,
+  targetId: string,
+  attachments?: EdgeAttachments,
+): ProcessModel | null => {
+  const edge = model.edges[edgeId];
+  const source = model.nodes[sourceId];
+  const target = model.nodes[targetId];
+  if (
+    !validAttachments(attachments) ||
+    !isValidNodeConnection(model, sourceId, targetId, edgeId)
+  )
+    return null;
+  if (!edge || !source || !target || sourceId === targetId) return null;
+  const sameNodes = sourceId === edge.source && targetId === edge.target;
+  const sourceSide =
+    attachments && 'sourceSide' in attachments
+      ? attachments.sourceSide
+      : sourceId === edge.source
+        ? edge.routing?.sourceSide
+        : undefined;
+  const targetSide =
+    attachments && 'targetSide' in attachments
+      ? attachments.targetSide
+      : targetId === edge.target
+        ? edge.routing?.targetSide
+        : undefined;
+  const sameSides =
+    sourceSide === edge.routing?.sourceSide && targetSide === edge.routing?.targetSide;
+  if (sameNodes && sameSides) return model;
+  const previousSource = edge.source;
+  const metadata = { ...edge.metadata };
+  if (previousSource !== sourceId) delete metadata[AUTO_PROBABILITY_KEY];
+  const routing =
+    edge.routing || sourceSide || targetSide
+      ? {
+          style: edge.routing?.style ?? 'orthogonal',
+          waypoints: sameNodes ? (edge.routing?.waypoints ?? []) : [],
+          sourceSide,
+          targetSide,
+        }
+      : undefined;
+  // Geometry-only edits keep probabilities, metadata and all other edges unchanged.
+  if (sameNodes) return replaceEdge(model, { ...edge, routing });
+  let next = replaceEdge(model, {
+    ...edge,
+    source: sourceId,
+    target: targetId,
+    probability: previousSource === sourceId ? edge.probability : undefined,
+    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    // Existing bend points refer to the old endpoints and must be laid out again.
+    routing,
+  });
+  if (previousSource !== sourceId && model.nodes[previousSource]?.kind === 'gateway')
+    next = rebalanceBranchProbabilities(next, previousSource);
+  if (source.kind === 'gateway') next = rebalanceBranchProbabilities(next, sourceId);
+  return next;
 };
 
 /**

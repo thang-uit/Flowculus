@@ -3,10 +3,10 @@ const ISO_PATTERN =
 const SLASH_PATTERN =
   /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?$/i;
 
-const offsetMinutes = (zone: string | undefined): number => {
+const offsetMinutes = (zone: string | undefined): number | null => {
   if (!zone || zone.toUpperCase() === 'Z') return 0;
   const match = zone.match(/^([+-])(\d{2}):?(\d{2})?$/);
-  if (!match) return 0;
+  if (!match || Number(match[2]) > 23 || Number(match[3] ?? '0') > 59) return null;
   const sign = match[1] === '-' ? -1 : 1;
   return sign * (Number(match[2]) * 60 + Number(match[3] ?? '0'));
 };
@@ -17,13 +17,18 @@ const isValidDate = (
   day: number,
   hour: number,
   minute: number,
+  second: number,
 ) =>
   month >= 1 &&
   month <= 12 &&
   day >= 1 &&
-  day <= 31 &&
-  hour <= 24 &&
+  day <= new Date(Date.UTC(year, month, 0)).getUTCDate() &&
+  hour >= 0 &&
+  hour < 24 &&
+  minute >= 0 &&
   minute < 60 &&
+  second >= 0 &&
+  second < 60 &&
   year > 1900;
 
 /**
@@ -67,11 +72,25 @@ export const parseTimestamp = (raw: string, dayFirst = true): number | null => {
       fraction = '0',
       zone,
     ] = iso;
+    const zoneOffset = offsetMinutes(zone);
+    const midnight =
+      Number(hour) === 24 &&
+      Number(minute) === 0 &&
+      Number(second) === 0 &&
+      Number(fraction) === 0;
     if (
-      !isValidDate(Number(year), Number(month), Number(day), Number(hour), Number(minute))
+      zoneOffset == null ||
+      !isValidDate(
+        Number(year),
+        Number(month),
+        Number(day),
+        midnight ? 0 : Number(hour),
+        Number(minute),
+        Number(second),
+      )
     )
       return null;
-    const milliseconds = Math.round(Number(`0.${fraction}`) * 1000);
+    const milliseconds = Math.floor(Number(`0.${fraction}`) * 1000);
     return (
       Date.UTC(
         Number(year),
@@ -82,7 +101,7 @@ export const parseTimestamp = (raw: string, dayFirst = true): number | null => {
         Number(second),
         milliseconds,
       ) -
-      offsetMinutes(zone) * 60_000
+      zoneOffset * 60_000
     );
   }
 
@@ -101,9 +120,11 @@ export const parseTimestamp = (raw: string, dayFirst = true): number | null => {
     const day = Number(dayFirst ? first : second);
     const month = Number(dayFirst ? second : first);
     let hour = Number(hourText);
+    if (meridiem && (hour < 1 || hour > 12)) return null;
     if (meridiem?.toLowerCase() === 'pm' && hour < 12) hour += 12;
     if (meridiem?.toLowerCase() === 'am' && hour === 12) hour = 0;
-    if (!isValidDate(Number(year), month, day, hour, Number(minute))) return null;
+    if (!isValidDate(Number(year), month, day, hour, Number(minute), Number(secondText)))
+      return null;
     return Date.UTC(
       Number(year),
       month - 1,
@@ -114,6 +135,7 @@ export const parseTimestamp = (raw: string, dayFirst = true): number | null => {
     );
   }
 
-  const fallback = Date.parse(value);
-  return Number.isFinite(fallback) ? fallback : null;
+  // Date.parse accepts browser-dependent formats, local zones and rolled-over
+  // calendar dates. Reject unknown formats rather than silently changing a log.
+  return null;
 };

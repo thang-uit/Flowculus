@@ -4,10 +4,11 @@ import { formatValue } from '@/components/scenario/format-value';
 import { formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Resource-pool load, utilisation ρ (a ratio, shown as %) and M/M/c wait. */
 export function CapacityTable() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const capacity = useWorkspaceStore((state) => state.analysisReport.capacity);
   if (capacity.length === 0) return null;

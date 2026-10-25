@@ -4,9 +4,9 @@
   flex: none;
   margin: 0;
   color: var(--text);
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.76rem;
-  line-height: 1.35;
+  font-family: var(--app-font);
+  font-size: 0.875rem;
+  line-height: 1.6;
   white-space: nowrap;
 }
 

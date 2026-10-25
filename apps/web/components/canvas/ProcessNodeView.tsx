@@ -12,6 +12,7 @@ import { TaskChips } from '@/components/canvas/TaskChips';
 import type { ProcessFlowNode } from '@/lib/canvas-flow';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const HANDLE_SIDES = [
   Position.Top,
@@ -43,7 +44,8 @@ function ProcessNodeViewComponent({
   selected,
   dragging,
 }: NodeProps<ProcessFlowNode>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
+  const isHand = useWorkspaceStore((state) => state.activeTool === 'hand');
   const singleSelection = useWorkspaceStore((state) => state.selectedNodeIds.length <= 1);
   const copy = getWorkspaceCopy(locale);
   const { node, critical } = data;
@@ -182,11 +184,12 @@ function ProcessNodeViewComponent({
       onPointerEnter={show}
       onPointerLeave={hide}
       onDoubleClick={(event) => {
+        if (isHand) return;
         event.stopPropagation();
         setEditing(true);
       }}
     >
-      <NodeHandles />
+      {!isHand ? <NodeHandles /> : null}
       {body}
       {inferred ? (
         <span
@@ -199,7 +202,9 @@ function ProcessNodeViewComponent({
       ) : null}
       <NodeQuickActions
         nodeId={id}
-        visible={!dragging && !editing && (hovered || (selected && singleSelection))}
+        visible={
+          !isHand && !dragging && !editing && (hovered || (selected && singleSelection))
+        }
         canContinue={
           node.kind !== 'end' && node.kind !== 'annotation' && node.kind !== 'data'
         }

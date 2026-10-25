@@ -1,4 +1,37 @@
 /* Process-mining map */
+.mining-resizer {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 8px;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--surface-soft);
+  border-inline: 1px solid var(--border);
+}
+
+.mining-resizer::after {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 2px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  content: '';
+  transform: translateY(-50%);
+}
+
+.mining-resizer:hover,
+.mining-resizer:focus-visible {
+  background: var(--accent-soft);
+}
+
+.mining-resizer:hover::after,
+.mining-resizer:focus-visible::after {
+  background: var(--accent-strong);
+}
+
 .dfg-activity {
   display: flex;
   height: 100%;
@@ -62,12 +95,6 @@
 
 .dfg-edge-path[data-dimmed='true'] {
   opacity: 0.16;
-}
-
-input[type='range'].flow-range {
-  width: 100%;
-  accent-color: var(--accent-strong);
-  cursor: pointer;
 }
 
 .flow-marker-defs {

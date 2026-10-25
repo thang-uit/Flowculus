@@ -5,7 +5,7 @@ import { resolveActivityTime } from '@flowculus/analysis-engine';
 import type { ProcessNode } from '@flowculus/process-model';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const round = (value: number): string => String(Number(value.toFixed(2)));
 
@@ -14,7 +14,7 @@ const round = (value: number): string => String(Number(value.toFixed(2)));
  * comes from (observed D or derived T + Wq), using the engine's own contract.
  */
 export function ActivityTimeSummary({ node }: Readonly<{ node: ProcessNode }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const time = resolveActivityTime(node);
   const missing = time.cycleTimeSource === 'missing';

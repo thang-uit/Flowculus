@@ -7,13 +7,13 @@ import {
 } from '@flowculus/process-model';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Shown once a person has confirmed an element's inferred semantics. */
 export function ConfirmedChip({
   metadata,
 }: Readonly<{ metadata: Record<string, ProcessMetadataValue> | undefined }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale).semantics;
   const confirmed = metadata?.[SEMANTIC_METADATA_KEYS.confirmed];
   if (confirmed !== true && confirmed !== 'true') return null;

@@ -13,9 +13,9 @@ describe('analyzeProcess', () => {
       edges: {},
     });
 
-    expect(report.status).toBe('ready');
-    expect(report.cycleTimeMinutes).toBe(0);
-    expect(report.formula).toBe('0');
+    expect(report.status).toBe('empty');
+    expect(report.cycleTimeMinutes).toBeNull();
+    expect(report.formula).toBe('');
     expect(report.issues.map((issue) => issue.code)).toEqual(['empty-model']);
   });
 

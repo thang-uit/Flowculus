@@ -6,11 +6,11 @@ import { useId, useState } from 'react';
 
 import { isCompleteMapping, type ColumnMapping } from '@flowculus/process-mining';
 
-import { inspectorInputClass } from '@/components/inspector/InspectorFields';
+import { AppSelect } from '@/components/ui/AppSelect';
 import { IconButton } from '@/components/ui/IconButton';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import type { MiningTableResponse } from '@/lib/mining-engine';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 type MappingField = keyof ColumnMapping;
 
@@ -44,20 +44,16 @@ function MappingSelect({
         {label}
         {required ? <span className="text-[var(--danger)]"> *</span> : null}
       </label>
-      <select
+      <AppSelect
         id={id}
         value={value ?? ''}
-        onChange={(event) => onChange(field, event.target.value || undefined)}
-        className={inspectorInputClass}
-        aria-required={required || undefined}
-      >
-        <option value="">{noneLabel}</option>
-        {headers.map((header) => (
-          <option key={header} value={header}>
-            {header}
-          </option>
-        ))}
-      </select>
+        onValueChange={(next) => onChange(field, next || undefined)}
+        required={required}
+        options={[
+          { value: '', label: noneLabel },
+          ...headers.map((header) => ({ value: header, label: header })),
+        ]}
+      />
     </div>
   );
 }
@@ -76,7 +72,7 @@ export function ColumnMappingDialog({
   onConfirm: (mapping: ColumnMapping) => void;
   onCancel: () => void;
 }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const [mapping, setMapping] = useState<Partial<ColumnMapping>>(table.suggestion);
   const complete = isCompleteMapping(mapping);

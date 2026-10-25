@@ -5,6 +5,9 @@ import type { EventLog } from './types';
 const isoOrEmpty = (value: number | undefined): string =>
   value == null ? '' : new Date(value).toISOString().replace('.000Z', 'Z');
 
+const safeSpreadsheetCell = (value: string): string =>
+  /^[\s\uFEFF]*[=+\-@]/u.test(value) ? `'${value}` : value;
+
 /** Writes a log in the column layout that `suggestColumnMapping` recognises. */
 export const eventLogToCsv = (log: EventLog): string => {
   const header = [
@@ -24,6 +27,8 @@ export const eventLogToCsv = (log: EventLog): string => {
     event.cost == null ? '' : String(event.cost),
   ]);
   return [header, ...rows]
-    .map((row) => row.map((value) => escapeCsvValue(value)).join(','))
+    .map((row) =>
+      row.map((value) => escapeCsvValue(safeSpreadsheetCell(value))).join(','),
+    )
     .join('\n');
 };

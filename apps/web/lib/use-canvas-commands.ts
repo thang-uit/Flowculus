@@ -30,6 +30,7 @@ export function useCanvasCommands() {
           })
         : { x: 240, y: 200 };
       const state = useWorkspaceStore.getState();
+      state.setActiveTool('select');
       const created = addNodeAt(state.processModel, tool, label, centre);
       const node = created.model.nodes[created.nodeId];
       const placed = {

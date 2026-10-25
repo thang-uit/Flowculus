@@ -1,5 +1,4 @@
 import {
-  DEFAULT_DISCOVERY_FILTER,
   type Bottleneck,
   type DfgActivity,
   type DfgEdge,
@@ -8,7 +7,6 @@ import {
   type EventLog,
   type EventLogStats,
   type MiningEvent,
-  type ProcessDiscovery,
   type Trace,
   type TraceVariant,
 } from './types';
@@ -190,6 +188,7 @@ export const buildDirectlyFollowsGraph = (traces: Trace[]): DirectlyFollowsGraph
         frequency: entry.frequency,
         caseFrequency: entry.cases.size,
         meanServiceMs: entry.services.length > 0 ? mean(entry.services) : null,
+        serviceSampleCount: entry.services.length,
         meanCost: entry.costs.length > 0 ? mean(entry.costs) : null,
         mainResource: main?.[0] ?? null,
         mainResourceShare: main ? main[1] / entry.frequency : 0,
@@ -286,19 +285,19 @@ export const findBottlenecks = (dfg: DirectlyFollowsGraph, limit = 12): Bottlene
   }));
   const services = dfg.activities.filter((activity) => activity.meanServiceMs != null);
   const totalService = services.reduce(
-    (sum, activity) => sum + (activity.meanServiceMs ?? 0) * activity.frequency,
+    (sum, activity) => sum + (activity.meanServiceMs ?? 0) * activity.serviceSampleCount,
     0,
   );
   const activityBottlenecks: Bottleneck[] = services.map((activity) => ({
     kind: 'activity',
     id: `activity:${activity.id}`,
     activity: activity.id,
-    frequency: activity.frequency,
+    frequency: activity.serviceSampleCount,
     meanDurationMs: activity.meanServiceMs ?? 0,
-    totalDurationMs: (activity.meanServiceMs ?? 0) * activity.frequency,
+    totalDurationMs: (activity.meanServiceMs ?? 0) * activity.serviceSampleCount,
     share:
       totalService > 0
-        ? ((activity.meanServiceMs ?? 0) * activity.frequency) / totalService
+        ? ((activity.meanServiceMs ?? 0) * activity.serviceSampleCount) / totalService
         : 0,
   }));
   return [...transitionBottlenecks, ...activityBottlenecks]
@@ -385,25 +384,5 @@ export const filterDirectlyFollowsGraph = (
     },
     hiddenActivityCount: dfg.activities.length - projected.activities.length,
     hiddenEdgeCount: projected.edges.length - edges.length,
-  };
-};
-
-/** One call for the mining view: statistics on the full log, a filtered map. */
-export const discoverProcess = (
-  log: EventLog,
-  filter: DiscoveryFilter = DEFAULT_DISCOVERY_FILTER,
-): ProcessDiscovery => {
-  const traces = buildTraces(log);
-  const variants = buildVariants(traces);
-  const fullDfg = buildDirectlyFollowsGraph(traces);
-  const filtered = filterDirectlyFollowsGraph(traces, fullDfg, filter);
-  return {
-    stats: computeLogStats(log, traces, variants),
-    dfg: filtered.dfg,
-    variants,
-    bottlenecks: findBottlenecks(fullDfg),
-    filter,
-    hiddenActivityCount: filtered.hiddenActivityCount,
-    hiddenEdgeCount: filtered.hiddenEdgeCount,
   };
 };

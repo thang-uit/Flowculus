@@ -1,3 +1,6 @@
+import type { GatewayKind } from './gateway-kind';
+export type { GatewayKind } from './gateway-kind';
+
 export type ProcessNodeKind =
   | 'start'
   | 'task'
@@ -8,8 +11,6 @@ export type ProcessNodeKind =
   | 'data'
   | 'annotation'
   | 'unknown';
-
-export type GatewayKind = 'xor' | 'and' | 'or' | 'eventBased' | 'complex';
 
 export interface TaskCost {
   /** Hourly labour/resource rate used by the book's cost flow analysis. */
@@ -93,6 +94,12 @@ export interface ProcessNode {
   metadata?: Record<string, ProcessMetadataValue>;
 }
 
+export const EDGE_ATTACHMENT_SIDES = ['top', 'right', 'bottom', 'left'] as const;
+export type EdgeAttachmentSide = (typeof EDGE_ATTACHMENT_SIDES)[number];
+
+export const isEdgeAttachmentSide = (value: unknown): value is EdgeAttachmentSide =>
+  EDGE_ATTACHMENT_SIDES.some((side) => side === value);
+
 export interface ProcessEdge {
   id: string;
   source: string;
@@ -103,6 +110,14 @@ export interface ProcessEdge {
   kind?: 'sequence' | 'message' | 'association' | 'unknown';
   reworkProbability?: number;
   drawioCellId?: string;
+  /** Presentation-only route; never changes control-flow semantics. */
+  routing?: {
+    style: 'orthogonal' | 'straight' | 'curved';
+    waypoints: Array<{ x: number; y: number }>;
+    /** Omitted sides use automatic routing; explicit sides stay attached on move/resize. */
+    sourceSide?: EdgeAttachmentSide;
+    targetSide?: EdgeAttachmentSide;
+  };
   metadata?: Record<string, ProcessMetadataValue>;
 }
 
@@ -162,3 +177,5 @@ export const DEFAULT_NODE_SIZE: Record<
 
 export const getNodeBounds = (node: ProcessNode): NodeBounds =>
   node.bounds ?? { x: 0, y: 0, ...DEFAULT_NODE_SIZE[node.kind] };
+
+export { BPMN_GATEWAY_MARKERS, type BpmnMarkerElement } from './bpmn-symbols';

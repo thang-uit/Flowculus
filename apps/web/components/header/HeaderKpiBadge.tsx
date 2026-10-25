@@ -8,13 +8,14 @@ import { cn } from '@/lib/cn';
 import { formatKpiMinutes, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /**
  * Live CT / TCT / CTE readout. It re-renders only when the worker publishes a
  * new report; clicking it opens the analysis dock.
  */
 export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const report = useWorkspaceStore((state) => state.analysisReport);
   const revision = useWorkspaceStore((state) => state.analysisRevision);
@@ -24,7 +25,8 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
   const dockOpen = useWorkspaceStore((state) => state.analysisDockOpen);
   const toggleDock = useWorkspaceStore((state) => state.toggleAnalysisDock);
 
-  const quality = qualityLabel(report.quality, copy);
+  const empty = report.status === 'empty';
+  const quality = empty ? copy.emptyAnalysis : qualityLabel(report.quality, copy);
   const ct = formatKpiMinutes(report.cycleTimeMinutes, copy.emptyValue);
   const tct = formatKpiMinutes(report.theoreticalCycleTimeMinutes, copy.emptyValue);
   const cte = formatPercent(report.cycleTimeEfficiency) ?? copy.emptyValue;
@@ -41,7 +43,7 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
         title={summary}
         className={cn(
           'focus-ring flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] font-mono text-[11px] tabular-nums text-[var(--muted-strong)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)]',
-          compact ? 'gap-1.5 px-1.5' : 'gap-2 px-2',
+          compact ? 'gap-1.5 px-1.5' : 'gap-2.5 px-3',
           dockOpen && 'border-[var(--accent)] bg-[var(--accent-soft)]',
         )}
       >
@@ -63,7 +65,7 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
         {!compact ? (
           <>
             <span
-              className="hidden text-[var(--border-strong)] xl:inline"
+              className="hidden px-0.5 text-[var(--border-strong)] xl:inline"
               aria-hidden="true"
             >
               |
@@ -75,7 +77,7 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
               <span className="text-[var(--muted)]">TCT </span>
               <strong className="font-semibold text-[var(--text)]">{tct}</strong>
             </span>
-            <span className="text-[var(--border-strong)]" aria-hidden="true">
+            <span className="px-0.5 text-[var(--border-strong)]" aria-hidden="true">
               |
             </span>
             <span key={`cte-${revision}`} className="analysis-value-update">
@@ -84,10 +86,12 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
             </span>
           </>
         ) : null}
-        <span
-          className={cn('size-1.5 shrink-0 rounded-full', QUALITY_DOT[report.quality])}
-          aria-hidden="true"
-        />
+        {!empty ? (
+          <span
+            className={cn('size-1.5 shrink-0 rounded-full', QUALITY_DOT[report.quality])}
+            aria-hidden="true"
+          />
+        ) : null}
       </button>
     </Tooltip>
   );

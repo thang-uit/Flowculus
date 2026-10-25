@@ -6,22 +6,28 @@ import type { ProcessNode } from '@flowculus/process-model';
 
 import { formatCost, formatPercent } from '@/lib/format';
 import type { WorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-/** CT/T/Wq, rate and rework chips; the tooltip names the cycle-time source. */
+/** CT/T/Wq, rate and rework chips; time tooltips name the matching source. */
 export function TaskChips({
   node,
   copy,
 }: Readonly<{ node: ProcessNode; copy: WorkspaceCopy }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
-  const source = resolveActivityTime(node).cycleTimeSource;
-  const sourceNote = `${copy.quality.cycleTimeSourceLabel}: ${copy.quality.cycleTimeSource[source]}`;
+  const locale = usePreferencesStore((state) => state.locale);
+  const time = resolveActivityTime(node);
+  const sourceNote = `${copy.quality.cycleTimeSourceLabel}: ${copy.quality.cycleTimeSource[time.cycleTimeSource]}`;
+  const processingNote = copy.quality.processingSource[time.processingSource];
   const titles = { CT: copy.cycleMinutes, T: copy.processing, Wq: copy.waiting };
   const chips: Array<{ key: string; text: string; title: string; accent?: boolean }> =
     activityTimeTerms(node).map((term) => ({
       key: term.symbol,
       text: `${term.symbol} ${formatCompactMinutes(term.minutes)}`,
-      title: `${titles[term.symbol]} · ${sourceNote}`,
+      title:
+        term.symbol === 'CT'
+          ? `${titles.CT} · ${sourceNote}`
+          : term.symbol === 'T'
+            ? `${titles.T} · ${processingNote}`
+            : titles.Wq,
     }));
   if (node.cost?.resourceRatePerHour != null) {
     chips.push({
@@ -45,7 +51,12 @@ export function TaskChips({
     });
   }
   return (
-    <div className="flow-chips">
+    <div
+      className="flow-chips nodrag nopan nowheel focus-ring"
+      role="region"
+      tabIndex={0}
+      aria-label={`${node.label}: ${copy.cycleMinutes}, ${copy.processing}, ${copy.hourlyRate}`}
+    >
       {chips.length === 0 ? (
         <span className="flow-chip flow-chip--empty" title={sourceNote}>
           CT –

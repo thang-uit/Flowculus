@@ -6,10 +6,9 @@ import {
   ShareNetwork,
   SidebarSimple,
 } from '@phosphor-icons/react';
-import Link from 'next/link';
 import { useRef, type ChangeEvent } from 'react';
 
-import { FlowculusLogo } from '@/components/branding/FlowculusLogo';
+import { WorkspaceProjectMenu } from '@/components/header/WorkspaceProjectMenu';
 import { HeaderKpiBadge } from '@/components/header/HeaderKpiBadge';
 import { ModeSwitch } from '@/components/header/ModeSwitch';
 import { ImageReferencePanel } from '@/components/ImageReferencePanel';
@@ -20,15 +19,17 @@ import { WorkspaceCanvasControls } from '@/components/WorkspaceToolbar';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { describeImportError } from '@/lib/import-error';
 import { useWorkspaceActions } from '@/lib/use-workspace-actions';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 interface WorkspaceHeaderProps {
-  onImportFiles: (files: File[]) => Promise<void>;
+  onImportFiles: (files: File[]) => Promise<boolean>;
 }
 
 export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const mode = useWorkspaceStore((state) => state.mode);
   const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
@@ -40,33 +41,18 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = '';
     void onImportFiles(files)
-      .then(() => showStatus(copy.fileReady))
-      .catch((error: unknown) => {
-        showStatus(
-          error instanceof Error && error.message === 'file-too-large'
-            ? copy.fileTooLarge
-            : copy.fileError,
-        );
-      });
+      .then((applied) => {
+        if (applied) showStatus(copy.fileReady);
+      })
+      .catch((error: unknown) => showStatus(describeImportError(error, copy)));
   };
 
-  const brand = (compact: boolean) => (
-    <Tooltip content={copy.brandTooltip}>
-      <Link
-        href="/"
-        aria-label={copy.brandTooltip}
-        title={copy.brandTooltip}
-        className="focus-ring group min-w-0 shrink-0 cursor-pointer select-none rounded-xl"
-      >
-        <FlowculusLogo compact={compact} className="shrink-0" />
-      </Link>
-    </Tooltip>
-  );
+  const brand = (compact: boolean) => <WorkspaceProjectMenu compact={compact} />;
 
   return (
     <header className="workspace-header relative flex h-12 min-h-12 min-w-0 shrink-0 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-2 sm:px-4">
       {/* Mobile */}
-      <div className="flex w-full min-w-0 items-center justify-between gap-1.5 lg:hidden">
+      <div className="flex w-full min-w-0 items-center justify-between gap-1.5 xl:hidden">
         <div className="flex min-w-0 items-center gap-1.5">
           {brand(true)}
           <ModeSwitch compact />
@@ -75,26 +61,41 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
           {mode === 'model' ? <HeaderKpiBadge compact /> : null}
           <LanguageToggle />
           <ThemeToggle />
-          <WorkspaceExportMenu
-            copy={copy}
-            compact
-            onOpenFile={() => fileInputRef.current?.click()}
-            onExport={runExport}
-            onShare={() => void share()}
-          />
+          {mode === 'model' ? (
+            <WorkspaceExportMenu
+              copy={copy}
+              compact
+              onOpenFile={() => fileInputRef.current?.click()}
+              onExport={runExport}
+              onShare={() => void share()}
+            />
+          ) : (
+            <button
+              type="button"
+              aria-label={copy.openFile}
+              title={copy.openFile}
+              onClick={() => fileInputRef.current?.click()}
+              className="focus-ring tb-btn tb-btn--idle"
+            >
+              <FileArrowUp size={15} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Desktop */}
-      <div className="hidden w-full min-w-0 items-center justify-between gap-3 lg:flex">
+      <div className="hidden w-full min-w-0 items-center justify-between gap-3 xl:flex">
         <div className="flex min-w-0 items-center gap-2.5">
           {brand(false)}
           <span className="tb-divider" aria-hidden="true" />
           <ModeSwitch />
           {mode === 'model' ? (
             <>
-              <span className="tb-divider" aria-hidden="true" />
-              <WorkspaceCanvasControls />
+              <span
+                className="tb-divider hidden min-[1440px]:inline-flex"
+                aria-hidden="true"
+              />
+              <WorkspaceCanvasControls className="hidden min-[1440px]:flex" />
             </>
           ) : null}
         </div>
@@ -117,37 +118,41 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
               <FileArrowUp size={15} aria-hidden="true" />
             </button>
           </Tooltip>
-          <Tooltip content={copy.saveFile}>
-            <button
-              type="button"
-              aria-label={copy.saveFile}
-              title={copy.saveFile}
-              onClick={() => runExport('drawio')}
-              className="focus-ring tb-btn tb-btn--idle"
-            >
-              <FileArrowDown size={15} aria-hidden="true" />
-            </button>
-          </Tooltip>
-          <Tooltip content={copy.shareFile}>
-            <button
-              type="button"
-              aria-label={copy.shareFile}
-              title={copy.shareFile}
-              onClick={() => void share()}
-              className="focus-ring tb-btn tb-btn--idle hidden xl:inline-flex"
-            >
-              <ShareNetwork size={15} aria-hidden="true" />
-            </button>
-          </Tooltip>
-          <span className="hidden xl:inline-flex">
-            <ImageReferencePanel />
-          </span>
-          <WorkspaceExportMenu
-            copy={copy}
-            onOpenFile={() => fileInputRef.current?.click()}
-            onExport={runExport}
-            onShare={() => void share()}
-          />
+          {mode === 'model' ? (
+            <>
+              <Tooltip content={copy.saveFile}>
+                <button
+                  type="button"
+                  aria-label={copy.saveFile}
+                  title={copy.saveFile}
+                  onClick={() => runExport('drawio')}
+                  className="focus-ring tb-btn tb-btn--idle"
+                >
+                  <FileArrowDown size={15} aria-hidden="true" />
+                </button>
+              </Tooltip>
+              <Tooltip content={copy.shareFile}>
+                <button
+                  type="button"
+                  aria-label={copy.shareFile}
+                  title={copy.shareFile}
+                  onClick={() => void share()}
+                  className="focus-ring tb-btn tb-btn--idle hidden xl:inline-flex"
+                >
+                  <ShareNetwork size={15} aria-hidden="true" />
+                </button>
+              </Tooltip>
+              <span className="hidden xl:inline-flex">
+                <ImageReferencePanel />
+              </span>
+              <WorkspaceExportMenu
+                copy={copy}
+                onOpenFile={() => fileInputRef.current?.click()}
+                onExport={runExport}
+                onShare={() => void share()}
+              />
+            </>
+          ) : null}
           <span className="tb-divider" aria-hidden="true" />
           <LanguageToggle />
           <ThemeToggle />
@@ -160,6 +165,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
                   aria-label={copy.toggleInspector}
                   title={copy.toggleInspector}
                   aria-pressed={inspectorOpen}
+                  data-inspector-toggle="true"
                   onClick={toggleInspector}
                   className={cn(
                     'focus-ring tb-btn',
@@ -190,7 +196,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".flowculus.json,.drawio,.xml,.json,.csv,.tsv,.xes"
+        accept=".flowculus.json,.drawio,.xml,.json,.csv,.tsv,.xes,.xlsx,.png,.jpg,.jpeg,.webp"
         multiple
         className="sr-only"
         aria-label={copy.openFile}

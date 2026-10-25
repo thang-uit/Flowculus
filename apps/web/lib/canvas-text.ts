@@ -4,6 +4,9 @@ export interface ReportLine {
   weight?: string;
 }
 
+export const REPORT_FONT =
+  '"Plus Jakarta Sans Variable", "Plus Jakarta Sans", Arial, sans-serif';
+
 export const wrapText = (
   context: CanvasRenderingContext2D,
   text: string,
@@ -36,7 +39,7 @@ export const drawLines = (
 ): number => {
   let cursorY = y;
   for (const line of lines) {
-    context.font = `${line.weight ?? '400'} 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+    context.font = `${line.weight ?? '400'} 22px ${REPORT_FONT}`;
     context.fillStyle = line.color ?? '#46525e';
     for (const wrapped of wrapText(context, line.text, maxWidth)) {
       context.fillText(wrapped, x, cursorY);

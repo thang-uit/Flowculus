@@ -23,7 +23,9 @@ const renderFormula = (node: FormulaNode): ReactNode => {
           <span className="formula-operator">(</span>
           {renderFormula(node.probability)}
           <span className="formula-operator">×</span>
+          {node.term.kind === 'sum' ? <span className="formula-operator">(</span> : null}
           {renderFormula(node.term)}
+          {node.term.kind === 'sum' ? <span className="formula-operator">)</span> : null}
           <span className="formula-operator">)</span>
         </span>
       );
@@ -64,7 +66,13 @@ const renderFormula = (node: FormulaNode): ReactNode => {
           {node.factors.map((factor, index) => (
             <Fragment key={`product-${index}`}>
               {index > 0 ? <span className="formula-operator">×</span> : null}
+              {factor.kind === 'sum' || factor.kind === 'difference' ? (
+                <span className="formula-operator">(</span>
+              ) : null}
               {renderFormula(factor)}
+              {factor.kind === 'sum' || factor.kind === 'difference' ? (
+                <span className="formula-operator">)</span>
+              ) : null}
             </Fragment>
           ))}
         </span>

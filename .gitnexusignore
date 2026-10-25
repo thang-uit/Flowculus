@@ -1,0 +1,13 @@
+# Generated artifacts and local evidence are never source-code graph inputs.
+node_modules/
+.next/
+.turbo/
+.tmp/
+.playwright-cli/
+.impeccable/
+coverage/
+dist/
+*.tsbuildinfo
+pnpm-lock.yaml
+apps/web/public/
+docs/images/

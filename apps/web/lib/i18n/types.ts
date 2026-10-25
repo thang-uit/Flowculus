@@ -1,4 +1,5 @@
 import type { MiningPresetId } from '@flowculus/process-mining';
+import type { ConformanceIssueKind } from '@flowculus/process-mining';
 
 import type { SemanticShapeTool } from '@/lib/shape-tools';
 
@@ -28,6 +29,7 @@ export interface WorkspaceCopy {
   shareCancelled: string;
   useLightTheme: string;
   useDarkTheme: string;
+  darkThemeSwitch: string;
   switchLanguage: string;
   collapsePalette: string;
   expandPalette: string;
@@ -37,6 +39,7 @@ export interface WorkspaceCopy {
   resizeResultsHint: string;
   analysisAutoUpdate: string;
   analysisUpdated: string;
+  analysisExportWait: string;
   addShape: string;
   shapes: string;
   shapesDescription: string;
@@ -69,6 +72,8 @@ export interface WorkspaceCopy {
   dataObject: string;
   annotation: string;
   select: string;
+  selectHint: string;
+  panHint: string;
   panCanvas: string;
   tools: string;
   fitToCanvas: string;
@@ -134,6 +139,15 @@ export interface WorkspaceCopy {
   assumption: string;
   simulationRequired: string;
   formula: string;
+  copyFormula: string;
+  formulaCopied: string;
+  formulaCopyFailed: string;
+  clipboardCopied: (count: number) => string;
+  clipboardPasted: (count: number) => string;
+  clipboardEmpty: string;
+  clipboardInvalid: string;
+  clipboardCut: string;
+  clipboardDuplicate: string;
   cycleFormulaLabel: string;
   theoreticalFormulaLabel: string;
   costFormulaLabel: string;
@@ -152,8 +166,13 @@ export interface WorkspaceCopy {
   shareText: string;
   fileReady: string;
   fileError: string;
+  exportError: string;
   fileTooLarge: string;
+  missingNodeTable: string;
+  invalidModelCsv: string;
+  invalidCsvNumber: (section: 'nodes' | 'edges', row: number, column: string) => string;
   emptyValue: string;
+  emptyAnalysis: string;
   clearScenarioInputs: string;
   invalidNumber: string;
   invalidReworkProbability: string;
@@ -189,11 +208,48 @@ export interface WorkspaceCopy {
   imageReference: string;
   imageReferenceDescription: string;
   imageFileHint: string;
-  imageRecognitionUnavailable: string;
   removeImage: string;
   close: string;
-  imageTooLarge: string;
-  imageInvalid: string;
+  imageVisualTrace: string;
+  imageAssistedTrace: string;
+  imageTraceReview: string;
+  imageTraceStage: Record<
+    'decode' | 'loading' | 'preprocess' | 'detect-shapes' | 'detect-connectors',
+    string
+  >;
+  imageTraceError: Record<
+    | 'invalid-type'
+    | 'invalid-size'
+    | 'invalid-dimensions'
+    | 'decode-failed'
+    | 'canvas-unavailable'
+    | 'worker-failed'
+    | 'timeout'
+    | 'trace-failed',
+    string
+  >;
+  imageTraceEmpty: string;
+  imageTraceHint: string;
+  imageTraceCandidates: string;
+  imageTraceConnectors: string;
+  imageTraceAddConnector: string;
+  imageTraceSource: string;
+  imageTraceTarget: string;
+  imageTraceCreate: string;
+  imageTraceReplaceWarning: string;
+  imageTraceOpacity: string;
+  imageTraceRotation: string;
+  imageTraceCrop: string;
+  imageTraceCropSide: Record<'left' | 'top' | 'right' | 'bottom', string>;
+  imageTraceLocked: string;
+  imageTraceRemoveCandidate: string;
+  imageTraceKind: string;
+  imageTraceLabel: string;
+  imageTraceRetry: string;
+  imageTraceCancel: string;
+  imageTraceLoaded: string;
+  imageStorageError: string;
+  imageTraceDiagnostics: string;
   pages: string;
   formulaBreakdown: string;
   assumptionsAndContext: string;
@@ -213,6 +269,36 @@ export interface WorkspaceCopy {
   exportSectionDiagram: string;
   exportSectionReport: string;
   flowKind: string;
+  edgeRoute: string;
+  edgeAttachmentSource: string;
+  edgeAttachmentTarget: string;
+  edgeAttachmentAuto: string;
+  edgeAttachmentSides: Record<'top' | 'right' | 'bottom' | 'left', string>;
+  edgeAttachmentHint: string;
+  edgeReconnectSource: string;
+  edgeReconnectTarget: string;
+  edgeReconnectInvalid: string;
+  edgeAccessibleName: (source: string, target: string) => string;
+  edgeOrthogonal: string;
+  edgeStraight: string;
+  edgeCurved: string;
+  edgeAddWaypoint: string;
+  edgeClearWaypoints: string;
+  edgeWaypoint: string;
+  edgeWaypointHint: string;
+  canvasContextMenu: string;
+  duplicateSelection: string;
+  copySelection: string;
+  cutSelection: string;
+  pasteSelection: string;
+  alignLeft: string;
+  alignRight: string;
+  alignTop: string;
+  alignBottom: string;
+  distributeHorizontal: string;
+  distributeVertical: string;
+  snapToGrid: string;
+  zoomToSelection: string;
   inferredBadge: string;
   inferredTypeHint: string;
   invalidProbability: string;
@@ -235,6 +321,10 @@ export interface WorkspaceCopy {
   messageFlow: string;
   minedModelTitle: string;
   minimap: string;
+  showMinimap: string;
+  hideMinimap: string;
+  edgeSegment: string;
+  edgeEditHint: string;
   miningActivities: string;
   miningActivityThreshold: string;
   miningBottlenecks: string;
@@ -253,6 +343,7 @@ export interface WorkspaceCopy {
   miningFrequency: string;
   miningHandoverDelay: string;
   miningHappyPath: string;
+  miningDegree: string;
   miningHappyPathBadge: string;
   miningHappyPathHint: string;
   miningHidden: (activities: number, edges: number) => string;
@@ -264,6 +355,38 @@ export interface WorkspaceCopy {
   miningLoading: string;
   miningLoopBadge: string;
   miningMap: string;
+  miningNetwork: string;
+  miningNetworkHint: string;
+  miningNoResources: string;
+  miningShownResources: (shown: number, total: number) => string;
+  miningResource: string;
+  miningResizeSource: string;
+  miningResizeInsights: string;
+  miningHandoffs: string;
+  miningBetweenness: string;
+  miningCloseness: string;
+  miningEigenvector: string;
+  miningPageRank: string;
+  miningAlpha: string;
+  miningAlphaHint: string;
+  miningAlphaLimit: string;
+  miningAlphaLoops: string;
+  miningAlphaCausal: string;
+  miningAlphaParallel: string;
+  miningPetriPlaces: string;
+  miningAlphaReplay: string;
+  miningAlphaReplayHint: string;
+  miningAlphaExamples: string;
+  miningConformance: string;
+  miningConformanceCheck: string;
+  miningConformanceHint: string;
+  miningConformanceUnmatched: string;
+  miningConformanceUnsupported: string;
+  miningConformanceLoading: string;
+  miningConformanceCases: string;
+  miningConformanceOmitted: (count: number) => string;
+  miningConformanceExpected: string;
+  miningConformanceIssue: Record<ConformanceIssueKind, string>;
   miningMedian: string;
   miningMoreVariants: (count: number) => string;
   miningNoBottlenecks: string;
@@ -275,7 +398,7 @@ export interface WorkspaceCopy {
   miningSendToCanvas: string;
   miningSendToCanvasHint: string;
   miningServiceTime: string;
-  miningSkipped: (rows: number, timestamps: number) => string;
+  miningSkipped: (rows: number, timestamps: number, startTimes: number) => string;
   miningSource: string;
   miningSourceHint: string;
   miningStart: string;

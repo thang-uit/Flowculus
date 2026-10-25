@@ -36,7 +36,7 @@ import {
 import { formatDurationMs, formatInteger } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import type { DfgEdgeMetric } from '@/lib/mining-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const hiddenHandles = (
   <>
@@ -58,7 +58,7 @@ const hiddenHandles = (
 const ActivityNode = memo(function ActivityNode({
   data,
 }: NodeProps<Node<DfgActivityNodeData, 'activity'>>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const { activity } = data;
   const share = activity.frequency / Math.max(1, data.maxFrequency);
@@ -92,7 +92,7 @@ const ActivityNode = memo(function ActivityNode({
 const TerminalNode = memo(function TerminalNode({
   data,
 }: NodeProps<Node<DfgTerminalNodeData, 'terminal'>>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   return (
     <div

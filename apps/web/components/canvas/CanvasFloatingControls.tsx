@@ -9,16 +9,18 @@ import {
   SlidersHorizontal,
 } from '@phosphor-icons/react';
 
+import { CanvasToolSwitch } from './CanvasToolSwitch';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useCanvasCommands } from '@/lib/use-canvas-commands';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /**
  * Compact action bar for touch layouts, where the header has no room for the
- * canvas controls. Hidden from `lg` upwards.
+ * canvas controls. Wide desktop layouts place these controls in the header.
  */
 export function CanvasFloatingControls() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const canUndo = useWorkspaceStore((state) => state.history.past.length > 0);
   const canRedo = useWorkspaceStore((state) => state.history.future.length > 0);
@@ -26,14 +28,16 @@ export function CanvasFloatingControls() {
   const redo = useWorkspaceStore((state) => state.redo);
   const setInspectorOpen = useWorkspaceStore((state) => state.setInspectorOpen);
   const { zoomIn, zoomOut, fit } = useCanvasCommands();
-  const buttonClass = 'focus-ring tb-btn tb-btn--idle size-9 disabled:opacity-40';
+  const buttonClass = 'focus-ring tb-btn tb-btn--idle size-8 disabled:opacity-40';
 
   return (
     <div
       role="toolbar"
       aria-label={copy.tools}
-      className="absolute bottom-3 left-1/2 z-[5] flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-[var(--shadow-soft)] lg:hidden"
+      className="absolute bottom-3 left-1/2 z-[5] flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-[var(--shadow-soft)] min-[1440px]:hidden"
     >
+      <CanvasToolSwitch />
+      <span className="tb-divider" aria-hidden="true" />
       <button
         type="button"
         className={buttonClass}

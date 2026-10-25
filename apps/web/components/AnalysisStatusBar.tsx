@@ -14,8 +14,10 @@ import { exportDrawioXml, importDrawioXml } from '@flowculus/drawio-adapter';
 import { withAutoLayout } from '@flowculus/file-formats';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { AppSelect } from '@/components/ui/AppSelect';
 import { useOnlineStatus } from '@/lib/use-online-status';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Switching page first writes the current edits back into the source file. */
 const switchDrawioPage = async (pageIndex: number) => {
@@ -33,7 +35,7 @@ const switchDrawioPage = async (pageIndex: number) => {
 };
 
 export function AnalysisStatusBar() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const draftStatus = useWorkspaceStore((state) => state.draftStatus);
   const analysisRuntimeStatus = useWorkspaceStore((state) => state.analysisRuntimeStatus);
@@ -154,18 +156,16 @@ export function AnalysisStatusBar() {
             <label htmlFor={pageSelectId} className="sr-only">
               {copy.pages}
             </label>
-            <select
+            <AppSelect
               id={pageSelectId}
-              value={drawioSource.pageIndex}
-              onChange={(event) => void switchDrawioPage(Number(event.target.value))}
-              className="focus-ring h-7 max-w-[10rem] cursor-pointer rounded-md border border-[var(--border)] bg-[var(--surface-raised)] px-1.5 text-[11px] text-[var(--text)]"
-            >
-              {drawioSource.pages.map((page, index) => (
-                <option key={page.id} value={index}>
-                  {page.name}
-                </option>
-              ))}
-            </select>
+              value={String(drawioSource.pageIndex)}
+              onValueChange={(next) => void switchDrawioPage(Number(next))}
+              options={drawioSource.pages.map((page, index) => ({
+                value: String(index),
+                label: page.name,
+              }))}
+              className="!h-7 max-w-[10rem] !text-[11px]"
+            />
           </span>
         ) : null}
         <span className="hidden items-center gap-1.5 font-mono text-[10px] sm:inline-flex">

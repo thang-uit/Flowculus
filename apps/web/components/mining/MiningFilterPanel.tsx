@@ -4,11 +4,11 @@ import { ArrowCounterClockwise } from '@phosphor-icons/react';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Frequency and duration thresholds; changes re-run discovery (debounced). */
 export function MiningFilterPanel() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const filter = useMiningStore((state) => state.filter);
   const discovery = useMiningStore((state) => state.result?.discovery);

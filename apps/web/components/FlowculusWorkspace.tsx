@@ -2,7 +2,7 @@
 
 import { ReactFlowProvider } from '@xyflow/react';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { AnalysisDock } from '@/components/AnalysisDock';
 import { AnalysisStatusBar } from '@/components/AnalysisStatusBar';
@@ -18,12 +18,15 @@ import { SemanticGateDialog } from '@/components/semantics/SemanticGateDialog';
 import { SectionErrorBoundary } from '@/components/ui/SectionErrorBoundary';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { importWorkspaceFiles } from '@/lib/import-process-file';
-import { useMiningStore } from '@/lib/mining-store';
 import { useAnalysisWorker } from '@/lib/use-analysis-worker';
 import { useLocalDraft } from '@/lib/use-local-draft';
+import { useReferenceAsset } from '@/lib/image-trace/use-reference-asset';
+import { useWorkspaceImport } from '@/lib/use-workspace-import';
 import { useMediaQuery } from '@/lib/use-media-query';
+import { useWorkspaceRoute } from '@/lib/use-workspace-route';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
+import type { WorkspaceMode } from '@/lib/workspace-store';
 
 // The mining view (worker, map and tables) is only loaded when it is opened.
 const MiningWorkspace = dynamic(
@@ -35,7 +38,7 @@ const MiningWorkspace = dynamic(
 );
 
 function MiningLoading() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   return (
     <div
@@ -52,44 +55,31 @@ function MiningLoading() {
   );
 }
 
-export function FlowculusWorkspace() {
-  const mode = useWorkspaceStore((state) => state.mode);
+export function FlowculusWorkspace({
+  initialMode = 'model',
+}: {
+  initialMode?: WorkspaceMode;
+}) {
+  const routeReady = useWorkspaceRoute();
+  const storedMode = useWorkspaceStore((state) => state.mode);
+  const mode = routeReady ? storedMode : initialMode;
   const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
   const setInspectorOpen = useWorkspaceStore((state) => state.setInspectorOpen);
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   // The bottom sheet is modal; it must not exist (and hide the page from
   // assistive technology) when the docked desktop inspector is visible.
   const dockedInspector = useMediaQuery('(min-width: 1280px)');
 
   useLocalDraft();
+  useReferenceAsset();
   useAnalysisWorker();
 
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
 
-  const handleImportFiles = useCallback(
-    async (files: File[]) => {
-      const imported = await importWorkspaceFiles(files, copy.modelName);
-      const state = useWorkspaceStore.getState();
-      if (imported.kind === 'event-log') {
-        useMiningStore.getState().queueUpload({
-          fileName: imported.fileName,
-          source: imported.source,
-        });
-        state.setMode('mining');
-        return;
-      }
-      state.loadModel(imported.model, {
-        drawioSource: imported.drawioSource,
-        analysisOptions: imported.analysisOptions,
-        modelName: imported.modelName,
-      });
-      state.setMode('model');
-    },
-    [copy.modelName],
-  );
+  const handleImportFiles = useWorkspaceImport(copy.modelName);
 
   return (
     <TooltipProvider>
@@ -115,16 +105,18 @@ export function FlowculusWorkspace() {
                 </SectionErrorBoundary>
                 <AnalysisStatusBar />
               </main>
-              <SectionErrorBoundary section="inspector">
-                <InspectorPanel open={inspectorOpen} />
-              </SectionErrorBoundary>
+              {routeReady && dockedInspector ? (
+                <SectionErrorBoundary section="inspector">
+                  <InspectorPanel open={inspectorOpen} />
+                </SectionErrorBoundary>
+              ) : null}
             </div>
           ) : (
             <SectionErrorBoundary section="mining">
               <MiningWorkspace />
             </SectionErrorBoundary>
           )}
-          {mode === 'model' && !dockedInspector ? (
+          {routeReady && mode === 'model' && !dockedInspector ? (
             <MobileInspectorDialog open={inspectorOpen} onOpenChange={setInspectorOpen} />
           ) : null}
           <FileDropOverlay copy={copy} onImportFiles={handleImportFiles} />

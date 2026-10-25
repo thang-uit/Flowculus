@@ -6,17 +6,20 @@ import { cn } from '@/lib/cn';
 import { formatDurationMs, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const MAX_VISIBLE_VARIANTS = 50;
 
 /** Trace variants ranked by frequency; selecting one highlights it on the map. */
 export function VariantExplorer({ variants }: Readonly<{ variants: TraceVariant[] }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const selectedId = useMiningStore((state) => state.selectedVariantId);
   const select = useMiningStore((state) => state.setSelectedVariantId);
-  const maxShare = Math.max(...variants.map((variant) => variant.share), 0.0001);
+  const maxShare = variants.reduce(
+    (max, variant) => Math.max(max, variant.share),
+    0.0001,
+  );
 
   return (
     <ol className="space-y-1.5" aria-label={copy.miningVariants}>
@@ -41,7 +44,10 @@ export function VariantExplorer({ variants }: Readonly<{ variants: TraceVariant[
                     {variant.id}
                   </span>
                   {variant.isHappyPath ? (
-                    <span className="rounded bg-[var(--accent)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase text-[var(--accent-ink)]">
+                    <span
+                      title={copy.miningHappyPathHint}
+                      className="rounded bg-[var(--accent)] px-1.5 py-0.5 text-[9.5px] font-bold uppercase text-[var(--accent-ink)]"
+                    >
                       {copy.miningHappyPathBadge}
                     </span>
                   ) : null}

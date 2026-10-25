@@ -1,7 +1,10 @@
 import {
   buildEventLog,
+  buildSocialNetwork,
+  checkModelConformance,
+  mineAlpha,
   dfgToProcessModel,
-  discoverProcess,
+  createProcessDiscovery,
   eventLogToCsv,
   generatePresetLog,
   parseEventTable,
@@ -14,6 +17,9 @@ import {
   type MiningConversionWarning,
   type MiningPresetId,
   type ProcessDiscovery,
+  type SocialNetwork,
+  type AlphaMiningResult,
+  type ModelConformance,
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
 
@@ -28,6 +34,7 @@ export type MiningRequest =
     }
   | { type: 'discover'; filter: DiscoveryFilter }
   | { type: 'to-model'; filter: DiscoveryFilter; name: string }
+  | { type: 'check-conformance'; model: ProcessModel }
   | { type: 'export-log' };
 
 export interface MiningDiscoveryResponse {
@@ -35,8 +42,11 @@ export interface MiningDiscoveryResponse {
   logName: string;
   hasStartTimes: boolean;
   discovery: ProcessDiscovery;
+  socialNetwork: SocialNetwork;
+  alpha: AlphaMiningResult;
   skippedRows: number;
   invalidTimestamps: number;
+  invalidStartTimes: number;
 }
 
 export interface MiningTableResponse {
@@ -61,8 +71,17 @@ export interface MiningCsvResponse {
   logName: string;
 }
 
+export interface MiningConformanceResponse {
+  type: 'conformance';
+  result: ModelConformance;
+}
+
 export type MiningResponse =
-  MiningDiscoveryResponse | MiningTableResponse | MiningModelResponse | MiningCsvResponse;
+  | MiningDiscoveryResponse
+  | MiningTableResponse
+  | MiningModelResponse
+  | MiningCsvResponse
+  | MiningConformanceResponse;
 
 /**
  * Stateful process-mining session shared by the Web Worker and the
@@ -72,7 +91,10 @@ export type MiningResponse =
 export const createMiningSession = () => {
   let table: EventTable | null = null;
   let log: EventLog | null = null;
-  let buildSummary = { skippedRows: 0, invalidTimestamps: 0 };
+  let buildSummary = { skippedRows: 0, invalidTimestamps: 0, invalidStartTimes: 0 };
+  let socialNetwork: SocialNetwork | null = null;
+  let alpha: AlphaMiningResult | null = null;
+  let discover: ReturnType<typeof createProcessDiscovery> | null = null;
 
   const requireLog = (): EventLog => {
     if (!log) throw new Error('No event log is loaded.');
@@ -85,7 +107,9 @@ export const createMiningSession = () => {
       type: 'discovery',
       logName: current.name,
       hasStartTimes: current.hasStartTimes,
-      discovery: discoverProcess(current, filter),
+      discovery: (discover ??= createProcessDiscovery(current))(filter),
+      socialNetwork: socialNetwork ?? (socialNetwork = buildSocialNetwork(current)),
+      alpha: alpha ?? (alpha = mineAlpha(current)),
       ...buildSummary,
     };
   };
@@ -95,7 +119,10 @@ export const createMiningSession = () => {
       case 'load-preset':
         table = null;
         log = generatePresetLog(request.presetId);
-        buildSummary = { skippedRows: 0, invalidTimestamps: 0 };
+        socialNetwork = null;
+        alpha = null;
+        discover = null;
+        buildSummary = { skippedRows: 0, invalidTimestamps: 0, invalidStartTimes: 0 };
         return discovery(request.filter);
       case 'inspect-file':
         table = parseEventTable(request.fileName, request.source);
@@ -115,9 +142,14 @@ export const createMiningSession = () => {
           throw new Error('No event could be read with this column mapping.');
         }
         log = result.log;
+        table = null;
+        socialNetwork = null;
+        alpha = null;
+        discover = null;
         buildSummary = {
           skippedRows: result.skippedRows,
           invalidTimestamps: result.invalidTimestamps,
+          invalidStartTimes: result.invalidStartTimes,
         };
         return discovery(request.filter);
       }
@@ -125,7 +157,7 @@ export const createMiningSession = () => {
         return discovery(request.filter);
       case 'to-model': {
         const current = requireLog();
-        const { dfg } = discoverProcess(current, request.filter);
+        const { dfg } = (discover ??= createProcessDiscovery(current))(request.filter);
         const converted = dfgToProcessModel(dfg, {
           name: request.name,
           hasStartTimes: current.hasStartTimes,
@@ -136,6 +168,11 @@ export const createMiningSession = () => {
         const current = requireLog();
         return { type: 'csv', csv: eventLogToCsv(current), logName: current.name };
       }
+      case 'check-conformance':
+        return {
+          type: 'conformance',
+          result: checkModelConformance(requireLog(), request.model),
+        };
     }
   };
 };

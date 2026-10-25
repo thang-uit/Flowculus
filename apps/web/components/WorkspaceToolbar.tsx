@@ -1,11 +1,11 @@
 'use client';
 
+import { usePreferencesStore } from '@/lib/use-preferences-store';
+
 import {
   ArrowUUpLeft,
   ArrowUUpRight,
   ArrowsIn,
-  Cursor,
-  Hand,
   Minus,
   Plus,
 } from '@phosphor-icons/react';
@@ -15,7 +15,8 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useCanvasCommands } from '@/lib/use-canvas-commands';
-import { useWorkspaceStore, type CanvasTool } from '@/lib/workspace-store';
+import { CanvasToolSwitch } from '@/components/canvas/CanvasToolSwitch';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 
 /** Re-renders only when the zoom level changes, never on pan frames. */
 function ZoomLevel({ onReset, label }: Readonly<{ onReset: () => void; label: string }>) {
@@ -36,20 +37,13 @@ function ZoomLevel({ onReset, label }: Readonly<{ onReset: () => void; label: st
 }
 
 export function WorkspaceCanvasControls({ className }: Readonly<{ className?: string }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const activeTool = useWorkspaceStore((state) => state.activeTool);
-  const setActiveTool = useWorkspaceStore((state) => state.setActiveTool);
   const canUndo = useWorkspaceStore((state) => state.history.past.length > 0);
   const canRedo = useWorkspaceStore((state) => state.history.future.length > 0);
   const undo = useWorkspaceStore((state) => state.undo);
   const redo = useWorkspaceStore((state) => state.redo);
   const { zoomIn, zoomOut, fit, resetZoom } = useCanvasCommands();
-
-  const toolOptions: Array<{ id: CanvasTool; label: string; icon: typeof Cursor }> = [
-    { id: 'select', label: copy.select, icon: Cursor },
-    { id: 'hand', label: copy.panCanvas, icon: Hand },
-  ];
 
   return (
     <div
@@ -57,26 +51,7 @@ export function WorkspaceCanvasControls({ className }: Readonly<{ className?: st
       aria-label={copy.tools}
       className={cn('flex h-8 items-center gap-1', className)}
     >
-      {toolOptions.map(({ id, label, icon: Icon }) => {
-        const isActive = activeTool === id;
-        return (
-          <Tooltip key={id} content={label}>
-            <button
-              type="button"
-              aria-label={label}
-              title={label}
-              aria-pressed={isActive}
-              onClick={() => setActiveTool(id)}
-              className={cn(
-                'focus-ring tb-btn',
-                isActive ? 'tb-btn--active' : 'tb-btn--idle',
-              )}
-            >
-              <Icon size={15} weight={isActive ? 'bold' : 'regular'} aria-hidden="true" />
-            </button>
-          </Tooltip>
-        );
-      })}
+      <CanvasToolSwitch />
 
       <span className="tb-divider" aria-hidden="true" />
 

@@ -70,3 +70,52 @@ describe('mining session', () => {
     expect(preset.type === 'discovery' && preset.discovery.stats.caseCount).toBe(2);
   });
 });
+
+describe('mining session lifecycle', () => {
+  it('replaces cached discoveries when a different log is loaded', () => {
+    const session = createMiningSession();
+    session({
+      type: 'load-preset',
+      presetId: 'order-to-cash',
+      filter: DEFAULT_DISCOVERY_FILTER,
+    });
+    session({
+      type: 'inspect-file',
+      fileName: 'small.csv',
+      source: 'caseId,activity,timestamp\n1,Custom,2026-10-25',
+    });
+    const custom = session({
+      type: 'apply-mapping',
+      name: 'custom',
+      mapping: { caseId: 'caseId', activity: 'activity', timestamp: 'timestamp' },
+      filter: DEFAULT_DISCOVERY_FILTER,
+    });
+    expect(custom.type).toBe('discovery');
+    if (custom.type !== 'discovery') return;
+    expect(custom.discovery.stats.eventCount).toBe(1);
+    expect(custom.discovery.dfg.activities.map((activity) => activity.id)).toEqual([
+      'Custom',
+    ]);
+    const filtered = session({ type: 'discover', filter: DEFAULT_DISCOVERY_FILTER });
+    expect(filtered).toEqual(custom);
+    expect(() =>
+      session({
+        type: 'apply-mapping',
+        name: 'stale',
+        mapping: { caseId: 'caseId', activity: 'activity', timestamp: 'timestamp' },
+        filter: DEFAULT_DISCOVERY_FILTER,
+      }),
+    ).toThrow(/No event log file/);
+    const preset = session({
+      type: 'load-preset',
+      presetId: 'order-to-cash',
+      filter: DEFAULT_DISCOVERY_FILTER,
+    });
+    expect(preset.type).toBe('discovery');
+    if (preset.type !== 'discovery') return;
+    expect(preset.discovery.stats.eventCount).toBeGreaterThan(1);
+    expect(preset.discovery.dfg.activities.map((activity) => activity.id)).not.toContain(
+      'Custom',
+    );
+  });
+});

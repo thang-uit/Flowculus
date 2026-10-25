@@ -11,5 +11,7 @@ coverage/
 *.local
 .env
 .env.*
-!.env.example
 .tmp/
+.playwright-cli/
+.impeccable/review/
+.gitnexus/

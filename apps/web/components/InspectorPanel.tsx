@@ -1,10 +1,10 @@
 'use client';
 
 import { Info, Trash, WarningCircle, X } from '@phosphor-icons/react';
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 import { EdgeInspector } from '@/components/inspector/EdgeInspector';
-import { inspectorInputClass } from '@/components/inspector/InspectorFields';
+import { AppSelect } from '@/components/ui/AppSelect';
 import { NodeInspector } from '@/components/inspector/NodeInspector';
 import { SemanticReviewPanel } from '@/components/semantics/SemanticReviewPanel';
 import { IconButton } from '@/components/ui/IconButton';
@@ -13,13 +13,14 @@ import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { removeElements } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 export function InspectorPanel({
   mobile = false,
   open = true,
   onClose,
 }: Readonly<{ mobile?: boolean; open?: boolean; onClose?: () => void }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const nodes = useWorkspaceStore((state) => state.processModel.nodes);
   const edges = useWorkspaceStore((state) => state.processModel.edges);
@@ -29,6 +30,39 @@ export function InspectorPanel({
   const selectedEdgeId = useWorkspaceStore((state) => state.selectedEdgeId);
   const setSelection = useWorkspaceStore((state) => state.setSelection);
   const selectId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const closeInspector = useWorkspaceStore((state) => state.setInspectorOpen);
+
+  useEffect(() => {
+    if (mobile || !open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (panelRef.current?.contains(target)) return;
+      if (
+        target.closest(
+          '[data-inspector-toggle], [data-radix-popper-content-wrapper], [role="dialog"]',
+        )
+      )
+        return;
+      closeInspector(false);
+    };
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (
+        event.key !== 'Escape' ||
+        document.querySelector('[data-radix-popper-content-wrapper]')
+      )
+        return;
+      closeInspector(false);
+      document.querySelector<HTMLButtonElement>('[data-inspector-toggle]')?.focus();
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [closeInspector, mobile, open]);
   const node = selectedNodeIds.length === 1 ? nodes[selectedNodeIds[0]] : undefined;
   const edge =
     selectedNodeIds.length === 0 && selectedEdgeId ? edges[selectedEdgeId] : undefined;
@@ -73,6 +107,7 @@ export function InspectorPanel({
 
   return (
     <aside
+      ref={panelRef}
       aria-label={copy.inspector}
       className={cn(
         'shrink-0 flex-col bg-[var(--surface)]',
@@ -104,24 +139,23 @@ export function InspectorPanel({
         >
           {copy.chooseShape}
         </label>
-        <select
+        <AppSelect
           id={selectId}
           value={node?.id ?? ''}
-          onChange={(event) =>
+          onValueChange={(next) =>
             setSelection({
-              nodeIds: event.target.value ? [event.target.value] : [],
+              nodeIds: next ? [next] : [],
               edgeId: null,
             })
           }
-          className={inspectorInputClass}
-        >
-          <option value="">{copy.noSelectionOption}</option>
-          {Object.values(nodes).map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.label} ({copy.shapeTypes[item.kind] ?? copy.shapeTypes.unknown})
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: '', label: copy.noSelectionOption },
+            ...Object.values(nodes).map((item) => ({
+              value: item.id,
+              label: `${item.label} (${copy.shapeTypes[item.kind] ?? copy.shapeTypes.unknown})`,
+            })),
+          ]}
+        />
       </div>
       <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto">{body}</div>
       <div className="border-t border-[var(--border)] bg-[var(--surface-raised)] p-3">

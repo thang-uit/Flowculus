@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { importDrawioXml } from '@flowculus/drawio-adapter';
 import { withAutoLayout } from '@flowculus/file-formats';
 import type { ProcessModel } from '@flowculus/process-model';
 
 import {
+  checkpointLocalDraft,
   loadLocalDraft,
   saveLocalDraft,
   type LocalDraftSnapshot,
@@ -50,53 +51,113 @@ export function useLocalDraft() {
   const modelName = useWorkspaceStore((state) => state.modelName);
   const setDraftStatus = useWorkspaceStore((state) => state.setDraftStatus);
   const hydratedRef = useRef(false);
+  const [hydrated, setHydrated] = useState(false);
   const saveTimerRef = useRef<number | null>(null);
+  const latestSnapshotRef = useRef<LocalDraftSnapshot | null>(null);
+  const saveVersionRef = useRef(0);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     let cancelled = false;
+    const initial = useWorkspaceStore.getState();
+    const workspaceUnchanged = () => {
+      const current = useWorkspaceStore.getState();
+      return (
+        current.processModel === initial.processModel &&
+        current.analysisOptions === initial.analysisOptions &&
+        current.drawioSource === initial.drawioSource
+      );
+    };
     setDraftStatus('loading');
 
     void loadLocalDraft()
       .then(async (draft) => {
         if (cancelled) return;
-        if (draft) {
+        if (draft && workspaceUnchanged()) {
           const model = await restoreLegacyGeometry(draft);
           if (cancelled) return;
-          useWorkspaceStore.getState().loadModel(model, {
-            drawioSource: draft.drawioSource ?? null,
-            analysisOptions: draft.analysisOptions ?? {},
-            modelName: draft.modelName,
-          });
+          if (workspaceUnchanged())
+            useWorkspaceStore.getState().loadModel(model, {
+              drawioSource: draft.drawioSource ?? null,
+              analysisOptions: draft.analysisOptions ?? {},
+              modelName: draft.modelName,
+            });
         }
         hydratedRef.current = true;
+        setHydrated(true);
         setDraftStatus('saved');
       })
       .catch(() => {
         if (cancelled) return;
         hydratedRef.current = true;
+        setHydrated(true);
         setDraftStatus('error');
       });
 
     return () => {
       cancelled = true;
+      // Client navigation to documentation may precede the debounced save.
+      // Keep the newest model available when the editor mounts again.
+      if (hydratedRef.current && latestSnapshotRef.current) {
+        try {
+          checkpointLocalDraft(latestSnapshotRef.current);
+        } catch {
+          // Existing IndexedDB snapshots remain the fallback if storage is full.
+        }
+      }
     };
   }, [setDraftStatus]);
 
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    const checkpoint = () => {
+      if (!hydratedRef.current || !latestSnapshotRef.current) return;
+      try {
+        checkpointLocalDraft(latestSnapshotRef.current);
+      } catch {
+        // The async IndexedDB save remains the primary path when quota is tight.
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') checkpoint();
+    };
+    window.addEventListener('pagehide', checkpoint);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.removeEventListener('pagehide', checkpoint);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const updatedAt = Math.max(
+      Date.now(),
+      (latestSnapshotRef.current?.updatedAt ?? 0) + 1,
+    );
+    latestSnapshotRef.current = {
+      model: processModel,
+      drawioSource,
+      modelName,
+      analysisOptions,
+      updatedAt,
+    };
+    const version = ++saveVersionRef.current;
     if (saveTimerRef.current != null) window.clearTimeout(saveTimerRef.current);
     setDraftStatus('saving');
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null;
-      void saveLocalDraft({
-        model: processModel,
-        drawioSource,
-        modelName,
-        analysisOptions,
-        updatedAt: Date.now(),
-      })
-        .then(() => setDraftStatus('saved'))
-        .catch(() => setDraftStatus('error'));
+      const snapshot = latestSnapshotRef.current;
+      if (!snapshot) return;
+      saveQueueRef.current = saveQueueRef.current
+        .catch(() => undefined)
+        .then(() => saveLocalDraft(snapshot));
+      void saveQueueRef.current
+        .then(() => {
+          if (version === saveVersionRef.current) setDraftStatus('saved');
+        })
+        .catch(() => {
+          if (version === saveVersionRef.current) setDraftStatus('error');
+        });
     }, SAVE_DEBOUNCE_MS);
 
     return () => {
@@ -105,5 +166,5 @@ export function useLocalDraft() {
         saveTimerRef.current = null;
       }
     };
-  }, [analysisOptions, drawioSource, modelName, processModel, setDraftStatus]);
+  }, [analysisOptions, drawioSource, hydrated, modelName, processModel, setDraftStatus]);
 }

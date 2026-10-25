@@ -6,11 +6,11 @@ import type { Bottleneck } from '@flowculus/process-mining';
 
 import { formatDurationMs, formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Slowest hand-overs and activities, by mean delay. */
 export function BottleneckList({ bottlenecks }: Readonly<{ bottlenecks: Bottleneck[] }>) {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   if (bottlenecks.length === 0) {
     return <p className="text-xs text-[var(--muted)]">{copy.miningNoBottlenecks}</p>;

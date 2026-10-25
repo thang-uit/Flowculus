@@ -12,11 +12,13 @@ const list = (dir) => (existsSync(dir) ? readdirSync(dir) : []);
 const rawWorkers = list(join(root, 'media')).filter((file) =>
   /\.worker\.[\w-]+\.(ts|tsx)$/.test(file),
 );
-const workerChunks = list(join(root, 'chunks')).filter((file) =>
-  /^flowculus-(analysis|mining)\.[\w-]+\.js$/.test(file),
+const requiredWorkers = ['analysis', 'mining', 'image-trace', 'xlsx'];
+const chunks = list(join(root, 'chunks'));
+const workerChunks = requiredWorkers.flatMap((worker) =>
+  chunks.filter((file) => new RegExp(`^flowculus-${worker}\\.[\\w-]+\\.js$`).test(file)),
 );
 
-if (rawWorkers.length > 0 || workerChunks.length < 2) {
+if (rawWorkers.length > 0 || workerChunks.length !== requiredWorkers.length) {
   console.error(
     `Worker bundling check failed. Raw worker sources: ${rawWorkers.join(', ') || 'none'}; ` +
       `bundled worker chunks: ${workerChunks.join(', ') || 'none'}.`,

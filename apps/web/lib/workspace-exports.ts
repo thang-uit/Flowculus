@@ -10,7 +10,7 @@ import { assertConfirmedModel, type ConfirmedProcessModel } from '@flowculus/val
 
 import { downloadDataUriFile, downloadTextFile } from '@/lib/browser-file-actions';
 import { buildDiagramSvg, rasterizeSvg, svgToDataUri } from '@/lib/diagram-export';
-import { safeFileStem } from '@/lib/file-name';
+import { exportFileName } from '@/lib/file-name';
 import { getModelCurrency } from '@/lib/format';
 import type { Locale, WorkspaceCopy } from '@/lib/i18n';
 import { printAnalysisReport } from '@/lib/print-report';
@@ -35,6 +35,8 @@ export interface WorkspaceExportContext {
    */
   model: ConfirmedProcessModel;
   report: AnalysisReport;
+  /** False while the worker is pending or failed; never embed stale analysis. */
+  analysisReady: boolean;
   analysisOptions: AnalysisOptions;
   drawioSource: DrawioSource | null;
   copy: WorkspaceCopy;
@@ -50,52 +52,66 @@ export const exportWorkspace = async (
 ): Promise<void> => {
   const { model, report, copy, locale } = context;
   assertConfirmedModel(model);
-  const stem = safeFileStem(model.name, 'process');
+  const exportedAt = new Date();
+  const fileName = (artifact: Parameters<typeof exportFileName>[1], extension: string) =>
+    exportFileName(model.name, artifact, extension, exportedAt);
   const title = model.name || copy.modelName;
   const currency = getModelCurrency(Object.values(model.nodes));
 
   switch (format) {
     case 'drawio': {
       const xml = await exportDrawioXml(model, context.drawioSource?.xml);
-      downloadTextFile(`${stem}.drawio`, xml, 'application/xml');
+      downloadTextFile(fileName('diagram', 'drawio'), xml, 'application/xml');
       return;
     }
     case 'flowculus': {
       const drawioXml = await exportDrawioXml(model, context.drawioSource?.xml);
       downloadTextFile(
-        `${stem}.flowculus.json`,
+        fileName('model', 'flowculus.json'),
         serializeFlowculusFile({
           schemaVersion: 1,
           model,
           drawioXml,
           analysisOptions: context.analysisOptions,
-          analysis: createAnalysisSnapshot(report),
+          ...(context.analysisReady ? { analysis: createAnalysisSnapshot(report) } : {}),
         }),
         'application/json',
       );
       return;
     }
     case 'csv':
-      downloadTextFile(`${stem}.nodes.csv`, processModelToNodesCsv(model), 'text/csv');
-      downloadTextFile(`${stem}.edges.csv`, processModelToEdgesCsv(model), 'text/csv');
+      downloadTextFile(
+        fileName('nodes', 'csv'),
+        processModelToNodesCsv(model),
+        'text/csv',
+      );
+      downloadTextFile(
+        fileName('edges', 'csv'),
+        processModelToEdgesCsv(model),
+        'text/csv',
+      );
       return;
     case 'svg':
       downloadTextFile(
-        `${stem}.svg`,
-        buildDiagramSvg(model, report).svg,
+        fileName('diagram', 'svg'),
+        buildDiagramSvg(model, context.analysisReady ? report : null, locale).svg,
         'image/svg+xml',
       );
       return;
     case 'png':
     case 'jpeg':
       downloadDataUriFile(
-        `${stem}.${format === 'jpeg' ? 'jpg' : 'png'}`,
-        await rasterizeSvg(buildDiagramSvg(model, report), format),
+        fileName('diagram', format === 'jpeg' ? 'jpg' : 'png'),
+        await rasterizeSvg(
+          buildDiagramSvg(model, context.analysisReady ? report : null, locale),
+          format,
+        ),
       );
       return;
     case 'pdf':
       printAnalysisReport({
-        imageDataUri: svgToDataUri(buildDiagramSvg(model, report).svg),
+        filename: fileName('analysis', 'pdf'),
+        imageDataUri: svgToDataUri(buildDiagramSvg(model, report, locale).svg),
         title,
         report,
         model,
@@ -109,8 +125,12 @@ export const exportWorkspace = async (
     case 'report-jpeg': {
       const imageFormat = format === 'report-jpeg' ? 'jpeg' : 'png';
       await downloadAnalysisReportImage({
-        imageDataUri: await rasterizeSvg(buildDiagramSvg(model, report), 'png', 2),
-        filename: `${stem}.report.${imageFormat === 'jpeg' ? 'jpg' : 'png'}`,
+        imageDataUri: await rasterizeSvg(
+          buildDiagramSvg(model, report, locale),
+          'png',
+          2,
+        ),
+        filename: fileName('analysis', imageFormat === 'jpeg' ? 'jpg' : 'png'),
         format: imageFormat,
         title,
         report,

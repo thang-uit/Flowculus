@@ -6,14 +6,13 @@ import { useMemo, useState } from 'react';
 import { countProcessPaths } from '@flowculus/analysis-engine';
 
 import { Tooltip } from '@/components/ui/Tooltip';
+import { AppSelect } from '@/components/ui/AppSelect';
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { cn } from '@/lib/cn';
 import { formatPathCountWarning } from '@/lib/diagnostic-messages';
-
-const selectClass =
-  'focus-ring h-9 w-full min-w-0 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 text-sm text-[var(--text)]';
 
 const formatNodeLabel = (label: string, id: string): string =>
   label.trim() && label.trim() !== id ? `${label} · ${id}` : id;
@@ -24,7 +23,7 @@ const formatNodeLabel = (label: string, id: string): string =>
  * the process model or cause a draw.io reload while the user is drawing.
  */
 export function PathQueryPanel() {
-  const locale = useWorkspaceStore((state) => state.locale);
+  const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const model = useWorkspaceStore((state) => state.processModel);
 
@@ -126,43 +125,48 @@ export function PathQueryPanel() {
       contentClassName="border-t border-[var(--border)] bg-[var(--surface-raised)] p-4 sm:p-6"
     >
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
-        <label className="min-w-0 space-y-1.5" htmlFor="path-query-start">
-          <span className="block text-[11px] font-medium text-[var(--muted-strong)]">
+        <div className="min-w-0 space-y-1.5">
+          <label
+            htmlFor="path-query-start"
+            className="block text-[11px] font-medium text-[var(--muted-strong)]"
+          >
             {copy.pathQueryStart}
-          </span>
-          <select
+          </label>
+          <AppSelect
             id="path-query-start"
             value={effectiveStartNodeId}
-            onChange={(event) => setStartNodeId(event.target.value)}
-            className={selectClass}
-          >
-            {nodes.length === 0 ? <option value="">{copy.emptyValue}</option> : null}
-            {nodes.map((node) => (
-              <option key={node.id} value={node.id}>
-                {formatNodeLabel(node.label, node.id)}
-              </option>
-            ))}
-          </select>
-        </label>
+            onValueChange={setStartNodeId}
+            options={
+              nodes.length === 0
+                ? [{ value: '', label: copy.emptyValue }]
+                : nodes.map((node) => ({
+                    value: node.id,
+                    label: formatNodeLabel(node.label, node.id),
+                  }))
+            }
+          />
+        </div>
 
-        <label className="min-w-0 space-y-1.5" htmlFor="path-query-end">
-          <span className="block text-[11px] font-medium text-[var(--muted-strong)]">
+        <div className="min-w-0 space-y-1.5">
+          <label
+            htmlFor="path-query-end"
+            className="block text-[11px] font-medium text-[var(--muted-strong)]"
+          >
             {copy.pathQueryEnd}
-          </span>
-          <select
+          </label>
+          <AppSelect
             id="path-query-end"
             value={effectiveEndNodeId}
-            onChange={(event) => setEndNodeId(event.target.value)}
-            className={selectClass}
-          >
-            <option value="">{copy.pathQueryAllEnds}</option>
-            {(terminalNodes.length > 0 ? terminalNodes : nodes).map((node) => (
-              <option key={node.id} value={node.id}>
-                {formatNodeLabel(node.label, node.id)}
-              </option>
-            ))}
-          </select>
-        </label>
+            onValueChange={setEndNodeId}
+            options={[
+              { value: '', label: copy.pathQueryAllEnds },
+              ...(terminalNodes.length > 0 ? terminalNodes : nodes).map((node) => ({
+                value: node.id,
+                label: formatNodeLabel(node.label, node.id),
+              })),
+            ]}
+          />
+        </div>
 
         <Tooltip content={copy.resetPathQuery}>
           <button

@@ -5,15 +5,14 @@ import type { CapacityReport } from './capacity';
 import type { CriticalChainReport } from './critical-chain';
 import type { CriticalPathReport } from './critical-path';
 import type { ResolvedActivityTime } from './cycle-time';
-import { literal } from './formula';
 import type { PathCountReport } from './path-count';
 import type { AnalysisMetric, CalculationQuality } from './quality';
 import type { QueueAnalysisReport } from './queue';
 
-export type AnalysisStatus = 'ready' | 'invalid' | 'unsupported';
+export type AnalysisStatus = 'empty' | 'ready' | 'invalid' | 'unsupported';
 
 export interface AnalysisReport {
-  /** `invalid`: cannot be analysed; `unsupported`: headline needs simulation. */
+  /** `empty`: no model to analyse; `invalid`: failed validation. */
   status: AnalysisStatus;
   /** Headline quality: the worse of the CT and TCT qualities. */
   quality: CalculationQuality;
@@ -88,19 +87,14 @@ export const invalidReport = (issues: Diagnostic[]): AnalysisReport => ({
 });
 
 export const createEmptyAnalysisReport = (): AnalysisReport => ({
-  status: 'ready',
+  status: 'empty',
   quality: 'exact',
   metricQuality: metricQualities('exact'),
-  cycleTimeMinutes: 0,
-  theoreticalCycleTimeMinutes: 0,
+  cycleTimeMinutes: null,
+  theoreticalCycleTimeMinutes: null,
   cycleTimeEfficiency: null,
-  costPerExecution: 0,
-  formula: '0',
-  formulaAst: literal('0'),
-  theoreticalFormula: '0',
-  theoreticalFormulaAst: literal('0'),
-  costFormula: '0',
-  costFormulaAst: literal('0'),
+  costPerExecution: null,
+  formula: '',
   issues: [{ code: 'empty-model', severity: 'info', impact: 'none' }],
   startNodeId: null,
   activityTimes: {},

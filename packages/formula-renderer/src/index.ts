@@ -14,7 +14,7 @@ export function formulaToText(node: FormulaNode): string {
     case 'sum':
       return node.terms.map(formulaToText).join(' + ');
     case 'weighted':
-      return `(${formulaToText(node.probability)} × ${formulaToText(node.term)})`;
+      return `(${formulaToText(node.probability)} × ${node.term.kind === 'sum' ? `(${formulaToText(node.term)})` : formulaToText(node.term)})`;
     case 'maximum':
       return `max(${node.terms.map(formulaToText).join(', ')})`;
     case 'fraction':
@@ -22,7 +22,13 @@ export function formulaToText(node: FormulaNode): string {
     case 'difference':
       return `(${formulaToText(node.minuend)}) - (${formulaToText(node.subtrahend)})`;
     case 'product':
-      return node.factors.map(formulaToText).join(' × ');
+      return node.factors
+        .map((factor) =>
+          factor.kind === 'sum' || factor.kind === 'difference'
+            ? `(${formulaToText(factor)})`
+            : formulaToText(factor),
+        )
+        .join(' × ');
   }
 }
 
@@ -38,7 +44,7 @@ export function formulaToLatex(node: FormulaNode): string {
     case 'sum':
       return node.terms.map(formulaToLatex).join(' + ');
     case 'weighted':
-      return `\\left(${formulaToLatex(node.probability)} \\times ${formulaToLatex(node.term)}\\right)`;
+      return `\\left(${formulaToLatex(node.probability)} \\times ${node.term.kind === 'sum' ? `\\left(${formulaToLatex(node.term)}\\right)` : formulaToLatex(node.term)}\\right)`;
     case 'maximum':
       return `\\max\\left(${node.terms.map(formulaToLatex).join(', ')}\\right)`;
     case 'fraction':
@@ -46,6 +52,12 @@ export function formulaToLatex(node: FormulaNode): string {
     case 'difference':
       return `\\left(${formulaToLatex(node.minuend)}\\right) - \\left(${formulaToLatex(node.subtrahend)}\\right)`;
     case 'product':
-      return node.factors.map(formulaToLatex).join(' \\times ');
+      return node.factors
+        .map((factor) =>
+          factor.kind === 'sum' || factor.kind === 'difference'
+            ? `\\left(${formulaToLatex(factor)}\\right)`
+            : formulaToLatex(factor),
+        )
+        .join(' \\times ');
   }
 }
