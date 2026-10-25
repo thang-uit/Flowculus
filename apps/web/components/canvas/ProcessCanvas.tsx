@@ -28,6 +28,7 @@ import { insertEdgeWaypoint } from '@flowculus/file-formats';
 import { getNodeBounds } from '@flowculus/process-model';
 
 import { CanvasOverview } from '@/components/canvas/CanvasOverview';
+import { CanvasEmptyState } from '@/components/canvas/CanvasEmptyState';
 import { CriticalChainLegend } from '@/components/canvas/CriticalChainLegend';
 import {
   CanvasContextMenu,
@@ -372,6 +373,7 @@ export function ProcessCanvas() {
         />
         <CanvasOverview />
       </ReactFlow>
+      <CanvasEmptyState />
       {contextMenu ? (
         <CanvasContextMenu position={contextMenu} onClose={closeContextMenu} />
       ) : null}

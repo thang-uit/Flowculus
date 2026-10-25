@@ -5,7 +5,7 @@ export const VI: WorkspaceCopy = {
   brandTooltip: 'Flowculus: vẽ luồng, để toán lo phần còn lại',
   nextLanguageName: 'English',
   workspace: 'Không gian làm việc',
-  modelName: 'Quy trình xử lý yêu cầu',
+  modelName: 'Quy trình chưa có tên',
   subtitle: 'Phân tích thời gian chu trình',
   openFile: 'Mở tệp',
   dropFiles: 'Thả tệp để mở',
@@ -78,6 +78,9 @@ export const VI: WorkspaceCopy = {
   zoomIn: 'Phóng to',
   toggleInspector: 'Bật/tắt thuộc tính',
   canvasLabel: 'Canvas mô hình quy trình',
+  canvasEmptyTitle: 'Bắt đầu quy trình của bạn',
+  canvasEmptyHint:
+    'Thêm hình từ thanh công cụ hoặc mở tệp quy trình. Bản vẽ được lưu trong trình duyệt này.',
   nodesAndFlows: (nodes, flows) => `${nodes} nút, ${flows} luồng`,
   pathCount: (count) => `${count == null ? 'N/A' : count} đường đi`,
   pathCountUnavailable: 'Không thể đếm đường đi',

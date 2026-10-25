@@ -81,6 +81,8 @@ export interface WorkspaceCopy {
   zoomIn: string;
   toggleInspector: string;
   canvasLabel: string;
+  canvasEmptyTitle: string;
+  canvasEmptyHint: string;
   nodesAndFlows: (nodes: number, flows: number) => string;
   pathCount: (count: number | null) => string;
   pathCountUnavailable: string;

@@ -5,7 +5,7 @@ export const EN: WorkspaceCopy = {
   brandTooltip: 'Flowculus: draw the flow, let the math do the sweating',
   nextLanguageName: 'Tiếng Việt',
   workspace: 'Workspace',
-  modelName: 'Request handling flow',
+  modelName: 'Untitled process',
   subtitle: 'Cycle-time analysis studio',
   openFile: 'Open file',
   dropFiles: 'Drop files to open',
@@ -78,6 +78,9 @@ export const EN: WorkspaceCopy = {
   zoomIn: 'Zoom in',
   toggleInspector: 'Toggle inspector',
   canvasLabel: 'Process model canvas',
+  canvasEmptyTitle: 'Start your process',
+  canvasEmptyHint:
+    'Add a shape from the palette or open a process file. Your work is saved in this browser.',
   nodesAndFlows: (nodes, flows) => `${nodes} nodes, ${flows} flows`,
   pathCount: (count) => `${count == null ? 'N/A' : count} paths`,
   pathCountUnavailable: 'Path count unavailable',

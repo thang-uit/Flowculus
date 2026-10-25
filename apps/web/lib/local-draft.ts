@@ -1,28 +1,17 @@
-import { isAnalysisOptions, type AnalysisOptions } from '@flowculus/analysis-engine';
-import type { ProcessModel } from '@flowculus/process-model';
+import { isAnalysisOptions } from '@flowculus/analysis-engine';
 import { processModelSchema } from '@flowculus/validation';
 
 import type { DrawioSource } from '@/lib/workspace-store';
+import { isUntouchedLegacyStarter } from '@/lib/legacy-starter-draft';
+import { LOCAL_DRAFT_VERSION, type LocalDraftSnapshot } from '@/lib/local-draft-snapshot';
+
+export type { LocalDraftSnapshot } from '@/lib/local-draft-snapshot';
 
 const DATABASE_NAME = 'flowculus-workspace';
 const DATABASE_VERSION = 1;
 const STORE_NAME = 'drafts';
 const DRAFT_KEY = 'current';
 const MAX_XML_LENGTH = 50_000_000;
-
-export interface LocalDraftSnapshot {
-  model: ProcessModel;
-  /** Original draw.io file of the current model, used for semantic-preserving export. */
-  drawioSource?: DrawioSource | null;
-  /**
-   * Drafts written before the native canvas kept only the editor XML. It is
-   * read once to recover geometry and never written again.
-   */
-  drawioXml?: string;
-  modelName: string;
-  analysisOptions?: AnalysisOptions;
-  updatedAt: number;
-}
 
 const isBrowser = (): boolean => typeof window !== 'undefined';
 
@@ -41,6 +30,7 @@ const isLocalDraftSnapshot = (value: unknown): value is LocalDraftSnapshot => {
   if (value == null || typeof value !== 'object') return false;
   const candidate = value as Partial<LocalDraftSnapshot>;
   if (
+    (candidate.draftVersion != null && candidate.draftVersion !== LOCAL_DRAFT_VERSION) ||
     typeof candidate.modelName !== 'string' ||
     typeof candidate.updatedAt !== 'number' ||
     (candidate.drawioXml != null &&
@@ -86,7 +76,14 @@ const readIndexedDbDraft = async (): Promise<LocalDraftSnapshot | null> => {
       const transaction = database.transaction(STORE_NAME, 'readonly');
       const request = transaction.objectStore(STORE_NAME).get(DRAFT_KEY);
       request.onsuccess = () => {
-        resolve(isLocalDraftSnapshot(request.result) ? request.result : null);
+        const snapshot: unknown = request.result;
+        // Hydration persists the current empty workspace after skipping the
+        // retired automatic starter. Edited/imported models are still restored.
+        resolve(
+          isLocalDraftSnapshot(snapshot) && !isUntouchedLegacyStarter(snapshot)
+            ? snapshot
+            : null,
+        );
       };
       request.onerror = () =>
         reject(request.error ?? new Error('Could not read the local draft.'));
@@ -119,7 +116,12 @@ const readFallbackDraft = (): LocalDraftSnapshot | null => {
     const raw = window.localStorage.getItem(`${DATABASE_NAME}:${DRAFT_KEY}`);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    return isLocalDraftSnapshot(parsed) ? parsed : null;
+    if (!isLocalDraftSnapshot(parsed)) return null;
+    if (isUntouchedLegacyStarter(parsed)) {
+      window.localStorage.removeItem(`${DATABASE_NAME}:${DRAFT_KEY}`);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -130,7 +132,7 @@ const writeFallbackDraft = (snapshot: LocalDraftSnapshot): void => {
   try {
     window.localStorage.setItem(
       `${DATABASE_NAME}:${DRAFT_KEY}`,
-      JSON.stringify(snapshot),
+      JSON.stringify({ ...snapshot, draftVersion: LOCAL_DRAFT_VERSION }),
     );
   } catch {
     // Quota errors are surfaced by saveLocalDraft so the UI can explain the issue.
@@ -167,7 +169,7 @@ export const saveLocalDraft = async (snapshot: LocalDraftSnapshot): Promise<void
   }
 
   try {
-    await writeIndexedDbDraft(snapshot);
+    await writeIndexedDbDraft({ ...snapshot, draftVersion: LOCAL_DRAFT_VERSION });
   } catch {
     writeFallbackDraft(snapshot);
   }

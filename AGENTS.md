@@ -160,6 +160,9 @@ path, params }`. Packages never return user-facing sentences; the web app
   keep the original edge; completed pointer gestures commit one undo entry.
 - Pointer movement and drag frames stay inside React Flow or local gesture state; the store receives
   committed changes only (`commitModel`, with undo history).
+- A fresh workspace starts empty; Mining presets load only after explicit selection.
+  Skip only exact untouched copies of the retired starter during draft hydration;
+  never clear edited models based on an ID or metadata marker alone.
 - One local draft is stored in IndexedDB (localStorage fallback), debounced.
   Store schema-valid work-in-progress even when graph/time diagnostics prevent
   analysis. Checkpoint synchronously on pagehide; restore the newest copy.

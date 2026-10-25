@@ -5,6 +5,7 @@ import {
   ChartLineUp,
   CheckCircle,
   Clock,
+  Info,
   Lightning,
   Pulse,
   WarningCircle,
@@ -167,6 +168,8 @@ export function AnalysisDock() {
                     className="text-[var(--success)]"
                     aria-hidden="true"
                   />
+                ) : report.status === 'empty' ? (
+                  <Info size={13} className="text-[var(--muted)]" aria-hidden="true" />
                 ) : (
                   <WarningCircle
                     size={13}

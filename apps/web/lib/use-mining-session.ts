@@ -20,7 +20,6 @@ import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const FILTER_DEBOUNCE_MS = 140;
-const DEFAULT_PRESET: MiningPresetId = 'order-to-cash';
 const LOG_EXTENSION = /\.(csv|tsv|json|xes|xml|txt|xlsx)$/i;
 
 const asDiscovery = (response: MiningResponse): MiningDiscoveryResponse => {
@@ -164,7 +163,7 @@ export function useMiningSession() {
   );
 
   // Boot: a queued upload wins, otherwise rebuild the previous session or
-  // open the default preset.
+  // remain empty until a person chooses a source.
   useEffect(() => {
     if (bootedRef.current) return;
     bootedRef.current = true;
@@ -192,7 +191,7 @@ export function useMiningSession() {
           }),
         );
       });
-    } else if (!upload) void loadPreset(DEFAULT_PRESET);
+    }
   }, [inspectUpload, loadPreset, request, run]);
 
   // Files dropped or opened while the view is visible.

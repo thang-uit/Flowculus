@@ -54,6 +54,10 @@ Mọi kết quả đều kèm mức chất lượng (`exact`, `assumption`, `sim
 
 The **Knowledge** page (`/knowledge`) provides 21 bilingual topics, accent-insensitive search, contents navigation, diagrams, copyable formulas and an isolated rework example using the actual engine. **About** (`/about`) introduces the product, its two developers and the verified repository links. Click the Flowculus brand to open project navigation from either workspace; the reading pages have their own navigation, language and theme controls.
 
+**Lần mở đầu · First visit.** Canvas bắt đầu trống, không tự nạp sơ đồ minh họa. Mining cũng đợi bạn tải log hoặc chủ động chọn mẫu. Bản nháp đã chỉnh sửa tiếp tục được phục hồi; bản nháp khớp hoàn toàn sơ đồ mẫu tự nạp cũ được bỏ qua để không xuất hiện lại sau cập nhật. Cache trình duyệt/CDN không phải nguồn của sơ đồ mặc định này.
+
+**English.** Fresh workspaces start empty. Mining waits for an upload or an explicit sample selection. Edited drafts remain recoverable; only an exact untouched copy of the retired automatic starter is skipped. The old diagram came from application initialization, not a CDN cache.
+
 ## 2. Tính năng và tập con BPMN · Features and BPMN subset
 
 | Nhóm · Area                              | Tính năng · Feature                                                                                                                                                                                                                                                                                                                                                                 |
@@ -86,9 +90,13 @@ The **Knowledge** page (`/knowledge`) provides 21 bilingual topics, accent-insen
 
 ## 3. Hình ảnh và sơ đồ · Screenshots and diagrams
 
-Ảnh bên dưới chụp từ bản production cục bộ với dữ liệu mẫu đi kèm, được nén WebP. Sơ đồ bài học dùng SVG theo theme; ví dụ làm lại phản hồi ngay khi đổi xác suất và chính sách. Các hiệu ứng phản hồi ngắn tôn trọng chế độ giảm chuyển động. README trên GitHub là tài liệu tĩnh; tương tác đầy đủ nằm ở `/knowledge`.
+Ảnh bên dưới chụp từ bản production cục bộ sau khi chủ động nhập mô hình minh họa, được nén WebP; đây không phải trạng thái mở đầu. Sơ đồ bài học dùng SVG theo theme; ví dụ làm lại phản hồi ngay khi đổi xác suất và chính sách. Các hiệu ứng phản hồi ngắn tôn trọng chế độ giảm chuyển động. README trên GitHub là tài liệu tĩnh; tương tác đầy đủ nằm ở `/knowledge`.
 
-**English.** These are real screenshots of the local production app with bundled example data, compressed as WebP. Theme-aware lesson diagrams use SVG; the rework playground responds to policy and probability changes. Short feedback effects respect reduced motion. GitHub renders a static README; full interaction is available at `/knowledge`.
+**English.** These are real screenshots after explicitly importing illustrative data into the local production app, compressed as WebP; a fresh workspace is empty. Theme-aware lesson diagrams use SVG; the rework playground responds to policy and probability changes. Short feedback effects respect reduced motion. GitHub renders a static README; full interaction is available at `/knowledge`.
+
+![Canvas trống khi mở lần đầu · Empty first-visit workspace](docs/images/empty-workspace.webp)
+
+Ví dụ bên dưới là mô hình được chủ động nhập vào canvas. · The following example was explicitly imported into the canvas.
 
 ![Flowculus — canvas và phân tích · canvas and analysis](apps/web/public/demo/workspace-vi.webp)
 
@@ -461,6 +469,7 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 
 - Thêm `/about` và `/knowledge`, 21 bài song ngữ, tìm kiếm, mục lục, sơ đồ SVG và ví dụ engine độc lập; điều hướng qua logo và lưu bản nháp khi rời editor. Tách tùy chọn ngôn ngữ khỏi workspace store, thêm ảnh demo WebP và phần ảnh tối có thể mở rộng trong README. · Added About/Knowledge, bilingual articles, local search, contents, diagrams and isolated engine examples; separated locale preferences and protected drafts during documentation navigation, with WebP demos and an expandable dark-theme preview.
 - Cập nhật Next.js và ESLint config lên 16.4.3, Zod lên 4.6.7, Vitest lên 4.1.12 để nhận bản vá bảo mật trong cùng major version. Hai override có giới hạn cho Vite 8.2.4 và brace-expansion 5.0.12 giữ dependency gián tiếp của công cụ phát triển ở bản vá tương thích. · Updated Next.js and its ESLint config to 16.4.3, Zod to 4.6.7 and Vitest to 4.1.12. Scoped Vite 8.2.4 and brace-expansion 5.0.12 overrides patch transitive development tools within their declared ranges.
+- Lần mở đầu dùng canvas trống; Mining không tự nạp preset. Bỏ qua đúng bản nháp mẫu cũ chưa chỉnh sửa, giữ các bản vẽ đã sửa. · Empty first visits and opt-in mining samples; preserve edited drafts during legacy-starter migration.
 - Luồng Mở tệp và kéo thả dùng chung yêu cầu mới nhất; tệp cũ đọc chậm không ghi đè tệp mới, hủy XLSX sẽ dừng worker và không báo thành công giả. · Header/drop imports share cancellation and discard superseded reads.
 - Dọn cấu hình env/iframe cũ và `dotenv-cli`; thêm `pnpm clean:cache` để dọn đúng thư mục sinh tự động. Mining tái sử dụng dữ liệu đã chuẩn bị khi kéo bộ lọc, giải phóng bảng thô sau ánh xạ và không dùng phép spread với danh sách biến thể lớn. · Removed obsolete environment/iframe configuration and `dotenv-cli`; added scoped cache cleanup and reused prepared mining data across filter changes.
 - Sửa tỷ trọng thời gian xử lý khi log chỉ có một phần thời điểm bắt đầu: số mẫu đo được thay cho tổng số lượt thực hiện. Giới hạn 500.000 dòng được kiểm tra thêm ở bước ánh xạ; ghép lifecycle dùng hàng đợi không dịch mảng. · Service-time totals now use measured samples for partial-start logs; mapping enforces the row limit and lifecycle pairing avoids repeated array shifting.
