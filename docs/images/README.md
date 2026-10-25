@@ -5,6 +5,7 @@ illustrative bundled data. Captured at 1440 px desktop width on 2026-10-25/26 an
 compressed to WebP; they are not generated mockups.
 
 - `image-reference.webp`: visible image settings/removal controls with a synthetic test diagram.
+- `inspector-select.webp`: a cropped production inspector with long synthetic node labels/IDs, showing single-line selected values; captured in Vietnamese light theme on 2026-10-26.
 - `project-navigation.webp`: a 760 × 350 crop of the Vietnamese header and open brand menu; workspace modes appear only in the header switch.
 - `empty-workspace.webp`: the actual empty first-visit canvas, Vietnamese light theme.
 - `formula-or.webp`: the conditional OR equations rendered with native MathML,

@@ -49,6 +49,7 @@ export function InspectorPanel({
     };
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (
+        event.defaultPrevented ||
         event.key !== 'Escape' ||
         document.querySelector('[data-radix-popper-content-wrapper]')
       )

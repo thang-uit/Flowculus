@@ -64,7 +64,11 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
       announce(copy.clipboardPasted(result.nodeIds.length));
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditable(event.target) || useWorkspaceStore.getState().mode !== 'model')
+      if (
+        event.defaultPrevented ||
+        isEditable(event.target) ||
+        useWorkspaceStore.getState().mode !== 'model'
+      )
         return;
       const wrapper = wrapperRef.current;
       const state = useWorkspaceStore.getState();

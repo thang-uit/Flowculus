@@ -106,6 +106,10 @@ The **Knowledge** page (`/knowledge`) provides 21 bilingual topics, accent-insen
 
 ![Canvas trống khi mở lần đầu · Empty first-visit workspace](docs/images/empty-workspace.webp)
 
+Ô chọn tên hình giữ bố cục khi nhãn hoặc ID dài; mở danh sách để đọc toàn bộ lựa chọn. · Shape selectors keep long labels and IDs inside their controls; open the dropdown to read the full options.
+
+![Ô chọn trong bảng thuộc tính · Inspector selects](docs/images/inspector-select.webp)
+
 Ví dụ bên dưới là mô hình được chủ động nhập vào canvas. · The following example was explicitly imported into the canvas.
 
 ![Flowculus — canvas và phân tích · canvas and analysis](apps/web/public/demo/workspace-vi.webp)
@@ -476,6 +480,9 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 ## 17. Changelog và ghi chú chuyển đổi · Changelog and migration notes
 
 **Production hardening**
+
+- Ô chọn dùng chung giữ tên dài trên một dòng có dấu ba chấm, xem đầy đủ bằng tooltip hoặc mở danh sách; danh sách tự xuống dòng và giới hạn theo chiều rộng màn hình. · Shared selects truncate long selected labels to one line, expose the full label on hover or in the dropdown, and wrap dropdown options within the viewport.
+- Escape đóng danh sách trước bảng thuộc tính, trả focus về ô chọn; phím tắt canvas bỏ qua sự kiện đã được control xử lý để giữ đường/hình đang chọn. · Escape dismisses a select before its inspector and restores trigger focus; canvas shortcuts ignore handled events to preserve the current selection.
 
 - Gộp điểm chuyển chế độ tại header, bỏ mục trùng trong menu logo và đồng nhất tên Mô hình/Model trên các trang đọc. Đồng bộ lựa chọn từ trạng thái React Flow hiện tại để tránh vòng lặp render khi quay lại từ Mining với shape đang chọn. · Removed duplicate mode links from the brand menu and aligned reading-page labels. Read the current React Flow selection to avoid stale selection effects causing a render loop when returning from Mining.
 
