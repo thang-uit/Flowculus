@@ -54,6 +54,10 @@ Mọi kết quả đều kèm mức chất lượng (`exact`, `assumption`, `sim
 
 The **Knowledge** page (`/knowledge`) provides 21 bilingual topics, accent-insensitive search, contents navigation, diagrams, copyable formulas and an isolated rework example using the actual engine. **About** (`/about`) introduces the product, its two developers and the verified repository links. Click the Flowculus brand to open project navigation from either workspace; the reading pages have their own navigation, language and theme controls.
 
+**Điều hướng · Navigation.** Chuyển **Mô hình / Khai phá** bằng thanh chọn trên header; menu logo chỉ chứa **Kiến thức, Dự án và GitHub**, không lặp lại hai chế độ. Các liên kết tới không gian vẽ trên trang đọc dùng cùng tên **Mô hình**. · Use the header switch for **Model / Mining**. The brand menu contains only **Knowledge, About and GitHub**. Reading pages use the same **Model** label when linking back to the editor.
+
+![Điều hướng thống nhất · Unified navigation](docs/images/project-navigation.webp)
+
 **Quản lý ảnh · Image controls.** Khi có ảnh trên canvas, thanh công cụ ngay trên canvas luôn có **Tùy chỉnh ảnh** và **Xóa ảnh**, kể cả trên điện thoại và khi ảnh bị khóa. Mở tùy chỉnh để **Thay ảnh**. Xóa ảnh chỉ xóa lớp tham chiếu, giữ các shape đã vẽ; lựa chọn xóa được checkpoint trước khi ghi IndexedDB để ảnh cũ không quay lại khi reload nhanh. Thay ảnh/crop hủy kết quả nhận dạng cũ. Đặt góc xoay về 0° khi chạy nhận dạng; xoay ảnh vẫn dùng được khi vẽ tay.
 
 ![Quản lý ảnh tham chiếu · Reference image controls](docs/images/image-reference.webp)
@@ -472,6 +476,8 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 ## 17. Changelog và ghi chú chuyển đổi · Changelog and migration notes
 
 **Production hardening**
+
+- Gộp điểm chuyển chế độ tại header, bỏ mục trùng trong menu logo và đồng nhất tên Mô hình/Model trên các trang đọc. Đồng bộ lựa chọn từ trạng thái React Flow hiện tại để tránh vòng lặp render khi quay lại từ Mining với shape đang chọn. · Removed duplicate mode links from the brand menu and aligned reading-page labels. Read the current React Flow selection to avoid stale selection effects causing a render loop when returning from Mining.
 
 - Thêm `/about` và `/knowledge`, 21 bài song ngữ, tìm kiếm, mục lục, sơ đồ SVG và ví dụ engine độc lập; điều hướng qua logo và lưu bản nháp khi rời editor. Tách tùy chọn ngôn ngữ khỏi workspace store, thêm ảnh demo WebP và phần ảnh tối có thể mở rộng trong README. · Added About/Knowledge, bilingual articles, local search, contents, diagrams and isolated engine examples; separated locale preferences and protected drafts during documentation navigation, with WebP demos and an expandable dark-theme preview.
 - Cập nhật Next.js và ESLint config lên 16.4.3, Zod lên 4.6.7, Vitest lên 4.1.12 để nhận bản vá bảo mật trong cùng major version. Hai override có giới hạn cho Vite 8.2.4 và brace-expansion 5.0.12 giữ dependency gián tiếp của công cụ phát triển ở bản vá tương thích. · Updated Next.js and its ESLint config to 16.4.3, Zod to 4.6.7 and Vitest to 4.1.12. Scoped Vite 8.2.4 and brace-expansion 5.0.12 overrides patch transitive development tools within their declared ranges.

@@ -5,9 +5,7 @@ import {
   ArrowUpRight,
   BookOpen,
   CaretDown,
-  FlowArrow,
   GithubLogo,
-  Graph,
   Users,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -16,7 +14,6 @@ import { FlowculusLogo } from '@/components/branding/FlowculusLogo';
 import { getReadingCopy } from '@/lib/i18n/knowledge/copy';
 import { PROJECT_REPOSITORY } from '@/lib/knowledge/project';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
 
 /** A navigation disclosure on the existing brand footprint keeps mobile chrome compact. */
 export function WorkspaceProjectMenu({ compact }: Readonly<{ compact: boolean }>) {
@@ -104,8 +101,6 @@ export function WorkspaceProjectMenu({ compact }: Readonly<{ compact: boolean }>
           }}
         >
           {[
-            { href: '/', label: copy.model, icon: FlowArrow },
-            { href: '/mining', label: copy.mining, icon: Graph },
             { href: '/knowledge', label: copy.knowledge, icon: BookOpen },
             { href: '/about', label: copy.about, icon: Users },
           ].map(({ href, label, icon: Icon }) => (
@@ -113,33 +108,15 @@ export function WorkspaceProjectMenu({ compact }: Readonly<{ compact: boolean }>
               key={href}
               href={href}
               prefetch={false}
-              target={href === '/knowledge' || href === '/about' ? '_blank' : undefined}
-              rel={
-                href === '/knowledge' || href === '/about'
-                  ? 'noopener noreferrer'
-                  : undefined
-              }
-              aria-label={
-                href === '/knowledge' || href === '/about'
-                  ? `${label} · ${copy.newTab}`
-                  : undefined
-              }
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${label} · ${copy.newTab}`}
               className="focus-ring"
               onClick={() => setOpen(false)}
-              onNavigate={(event) => {
-                event.preventDefault();
-                if (href === '/' || href === '/mining') {
-                  useWorkspaceStore
-                    .getState()
-                    .setMode(href === '/mining' ? 'mining' : 'model');
-                }
-              }}
             >
               <Icon size={17} aria-hidden="true" />
               {label}
-              {href === '/knowledge' || href === '/about' ? (
-                <ArrowUpRight size={12} aria-hidden="true" />
-              ) : null}
+              <ArrowUpRight size={12} aria-hidden="true" />
             </Link>
           ))}
           <a

@@ -10,7 +10,6 @@ import {
   useReactFlow,
   type EdgeChange,
   type NodeChange,
-  type OnSelectionChangeParams,
   type Viewport,
 } from '@xyflow/react';
 import {
@@ -78,7 +77,7 @@ export function ProcessCanvas() {
   const selectedEdgeId = useWorkspaceStore((state) => state.selectedEdgeId);
   const activeTool = useWorkspaceStore((state) => state.activeTool);
   const [initialViewport] = useState(() => useWorkspaceStore.getState().canvasViewport);
-  const { screenToFlowPosition, fitView, setViewport } = useReactFlow<
+  const { screenToFlowPosition, fitView, setViewport, getNodes, getEdges } = useReactFlow<
     ProcessFlowNode,
     ProcessFlowEdge
   >();
@@ -191,23 +190,25 @@ export function ProcessCanvas() {
     [],
   );
 
-  const onSelectionChange = useCallback(
-    ({ nodes: selectedNodes, edges: selectedEdges }: OnSelectionChangeParams) => {
-      const nodeIds = selectedNodes.map((node) => node.id).sort();
-      const edgeId =
-        selectedNodes.length === 0 && selectedEdges.length === 1
-          ? selectedEdges[0].id
-          : null;
-      const state = useWorkspaceStore.getState();
-      if (
-        !sameIds([...state.selectedNodeIds].sort(), nodeIds) ||
-        state.selectedEdgeId !== edgeId
-      ) {
-        state.setSelection({ nodeIds, edgeId });
-      }
-    },
-    [],
-  );
+  const onSelectionChange = useCallback(() => {
+    // A remounted canvas can receive a selection effect from the previous
+    // React Flow snapshot. Read its current store to avoid oscillating between
+    // that stale selection and the controlled nodes supplied on this render.
+    const nodeIds = getNodes()
+      .filter((node) => node.selected)
+      .map((node) => node.id)
+      .sort();
+    const selectedEdges = getEdges().filter((edge) => edge.selected);
+    const edgeId =
+      nodeIds.length === 0 && selectedEdges.length === 1 ? selectedEdges[0].id : null;
+    const state = useWorkspaceStore.getState();
+    if (
+      !sameIds([...state.selectedNodeIds].sort(), nodeIds) ||
+      state.selectedEdgeId !== edgeId
+    ) {
+      state.setSelection({ nodeIds, edgeId });
+    }
+  }, [getNodes, getEdges]);
 
   const onNodeDragStop = useCallback(
     (_event: unknown, _node: ProcessFlowNode, dragged: ProcessFlowNode[]) => {

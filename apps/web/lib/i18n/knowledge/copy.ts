@@ -70,7 +70,7 @@ interface ReadingCopy {
 const EN: ReadingCopy = {
   knowledge: 'Knowledge',
   about: 'About',
-  model: 'Canvas',
+  model: 'Model',
   mining: 'Mining',
   github: 'GitHub',
   navigation: 'Project navigation',
@@ -164,7 +164,7 @@ const EN: ReadingCopy = {
 const VI: ReadingCopy = {
   knowledge: 'Kiến thức',
   about: 'Dự án',
-  model: 'Canvas',
+  model: 'Mô hình',
   mining: 'Khai phá',
   github: 'GitHub',
   navigation: 'Điều hướng dự án',
