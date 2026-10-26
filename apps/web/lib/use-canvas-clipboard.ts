@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 import { makeCanvasClipboard, pasteCanvasClipboard } from '@/lib/canvas-clipboard';
 import { copySelectedNodes, readCanvasClipboard } from '@/lib/canvas-clipboard-runtime';
+import { showNotice } from '@/lib/ui/notice-store';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { moveNodes, removeElements } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
@@ -12,30 +13,20 @@ import { usePreferencesStore } from '@/lib/use-preferences-store';
 const isEditable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   Boolean(
-    target.closest('input,textarea,select,[contenteditable="true"],[role="dialog"]'),
+    target.closest(
+      'input,textarea,select,[contenteditable="true"],[role="dialog"],[role="menu"],[role="listbox"],[role="tab"]',
+    ),
   );
 
 /** Canvas-only editing commands; model edits are committed once for undo/redo. */
 export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const [status, setStatus] = useState('');
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pasteCount = useRef(0);
 
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-
   useEffect(() => {
-    const announce = (message: string) => {
-      setStatus(message);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setStatus(''), 4000);
-    };
+    let active = true;
+    const announce = (message: string) => showNotice(message);
     const getPayload = () => {
       const state = useWorkspaceStore.getState();
       const payload = makeCanvasClipboard(state.processModel, state.selectedNodeIds);
@@ -43,7 +34,9 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
       return payload;
     };
     const paste = async () => {
+      const documentId = useWorkspaceStore.getState().activeDocumentId;
       const payload = await readCanvasClipboard();
+      if (!active || useWorkspaceStore.getState().activeDocumentId !== documentId) return;
       if (!payload) {
         announce(copy.clipboardInvalid);
         return;
@@ -133,7 +126,9 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      active = false;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [copy, wrapperRef]);
-  return status;
 }

@@ -7,11 +7,15 @@ export const EN: WorkspaceCopy = {
   workspace: 'Workspace',
   modelName: 'Untitled process',
   subtitle: 'Cycle-time analysis studio',
+  mixedFileSelection:
+    'Open model files together, or select one event log or reference image at a time.',
+  documentLimit:
+    'Up to 20 processes can be open. Save and close a tab before opening another.',
   openFile: 'Open file',
   dropFiles: 'Drop files to open',
   dropFilesHint:
     'Flowculus, draw.io, process CSV and CSV/XLSX/JSON/XES event logs are supported.',
-  saveFile: 'Save as .drawio',
+  saveFile: 'Save to device',
   shareFile: 'Share model file',
   exportFile: 'Export',
   importHint: 'Open a Flowculus, draw.io, CSV or event-log file, including XLSX',
@@ -251,7 +255,7 @@ export const EN: WorkspaceCopy = {
   imageTraceEmpty:
     'No process shapes were detected. Use the image as a reference and draw manually.',
   imageTraceHint:
-    'Recognition is approximate. Review every shape and connector before analysis. No times or probabilities are read from the photo.',
+    'Review every shape and connector. Direction is proposed left-to-right or top-to-bottom; arrowheads are not verified. Enter labels, times and probabilities yourself.',
   imageTraceCandidates: 'Shapes',
   imageTraceConnectors: 'Proposed connectors',
   imageTraceAddConnector: 'Add connector',
@@ -483,7 +487,16 @@ export const EN: WorkspaceCopy = {
   miningResetFilters: 'Reset filters',
   miningSendToCanvas: 'Send to BPMN canvas',
   miningSendToCanvasHint:
-    'Converts the filtered map into a BPMN model (XOR gateways from frequencies, rework from repeats) to calculate CT, TCT and CTE.',
+    'Choose a process name, then open the filtered map in a new tab. Inferred routing needs review before saving or exporting.',
+  miningCreateTitle: 'Name your process',
+  miningCreateHint:
+    'The log name identifies the data source. Choose your own process name for its tab, exports and reports. The current tabs stay open.',
+  miningCreateAction: 'Create process',
+  miningCreateBusy: 'Creating process…',
+  miningCreateStale:
+    'The log or filters have changed, or discovery is still running. Cancel, wait for the current map, then try again.',
+  miningCreateFailed:
+    'The process could not be created. Cancel and reload the log, then try again.',
   miningServiceTime: 'Service time',
   miningSkipped: (rows, timestamps, startTimes) =>
     `${rows} rows without case/activity and ${timestamps} rows with unreadable completion timestamps were skipped; ${startTimes} invalid or late start timestamps were excluded from waiting/service time.`,

@@ -9,6 +9,7 @@ import {
   SlidersHorizontal,
 } from '@phosphor-icons/react';
 
+import { PaletteToggle } from '@/components/palette/PaletteToggle';
 import { CanvasToolSwitch } from './CanvasToolSwitch';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useCanvasCommands } from '@/lib/use-canvas-commands';
@@ -34,8 +35,11 @@ export function CanvasFloatingControls() {
     <div
       role="toolbar"
       aria-label={copy.tools}
-      className="absolute bottom-3 left-1/2 z-[5] flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-[var(--shadow-soft)] min-[1440px]:hidden"
+      className="canvas-touch-toolbar absolute bottom-3 left-1/2 z-[5] flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-[var(--shadow-soft)] min-[1440px]:hidden"
     >
+      <div className="flex lg:hidden">
+        <PaletteToggle placement="mobile" />
+      </div>
       <CanvasToolSwitch />
       <span className="tb-divider" aria-hidden="true" />
       <button

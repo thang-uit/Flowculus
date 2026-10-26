@@ -7,30 +7,30 @@ import {
   type AnalysisOptions,
   type AnalysisReport,
 } from '@flowculus/analysis-engine';
-import type { DrawioPageSummary } from '@flowculus/drawio-adapter';
 import type { ProcessModel } from '@flowculus/process-model';
 import { confirmSemantics, type SemanticTarget } from '@flowculus/validation';
+
+import {
+  createDocumentActions,
+  type DocumentActions,
+} from '@/lib/documents/document-store-actions';
+import {
+  createDocument,
+  INITIAL_DOCUMENT_ID,
+  type DrawioSource,
+  type CanvasViewport,
+  type WorkspaceDocument,
+} from '@/lib/documents/document-types';
 
 import { INITIAL_PROCESS_MODEL } from '@/lib/initial-process-model';
 
 export type WorkspaceMode = 'model' | 'mining';
 export type CanvasTool = 'select' | 'hand';
-export type DraftStatus = 'loading' | 'saving' | 'saved' | 'error';
+export type DraftStatus = 'loading' | 'saving' | 'saved' | 'error' | 'conflict';
 export type AnalysisRuntimeStatus =
   'idle' | 'calculating' | 'ready' | 'fallback' | 'restarting' | 'timeout' | 'error';
 
-/** The original draw.io file, kept so export can patch it (semantic-preserving). */
-export interface DrawioSource {
-  xml: string;
-  pages: DrawioPageSummary[];
-  pageIndex: number;
-}
-
-export interface CanvasViewport {
-  x: number;
-  y: number;
-  zoom: number;
-}
+export type { DrawioSource, CanvasViewport } from '@/lib/documents/document-types';
 
 const HISTORY_LIMIT = 100;
 
@@ -58,7 +58,9 @@ interface LoadModelOptions {
   modelName?: string;
 }
 
-interface WorkspaceState {
+interface WorkspaceState extends DocumentActions {
+  documents: WorkspaceDocument[];
+  activeDocumentId: string;
   mode: WorkspaceMode;
   activeTool: CanvasTool;
   selectedNodeIds: string[];
@@ -119,6 +121,9 @@ const pruneSelection = (
 });
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
+  ...createDocumentActions(set),
+  documents: [createDocument(INITIAL_PROCESS_MODEL, {}, INITIAL_DOCUMENT_ID)],
+  activeDocumentId: INITIAL_DOCUMENT_ID,
   mode: 'model',
   activeTool: 'select',
   selectedNodeIds: [],
@@ -196,6 +201,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!previous) return;
     set((state) => ({
       processModel: previous,
+      modelName: previous.name,
       analysisRuntimeStatus: 'calculating',
       history: {
         past: history.past.slice(0, -1),
@@ -210,6 +216,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!next) return;
     set((state) => ({
       processModel: next,
+      modelName: next.name,
       analysisRuntimeStatus: 'calculating',
       history: {
         past: [...history.past, processModel].slice(-HISTORY_LIMIT),
@@ -234,11 +241,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     })),
   setDraftStatus: (draftStatus) => set({ draftStatus }),
   setAnalysisStatus: (analysisRuntimeStatus) => set({ analysisRuntimeStatus }),
-  setModelName: (modelName) =>
-    set((state) => ({
-      modelName,
-      processModel: { ...state.processModel, name: modelName },
-    })),
+  setModelName: (modelName) => {
+    get().renameDocument(get().activeDocumentId, modelName);
+  },
   focusElement: ({ elementType, elementId }) =>
     set((state) => {
       const exists =

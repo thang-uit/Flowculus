@@ -1,6 +1,7 @@
 'use client';
 
 import type { TraceResult } from '@/lib/image-trace/trace-model';
+import { routeOrthogonalEdge, roundedPolylinePath } from '@flowculus/graph-layout';
 
 export function ImageTracePreview({
   draft,
@@ -27,13 +28,15 @@ export function ImageTracePreview({
           const source = byId.get(connector.source);
           const target = byId.get(connector.target);
           if (!source || !target) return null;
+          const route = routeOrthogonalEdge(source.bounds, target.bounds, {
+            sourceSide: connector.sourceSide,
+            targetSide: connector.targetSide,
+          });
           return (
-            <line
+            <path
               key={`${connector.source}-${connector.target}-${index}`}
-              x1={source.bounds.x + source.bounds.width / 2}
-              y1={source.bounds.y + source.bounds.height / 2}
-              x2={target.bounds.x + target.bounds.width / 2}
-              y2={target.bounds.y + target.bounds.height / 2}
+              d={roundedPolylinePath(route.points, 5)}
+              fill="none"
               stroke="var(--accent-strong)"
               strokeWidth={Math.max(2, draft.width / 500)}
               strokeDasharray="8 5"

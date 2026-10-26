@@ -49,3 +49,20 @@ identity or decorative raster artwork is needed.
   to the selected article after closing.
 - Mining calls the observed non-repeating variant Common route / Luồng phổ biến;
   it is never labelled an approved reference process.
+
+- The document workflow lesson explains independent process tabs, process/file naming,
+  browser recovery versus device saves, session-only writable file access, fallback
+  downloads, semantic review, guarded closing and concurrent-window storage ownership.
+  Demo screenshots track the document bar and save dialog in all documented locales
+  and themes. The incumbent yellow toolbar/token system remains the visual authority.
+
+- Process tabs use rounded browser-style shoulders, a yellow active surface/top edge
+  and separate close-button hover/focus feedback. Every close asks confirmation;
+  clean copies and unsaved work have different actions and accurate bilingual copy.
+  The desktop palette toggle is a compact 32 px yellow control with expanded state.
+
+- Mining conversion asks for an explicit process name; sample log names remain source labels. The documents and DFG lessons explain naming, inferred routing and preservation of existing tabs.
+- Device-save and image-lock options share AppCheckbox: rounded yellow styling, native checkbox semantics, visible keyboard focus, disabled, reduced-motion and forced-colors support.
+
+- Menus, selects, modal dialogs, buttons and transient workspace notices share their primitives and tokens. Navigation/export/context menus support the same keyboard model and yellow interaction state; form selects retain listbox semantics.
+- Process tabs reorder by pointer, touch hold, Alt+Shift+Left/Right or the tab context menu. Order is browser-persisted while per-document content/history/file/photo ownership is preserved.

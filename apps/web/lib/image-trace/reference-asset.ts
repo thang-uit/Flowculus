@@ -77,40 +77,51 @@ const transaction = async <T>(
   }
 };
 
-export async function loadReferenceAsset(): Promise<ReferenceAsset | null> {
+export async function loadReferenceAsset(scope?: string): Promise<ReferenceAsset | null> {
   return transaction<ReferenceAsset | null>('readonly', (store, resolve) => {
-    const request = store.get(KEY);
+    const request = store.get(scope ?? KEY);
     request.onsuccess = () => {
       const value: unknown = request.result;
       resolve(
-        isReferenceAsset(value) && referenceSelectionMatches(value.assetId)
-          ? { ...value, ...restoreReferencePresentation(value) }
+        isReferenceAsset(value) && referenceSelectionMatches(value.assetId, scope)
+          ? { ...value, ...restoreReferencePresentation(value, scope) }
           : null,
       );
     };
   });
 }
 
-export async function saveReferenceAsset(asset: ReferenceAsset): Promise<void> {
+export async function saveReferenceAsset(
+  asset: ReferenceAsset,
+  scope?: string,
+): Promise<void> {
   if (!isReferenceAsset(asset)) throw new Error('Invalid reference image asset.');
   await transaction<void>('readwrite', (store, resolve) => {
-    if (!referenceSelectionMatches(asset.assetId)) {
+    if (!referenceSelectionMatches(asset.assetId, scope)) {
       resolve();
       return;
     }
-    store.put(asset, KEY);
+    store.put(asset, scope ?? KEY);
     store.transaction.oncomplete = () => resolve();
   });
 }
 
-export async function deleteReferenceAsset(): Promise<void> {
+export async function deleteReferenceAsset(scope?: string): Promise<void> {
   await transaction<void>('readwrite', (store, resolve) => {
-    const selected = readReferenceSelection();
+    const selected = readReferenceSelection(scope);
     if (selected !== null && selected !== REMOVED_REFERENCE) {
       resolve();
       return;
     }
-    store.delete(KEY);
+    store.delete(scope ?? KEY);
+    store.transaction.oncomplete = () => resolve();
+  });
+}
+
+/** Closed document IDs are never reused; reclaim their separate photo bytes. */
+export async function deleteDocumentReferenceAsset(id: string): Promise<void> {
+  await transaction<void>('readwrite', (store, resolve) => {
+    store.delete(id);
     store.transaction.oncomplete = () => resolve();
   });
 }

@@ -39,6 +39,15 @@ export function useAnalysisWorker() {
   const analysisOptions = useWorkspaceStore((state) => state.analysisOptions);
   const setAnalysisReport = useWorkspaceStore((state) => state.setAnalysisReport);
   const setAnalysisStatus = useWorkspaceStore((state) => state.setAnalysisStatus);
+  const latestPayload = useRef<AnalysisPayload | null>(null);
+  const isCurrent = (payload: AnalysisPayload | null) => {
+    const state = useWorkspaceStore.getState();
+    return (
+      payload &&
+      state.processModel === payload.model &&
+      state.analysisOptions === payload.options
+    );
+  };
   const supervisorRef = useRef<WorkerSupervisor<AnalysisPayload> | null>(null);
 
   useEffect(() => {
@@ -47,6 +56,7 @@ export function useAnalysisWorker() {
       if (!payload) return;
       window.setTimeout(() => {
         try {
+          if (!isCurrent(payload)) return;
           setAnalysisReport(analyzeProcess(payload.model, payload.options));
           setAnalysisStatus('fallback');
         } catch {
@@ -64,6 +74,7 @@ export function useAnalysisWorker() {
       cancelAfterMs: CANCEL_AFTER_MS,
       maxRestarts: MAX_RESTARTS,
       onResponse: (response) => {
+        if (!isCurrent(latestPayload.current)) return;
         if (response.report) {
           setAnalysisReport(response.report);
           setAnalysisStatus('ready');
@@ -85,12 +96,14 @@ export function useAnalysisWorker() {
   useEffect(() => {
     setAnalysisStatus('calculating');
     const payload = { model: processModel, options: analysisOptions };
+    latestPayload.current = payload;
     if (supervisorRef.current?.request(payload)) return undefined;
 
     // Browsers without (working) module workers compute on the main thread
     // after a macrotask so the edit that triggered it still paints first.
     const timer = window.setTimeout(() => {
       try {
+        if (!isCurrent(payload)) return;
         setAnalysisReport(analyzeProcess(payload.model, payload.options));
         setAnalysisStatus('fallback');
       } catch {

@@ -3,6 +3,7 @@ import { BASICS } from '@/lib/i18n/knowledge/basics';
 import { ANALYSIS } from '@/lib/i18n/knowledge/analysis';
 import { MINING } from '@/lib/i18n/knowledge/mining';
 import { NOTATION_COPY } from '@/lib/i18n/knowledge/notation';
+import { DOCUMENTS } from '@/lib/i18n/knowledge/documents';
 import { WORKFLOW } from '@/lib/i18n/knowledge/workflow';
 import type { KnowledgeArticle, KnowledgeBlock, KnowledgeCategory } from './types';
 
@@ -12,7 +13,13 @@ export const KNOWLEDGE_CATEGORIES: KnowledgeCategory[] = [
   'mining',
   'workflow',
 ];
-export const KNOWLEDGE_ENTRIES = [...BASICS, ...ANALYSIS, ...MINING, ...WORKFLOW];
+export const KNOWLEDGE_ENTRIES = [
+  ...BASICS,
+  ...ANALYSIS,
+  ...MINING,
+  ...DOCUMENTS,
+  ...WORKFLOW,
+];
 
 export const getKnowledgeArticles = (locale: Locale): KnowledgeArticle[] =>
   KNOWLEDGE_ENTRIES.map(({ id, category, content }) => ({

@@ -1,170 +1,127 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-
-import { importDrawioXml } from '@flowculus/drawio-adapter';
-import { withAutoLayout } from '@flowculus/file-formats';
-import type { ProcessModel } from '@flowculus/process-model';
-
-import {
-  checkpointLocalDraft,
-  loadLocalDraft,
-  saveLocalDraft,
-  type LocalDraftSnapshot,
-} from '@/lib/local-draft';
+import { useEffect } from 'react';
+import { acquireWorkspaceStorage } from '@/lib/documents/workspace-storage-owner';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { getWorkspaceDocuments } from '@/lib/documents/document-types';
+import {
+  checkpointWorkspaceSession,
+  loadWorkspaceSession,
+  saveWorkspaceSession,
+  type WorkspaceSession,
+} from '@/lib/documents/workspace-session-storage';
 
+/** One ordered persistence queue across mounts; a slow write cannot beat a newer save. */
+let saveQueue: Promise<void> = Promise.resolve();
 const SAVE_DEBOUNCE_MS = 650;
 
-/** Drafts from the iframe era stored geometry only inside the editor XML. */
-const restoreLegacyGeometry = async (
-  draft: LocalDraftSnapshot,
-): Promise<ProcessModel> => {
-  if (Object.values(draft.model.nodes).every((node) => node.bounds) || !draft.drawioXml) {
-    return withAutoLayout(draft.model);
-  }
-  try {
-    const { model: legacy } = await importDrawioXml(draft.drawioXml);
-    return withAutoLayout({
-      ...draft.model,
-      nodes: Object.fromEntries(
-        Object.entries(draft.model.nodes).map(([id, node]) => [
-          id,
-          node.bounds ? node : { ...node, bounds: legacy.nodes[id]?.bounds },
-        ]),
-      ),
-    });
-  } catch {
-    return withAutoLayout(draft.model);
-  }
-};
-
-/**
- * Restores one browser-local workspace and persists committed changes after a
- * short debounce. Drag frames never reach this hook: the model only changes
- * once per gesture.
- */
 export function useLocalDraft() {
-  const processModel = useWorkspaceStore((state) => state.processModel);
-  const analysisOptions = useWorkspaceStore((state) => state.analysisOptions);
-  const drawioSource = useWorkspaceStore((state) => state.drawioSource);
-  const modelName = useWorkspaceStore((state) => state.modelName);
-  const setDraftStatus = useWorkspaceStore((state) => state.setDraftStatus);
-  const hydratedRef = useRef(false);
-  const [hydrated, setHydrated] = useState(false);
-  const saveTimerRef = useRef<number | null>(null);
-  const latestSnapshotRef = useRef<LocalDraftSnapshot | null>(null);
-  const saveVersionRef = useRef(0);
-  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
-
   useEffect(() => {
-    let cancelled = false;
+    let disposed = false;
+    let hydrated = false;
+    let writable = false;
+    let releaseStorage = () => undefined as void;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let version = 0;
+    let updatedAt = Date.now();
     const initial = useWorkspaceStore.getState();
-    const workspaceUnchanged = () => {
-      const current = useWorkspaceStore.getState();
-      return (
-        current.processModel === initial.processModel &&
-        current.analysisOptions === initial.analysisOptions &&
-        current.drawioSource === initial.drawioSource
+    const snapshot = (): WorkspaceSession => {
+      updatedAt = Math.max(Date.now(), updatedAt + 1);
+      const state = useWorkspaceStore.getState();
+      return {
+        version: 1,
+        updatedAt,
+        activeDocumentId: state.activeDocumentId,
+        documents: getWorkspaceDocuments(state),
+      };
+    };
+    const queueSave = (session: WorkspaceSession, sequence: number) => {
+      saveQueue = saveQueue
+        .catch(() => undefined)
+        .then(() => saveWorkspaceSession(session));
+      void saveQueue.then(
+        () => {
+          if (!disposed && sequence === version)
+            useWorkspaceStore.getState().setDraftStatus('saved');
+        },
+        () => {
+          if (!disposed && sequence === version)
+            useWorkspaceStore.getState().setDraftStatus('error');
+        },
       );
     };
-    setDraftStatus('loading');
-
-    void loadLocalDraft()
-      .then(async (draft) => {
-        if (cancelled) return;
-        if (draft && workspaceUnchanged()) {
-          const model = await restoreLegacyGeometry(draft);
-          if (cancelled) return;
-          if (workspaceUnchanged())
-            useWorkspaceStore.getState().loadModel(model, {
-              drawioSource: draft.drawioSource ?? null,
-              analysisOptions: draft.analysisOptions ?? {},
-              modelName: draft.modelName,
-            });
+    const checkpoint = () => {
+      if (!hydrated || !writable) return;
+      clearTimeout(timer);
+      const session = snapshot();
+      try {
+        checkpointWorkspaceSession(session);
+      } catch {
+        useWorkspaceStore.getState().setDraftStatus('error');
+      }
+      queueSave(session, ++version);
+    };
+    const schedule = () => {
+      if (!hydrated || !writable) return;
+      const sequence = ++version;
+      clearTimeout(timer);
+      useWorkspaceStore.getState().setDraftStatus('saving');
+      timer = setTimeout(() => queueSave(snapshot(), sequence), SAVE_DEBOUNCE_MS);
+    };
+    const unsubscribe = useWorkspaceStore.subscribe((state, previous) => {
+      if (
+        state.processModel !== previous.processModel ||
+        state.documents !== previous.documents ||
+        state.activeDocumentId !== previous.activeDocumentId ||
+        state.analysisOptions !== previous.analysisOptions ||
+        state.drawioSource !== previous.drawioSource
+      )
+        schedule();
+    });
+    initial.setDraftStatus('loading');
+    void acquireWorkspaceStorage()
+      .then(async (ownership) => {
+        if (disposed) {
+          ownership.release();
+          return null;
         }
-        hydratedRef.current = true;
-        setHydrated(true);
-        setDraftStatus('saved');
+        writable = ownership.writable;
+        releaseStorage = ownership.release;
+        return loadWorkspaceSession();
+      })
+      .then((session) => {
+        if (disposed) return;
+        const current = useWorkspaceStore.getState();
+        const unchanged =
+          current.processModel === initial.processModel &&
+          current.documents === initial.documents &&
+          current.analysisOptions === initial.analysisOptions &&
+          current.drawioSource === initial.drawioSource &&
+          current.modelRevision === initial.modelRevision;
+        if (session && unchanged)
+          current.restoreDocuments(session.documents, session.activeDocumentId);
+        hydrated = true;
+        if (writable) schedule();
+        else useWorkspaceStore.getState().setDraftStatus('conflict');
       })
       .catch(() => {
-        if (cancelled) return;
-        hydratedRef.current = true;
-        setHydrated(true);
-        setDraftStatus('error');
+        if (disposed) return;
+        hydrated = true;
+        useWorkspaceStore.getState().setDraftStatus('error');
       });
-
-    return () => {
-      cancelled = true;
-      // Client navigation to documentation may precede the debounced save.
-      // Keep the newest model available when the editor mounts again.
-      if (hydratedRef.current && latestSnapshotRef.current) {
-        try {
-          checkpointLocalDraft(latestSnapshotRef.current);
-        } catch {
-          // Existing IndexedDB snapshots remain the fallback if storage is full.
-        }
-      }
-    };
-  }, [setDraftStatus]);
-
-  useEffect(() => {
-    const checkpoint = () => {
-      if (!hydratedRef.current || !latestSnapshotRef.current) return;
-      try {
-        checkpointLocalDraft(latestSnapshotRef.current);
-      } catch {
-        // The async IndexedDB save remains the primary path when quota is tight.
-      }
-    };
-    const onVisibilityChange = () => {
+    const onVisibility = () => {
       if (document.visibilityState === 'hidden') checkpoint();
     };
     window.addEventListener('pagehide', checkpoint);
-    document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      checkpoint();
+      disposed = true;
+      clearTimeout(timer);
+      unsubscribe();
+      void saveQueue.finally(releaseStorage);
       window.removeEventListener('pagehide', checkpoint);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    const updatedAt = Math.max(
-      Date.now(),
-      (latestSnapshotRef.current?.updatedAt ?? 0) + 1,
-    );
-    latestSnapshotRef.current = {
-      model: processModel,
-      drawioSource,
-      modelName,
-      analysisOptions,
-      updatedAt,
-    };
-    const version = ++saveVersionRef.current;
-    if (saveTimerRef.current != null) window.clearTimeout(saveTimerRef.current);
-    setDraftStatus('saving');
-    saveTimerRef.current = window.setTimeout(() => {
-      saveTimerRef.current = null;
-      const snapshot = latestSnapshotRef.current;
-      if (!snapshot) return;
-      saveQueueRef.current = saveQueueRef.current
-        .catch(() => undefined)
-        .then(() => saveLocalDraft(snapshot));
-      void saveQueueRef.current
-        .then(() => {
-          if (version === saveVersionRef.current) setDraftStatus('saved');
-        })
-        .catch(() => {
-          if (version === saveVersionRef.current) setDraftStatus('error');
-        });
-    }, SAVE_DEBOUNCE_MS);
-
-    return () => {
-      if (saveTimerRef.current != null) {
-        window.clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
-    };
-  }, [analysisOptions, drawioSource, hydrated, modelName, processModel, setDraftStatus]);
 }

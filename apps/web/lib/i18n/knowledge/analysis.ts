@@ -19,7 +19,7 @@ export const ANALYSIS: KnowledgeEntry[] = [
           },
           {
             kind: 'example',
-            title: 'The bundled request example',
+            title: 'An illustrative request process',
             text: 'CT = 35.2 minutes; TCT = 12.8 minutes. CTE = 12.8 / 35.2 ≈ 0.3636, displayed as 36.4%. In the raw model/API, efficiency remains a ratio.',
           },
           {
@@ -42,7 +42,7 @@ export const ANALYSIS: KnowledgeEntry[] = [
           },
           {
             kind: 'example',
-            title: 'Ví dụ xử lý yêu cầu có sẵn',
+            title: 'Ví dụ minh họa quy trình xử lý yêu cầu',
             text: 'CT = 35,2 phút; TCT = 12,8 phút. CTE = 12,8 / 35,2 ≈ 0,3636, hiển thị 36,4%. Trong dữ liệu/API, hiệu suất vẫn là tỷ lệ.',
           },
           {

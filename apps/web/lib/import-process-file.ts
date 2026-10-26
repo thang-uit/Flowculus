@@ -96,10 +96,13 @@ const restoreBounds = async (
   return withAutoLayout(model);
 };
 
-const drawioSourceFor = async (xml: string | undefined): Promise<DrawioSource | null> => {
+const drawioSourceFor = async (
+  xml: string | undefined,
+  pageIndex = 0,
+): Promise<DrawioSource | null> => {
   if (!xml?.trim()) return null;
   try {
-    const imported = await importDrawioXml(xml);
+    const imported = await importDrawioXml(xml, { pageIndex });
     return { xml, pages: imported.pages, pageIndex: imported.pageIndex };
   } catch {
     return null;
@@ -167,7 +170,7 @@ export const importWorkspaceFiles = async (
     return {
       kind: 'model',
       model: await restoreBounds(validated.model, flowculus.drawioXml),
-      drawioSource: await drawioSourceFor(flowculus.drawioXml),
+      drawioSource: await drawioSourceFor(flowculus.drawioXml, flowculus.drawioPageIndex),
       analysisOptions: flowculus.analysisOptions ?? {},
       modelName: flowculus.model.name || modelName,
     };

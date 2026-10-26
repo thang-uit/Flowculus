@@ -6,6 +6,7 @@ import {
   mergeTracedModel,
   snapConnector,
   traceToProcessModel,
+  inferTraceEventKinds,
   type TraceResult,
 } from './trace-model';
 
@@ -143,8 +144,43 @@ describe('image trace candidate model', () => {
     const merged = mergeTracedModel(current, trace, 0.5, { x: 400, y: 100 });
     expect(merged.model.nodes.a.label).toBe('Existing');
     expect(merged.nodeIds).toHaveLength(2);
-    expect(merged.model.nodes[merged.nodeIds[0]]?.bounds?.x).toBe(405);
+    const bounds = merged.model.nodes[merged.nodeIds[0]]!.bounds!;
+    expect(bounds.x + bounds.width / 2).toBe(430);
+    expect(bounds.width).toBeGreaterThanOrEqual(120);
+    expect(bounds.height).toBeGreaterThanOrEqual(72);
     expect(Object.values(merged.model.edges)).toHaveLength(1);
     expect(collectUnconfirmedSemantics(merged.model)).toHaveLength(4);
+  });
+
+  it('retains detected attachment sides and inferred endpoint roles', () => {
+    const draft: TraceResult = {
+      ...result,
+      candidates: result.candidates.map((candidate) => ({ ...candidate, kind: 'event' })),
+      connectors: [
+        {
+          source: 'a',
+          target: 'b',
+          confidence: 0.4,
+          sourceSide: 'right',
+          targetSide: 'top',
+        },
+      ],
+    };
+    const inferred = inferTraceEventKinds(draft);
+    expect(inferred.candidates.map((candidate) => candidate.kind)).toEqual([
+      'start',
+      'end',
+    ]);
+    const model = traceToProcessModel(inferred, 'Draft');
+    expect(model.edges['trace-flow-1'].routing).toMatchObject({
+      sourceSide: 'right',
+      targetSide: 'top',
+    });
+    expect(collectUnconfirmedSemantics(model)).toHaveLength(3);
+    expect(
+      inferTraceEventKinds({ ...draft, connectors: [] }).candidates.every(
+        (candidate) => candidate.kind === 'event',
+      ),
+    ).toBe(true);
   });
 });

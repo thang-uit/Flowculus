@@ -10,8 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import { useId } from 'react';
 
-import { exportDrawioXml, importDrawioXml } from '@flowculus/drawio-adapter';
-import { withAutoLayout } from '@flowculus/file-formats';
+import { useDrawioPage } from '@/lib/documents/use-drawio-page';
 
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { AppSelect } from '@/components/ui/AppSelect';
@@ -19,25 +18,9 @@ import { useOnlineStatus } from '@/lib/use-online-status';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-/** Switching page first writes the current edits back into the source file. */
-const switchDrawioPage = async (pageIndex: number) => {
-  const state = useWorkspaceStore.getState();
-  const source = state.drawioSource;
-  if (!source || source.pageIndex === pageIndex) return;
-  const xml = await exportDrawioXml(state.processModel, source.xml);
-  const imported = await importDrawioXml(xml, {
-    pageIndex,
-    fallbackName: state.modelName,
-  });
-  useWorkspaceStore.getState().loadModel(withAutoLayout(imported.model), {
-    drawioSource: { xml, pages: imported.pages, pageIndex: imported.pageIndex },
-  });
-};
-
 export function AnalysisStatusBar() {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const draftStatus = useWorkspaceStore((state) => state.draftStatus);
   const analysisRuntimeStatus = useWorkspaceStore((state) => state.analysisRuntimeStatus);
   const report = useWorkspaceStore((state) => state.analysisReport);
   const analysisRevision = useWorkspaceStore((state) => state.analysisRevision);
@@ -49,6 +32,7 @@ export function AnalysisStatusBar() {
   );
   const drawioSource = useWorkspaceStore((state) => state.drawioSource);
   const pageSelectId = useId();
+  const { switchPage, busy: pageBusy, failed: pageFailed } = useDrawioPage();
   const isError = report.status === 'invalid';
   const online = useOnlineStatus();
   const runtimeLabel: Record<typeof analysisRuntimeStatus, string> = {
@@ -110,32 +94,6 @@ export function AnalysisStatusBar() {
           />
           {runtimeLabel[analysisRuntimeStatus]}
         </span>
-        <span
-          className="hidden items-center gap-1.5 whitespace-nowrap lg:inline-flex"
-          title={
-            draftStatus === 'error'
-              ? copy.draftSaveError
-              : draftStatus === 'saving'
-                ? copy.draftSaving
-                : copy.localDraft
-          }
-        >
-          <span
-            className={
-              draftStatus === 'error'
-                ? 'size-1.5 rounded-full bg-[var(--danger)]'
-                : draftStatus === 'saving'
-                  ? 'size-1.5 animate-pulse rounded-full bg-[var(--accent)]'
-                  : 'size-1.5 rounded-full bg-[var(--success)]'
-            }
-            aria-hidden="true"
-          />
-          {draftStatus === 'error'
-            ? copy.draftSaveError
-            : draftStatus === 'saving'
-              ? copy.draftSaving
-              : copy.localDraft}
-        </span>
       </div>
       <div className="flex shrink-0 items-center gap-3 text-[var(--muted)]">
         {!online ? (
@@ -150,6 +108,11 @@ export function AnalysisStatusBar() {
             <span className="sr-only">{copy.resilience.offlineHint}</span>
           </span>
         ) : null}
+        {pageFailed ? (
+          <span role="alert" className="text-[var(--danger)]">
+            {copy.fileError}
+          </span>
+        ) : null}
         {drawioSource && drawioSource.pages.length > 1 ? (
           <span className="inline-flex items-center gap-1.5">
             <Stack size={14} aria-hidden="true" />
@@ -158,8 +121,9 @@ export function AnalysisStatusBar() {
             </label>
             <AppSelect
               id={pageSelectId}
+              disabled={pageBusy}
               value={String(drawioSource.pageIndex)}
-              onValueChange={(next) => void switchDrawioPage(Number(next))}
+              onValueChange={(next) => void switchPage(Number(next))}
               options={drawioSource.pages.map((page, index) => ({
                 value: String(index),
                 label: page.name,

@@ -3,6 +3,7 @@
 import { ThemeProvider } from 'next-themes';
 import { useEffect } from 'react';
 
+import { ToastViewport } from '@/components/ui/ToastViewport';
 import { PageTitle } from '@/components/site/PageTitle';
 import { restoreLocalePreference } from '@/lib/use-preferences-store';
 
@@ -24,6 +25,7 @@ export function Providers({ children }: Readonly<{ children: React.ReactNode }>)
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <PageTitle />
       {children}
+      <ToastViewport />
     </ThemeProvider>
   );
 }

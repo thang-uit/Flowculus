@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { AppContextMenu } from '@/components/ui/AppContextMenu';
 import { useReactFlow } from '@xyflow/react';
 import { arrangeNodes, type ArrangeAction } from '@/lib/canvas-arrange';
 import { makeCanvasClipboard, pasteCanvasClipboard } from '@/lib/canvas-clipboard';
@@ -23,17 +23,7 @@ export function CanvasContextMenu({
   const selectedNodeIds = useWorkspaceStore((state) => state.selectedNodeIds);
   const selectedEdgeId = useWorkspaceStore((state) => state.selectedEdgeId);
   const copy = getWorkspaceCopy(locale);
-  const root = useRef<HTMLDivElement>(null);
   const { fitView } = useReactFlow();
-  useEffect(() => {
-    const first = root.current?.querySelector<HTMLButtonElement>('button:not(:disabled)');
-    first?.focus();
-    const outside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) onClose();
-    };
-    window.addEventListener('pointerdown', outside);
-    return () => window.removeEventListener('pointerdown', outside);
-  }, [onClose]);
 
   const arrange = (action: ArrangeAction) => {
     const state = useWorkspaceStore.getState();
@@ -63,8 +53,10 @@ export function CanvasContextMenu({
     onClose();
   };
   const pasteNodes = () => {
+    const documentId = useWorkspaceStore.getState().activeDocumentId;
     void readCanvasClipboard().then((payload) => {
-      if (!payload) return;
+      if (!payload || useWorkspaceStore.getState().activeDocumentId !== documentId)
+        return;
       const state = useWorkspaceStore.getState();
       const pasted = pasteCanvasClipboard(state.processModel, payload, 36);
       if (!pasted) return;
@@ -145,53 +137,23 @@ export function CanvasContextMenu({
       run: remove,
     },
   ];
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-      root.current?.closest<HTMLElement>('.flow-canvas')?.focus();
-      return;
-    }
-    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    const buttons = [
-      ...(root.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ??
-        []),
-    ];
-    if (buttons.length === 0) return;
-    const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    const next =
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? buttons.length - 1
-          : event.key === 'ArrowDown'
-            ? (index + 1) % buttons.length
-            : (index - 1 + buttons.length) % buttons.length;
-    buttons[next]?.focus();
-  };
   return (
-    <div
-      ref={root}
-      role="menu"
-      aria-label={copy.canvasContextMenu}
-      onKeyDown={onKeyDown}
-      className="absolute z-30 max-h-[min(24rem,65dvh)] w-52 overflow-y-auto rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] p-1 shadow-[var(--shadow-panel)]"
-      style={{ left: position.x, top: position.y }}
-    >
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          type="button"
-          role="menuitem"
-          disabled={!action.enabled}
-          onClick={action.run}
-          className="focus-ring block min-h-9 w-full rounded-lg px-3 py-2 text-left text-xs text-[var(--text)] hover:bg-[var(--accent-soft)] disabled:opacity-40"
-        >
-          {action.label}
-        </button>
-      ))}
-    </div>
+    <AppContextMenu
+      point={position}
+      label={copy.canvasContextMenu}
+      onClose={onClose}
+      sections={[
+        {
+          id: 'canvas',
+          actions: actions.map((action) => ({
+            id: action.label,
+            label: action.label,
+            disabled: !action.enabled,
+            onSelect: action.run,
+            tone: action.label === copy.deleteElement ? 'danger' : undefined,
+          })),
+        },
+      ]}
+    />
   );
 }

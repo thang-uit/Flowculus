@@ -166,7 +166,14 @@ path, params }`. Packages never return user-facing sentences; the web app
 - A fresh workspace starts empty; Mining presets load only after explicit selection.
   Skip only exact untouched copies of the retired starter during draft hydration;
   never clear edited models based on an ID or metadata marker alone.
-- One local draft is stored in IndexedDB (localStorage fallback), debounced.
+- Open process tabs and the active tab are stored in IndexedDB (localStorage fallback), debounced.
+  Each tab owns its model, options, draw.io source, viewport, bounded in-memory undo
+  history and separately keyed reference photo. Imports and Mining conversions open
+  new tabs; never overwrite existing work. Device saves use the semantic gate and
+  `.flowculus.json`; native writable handles and optional file auto-save are
+  session-only. Downloads must not be described as automatic device writes.
+  Preserve legacy drafts during migration and use Web Locks when available to
+  prevent concurrent editor windows overwriting the shared browser session.
   Store schema-valid work-in-progress even when graph/time diagnostics prevent
   analysis. Checkpoint synchronously on pagehide; restore the newest copy.
   Data-only exports remain available while analysis is pending or unavailable;

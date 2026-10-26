@@ -33,7 +33,9 @@ describe('reference image state', () => {
       height: 0,
     });
     expect(useImageReferenceStore.getState().requestId).toBeGreaterThan(id);
-    expect(readReferenceSelection()).toBe(REMOVED_REFERENCE);
+    expect(readReferenceSelection(useImageReferenceStore.getState().documentId)).toBe(
+      REMOVED_REFERENCE,
+    );
     state.restoreImage({
       blob: file(),
       name: 'old.png',
@@ -62,7 +64,23 @@ describe('reference image state', () => {
       locked: true,
     });
     expect(URL.revokeObjectURL).toHaveBeenCalledOnce();
-    expect(readReferenceSelection()).toBe(useImageReferenceStore.getState().assetId);
+    expect(readReferenceSelection(useImageReferenceStore.getState().documentId)).toBe(
+      useImageReferenceStore.getState().assetId,
+    );
+  });
+  it('changing document invalidates pending uploads and clears only the visible photo', () => {
+    const state = useImageReferenceStore.getState();
+    state.setImage(file(), 400, 300);
+    const oldId = state.beginUpload();
+    state.switchDocument('other-document');
+    expect(useImageReferenceStore.getState().requestId).toBeGreaterThan(oldId);
+    expect(useImageReferenceStore.getState()).toMatchObject({
+      documentId: 'other-document',
+      blob: null,
+      open: false,
+      touched: false,
+    });
+    expect(readReferenceSelection('other-document')).toBeNull();
   });
   it('clamps bounded settings and rejects non-finite geometry', () => {
     const state = useImageReferenceStore.getState();

@@ -2,7 +2,7 @@
 
 import * as Select from '@radix-ui/react-select';
 import { CaretDown, Check } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -34,6 +34,19 @@ export function AppSelect({
   const selectedIndex = options.findIndex((option) => option.value === value);
   const [open, setOpen] = useState(false);
   const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+        requestAnimationFrame(() => trigger?.focus());
+      }
+    };
+    window.addEventListener('keydown', escape, true);
+    return () => window.removeEventListener('keydown', escape, true);
+  }, [open, trigger]);
   return (
     <Select.Root
       open={open}
@@ -72,14 +85,14 @@ export function AppSelect({
           position="popper"
           sideOffset={5}
           collisionPadding={8}
-          className="z-[100] max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] max-w-[min(28rem,var(--radix-select-content-available-width))] overflow-hidden rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] p-1 shadow-[var(--shadow-panel)]"
+          className="z-[100] max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] max-w-[min(28rem,var(--radix-select-content-available-width))] app-menu overflow-hidden"
         >
           <Select.Viewport className="max-h-[19rem] overflow-y-auto scrollbar-thin">
             {options.map((option, index) => (
               <Select.Item
                 key={`${index}:${option.value}`}
                 value={`option-${index}`}
-                className="relative flex min-h-9 min-w-0 cursor-pointer select-none items-center rounded-lg py-2 pl-2.5 pr-8 text-sm text-[var(--text)] outline-none data-[highlighted]:bg-[var(--accent-soft)] data-[highlighted]:text-[var(--text)] data-[state=checked]:font-semibold"
+                className="app-menu__item app-select-item relative min-w-0 select-none pr-8 outline-none data-[state=checked]:font-semibold"
               >
                 <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">
                   <Select.ItemText>{option.label}</Select.ItemText>

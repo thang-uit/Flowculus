@@ -1,6 +1,7 @@
 'use client';
 
 import type { TraceCrop } from '@/lib/image-trace/file-validation';
+import { AppCheckbox } from '@/components/ui/AppCheckbox';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { useImageReferenceStore } from '@/lib/use-image-reference-store';
@@ -49,12 +50,10 @@ export function ImageReferenceControls({
           className="flow-range mt-2"
         />
       </label>
-      <label className="flex items-center gap-2 text-[11px] text-[var(--muted-strong)]">
-        <input
-          type="checkbox"
+      <label className="flex min-h-8 cursor-pointer items-center gap-2.5 text-[11px] text-[var(--muted-strong)]">
+        <AppCheckbox
           checked={locked}
           onChange={(event) => setLocked(event.target.checked)}
-          className="flow-checkbox"
         />
         {copy.imageTraceLocked}
       </label>

@@ -14,6 +14,8 @@ export interface WorkspaceCopy {
   modelName: string;
   subtitle: string;
   openFile: string;
+  documentLimit: string;
+  mixedFileSelection: string;
   dropFiles: string;
   dropFilesHint: string;
   saveFile: string;
@@ -402,6 +404,12 @@ export interface WorkspaceCopy {
   miningResetFilters: string;
   miningSendToCanvas: string;
   miningSendToCanvasHint: string;
+  miningCreateTitle: string;
+  miningCreateHint: string;
+  miningCreateAction: string;
+  miningCreateBusy: string;
+  miningCreateStale: string;
+  miningCreateFailed: string;
   miningServiceTime: string;
   miningSkipped: (rows: number, timestamps: number, startTimes: number) => string;
   miningSource: string;

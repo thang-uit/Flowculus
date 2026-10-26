@@ -7,11 +7,14 @@ export const VI: WorkspaceCopy = {
   workspace: 'Không gian làm việc',
   modelName: 'Quy trình chưa có tên',
   subtitle: 'Phân tích thời gian chu trình',
+  mixedFileSelection:
+    'Có thể mở nhiều file mô hình cùng lúc; với event log hoặc ảnh tham chiếu, hãy chọn từng file.',
+  documentLimit: 'Mở tối đa 20 quy trình. Hãy lưu và đóng một tab trước khi mở thêm.',
   openFile: 'Mở tệp',
   dropFiles: 'Thả tệp để mở',
   dropFilesHint:
     'Hỗ trợ tệp Flowculus, draw.io, CSV mô hình và nhật ký sự kiện CSV/XLSX/JSON/XES.',
-  saveFile: 'Lưu thành .drawio',
+  saveFile: 'Lưu vào thiết bị',
   shareFile: 'Chia sẻ tệp mô hình',
   exportFile: 'Xuất tệp',
   importHint: 'Mở tệp Flowculus, draw.io, CSV hoặc nhật ký sự kiện, gồm XLSX',
@@ -250,7 +253,7 @@ export const VI: WorkspaceCopy = {
   },
   imageTraceEmpty: 'Không nhận ra hình quy trình. Hãy dùng ảnh làm nền rồi tự vẽ.',
   imageTraceHint:
-    'Nhận dạng chỉ gần đúng. Hãy rà từng hình và đường nối trước khi phân tích. Ảnh không được dùng để tự điền thời gian hay xác suất.',
+    'Hãy rà từng hình và đường nối. Chiều được đề xuất từ trái sang phải hoặc trên xuống dưới; chưa xác minh đầu mũi tên. Bạn tự nhập tên, thời gian và xác suất.',
   imageTraceCandidates: 'Các hình',
   imageTraceConnectors: 'Đường nối đề xuất',
   imageTraceAddConnector: 'Thêm đường nối',
@@ -481,7 +484,15 @@ export const VI: WorkspaceCopy = {
   miningResetFilters: 'Đặt lại bộ lọc',
   miningSendToCanvas: 'Chuyển sang canvas BPMN',
   miningSendToCanvasHint:
-    'Chuyển bản đồ đã lọc thành mô hình BPMN (gateway XOR theo tần suất, làm lại theo lặp) để tính CT, TCT và CTE.',
+    'Đặt tên quy trình rồi mở bản đồ đã lọc trong tab mới. Cần rà soát ngữ nghĩa suy luận trước khi lưu tệp hoặc xuất.',
+  miningCreateTitle: 'Đặt tên quy trình',
+  miningCreateHint:
+    'Tên log dùng để nhận diện nguồn dữ liệu. Bạn tự đặt tên quy trình cho tab, tệp xuất và báo cáo. Các tab hiện có vẫn được giữ lại.',
+  miningCreateAction: 'Tạo quy trình',
+  miningCreateBusy: 'Đang tạo quy trình…',
+  miningCreateStale:
+    'Log hoặc bộ lọc đã thay đổi, hoặc đang khai phá. Hãy hủy, đợi bản đồ hiện tại tải xong rồi thử lại.',
+  miningCreateFailed: 'Chưa tạo được quy trình. Hãy hủy và nạp lại log rồi thử lại.',
   miningServiceTime: 'Thời gian xử lý',
   miningSkipped: (rows, timestamps, startTimes) =>
     `Đã bỏ qua ${rows} dòng thiếu mã ca/hoạt động và ${timestamps} dòng có thời điểm hoàn thành không đọc được; ${startTimes} thời điểm bắt đầu sai hoặc muộn hơn lúc hoàn thành không được dùng để tính thời gian chờ/xử lý.`,

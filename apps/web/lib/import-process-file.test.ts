@@ -22,6 +22,22 @@ const model: ProcessModel = {
   },
 };
 
+it('retains the selected draw.io source page inside a portable model backup', async () => {
+  const xml =
+    '<mxfile><diagram id="one" name="First"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram><diagram id="two" name="Second"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>';
+  const result = await importWorkspaceFiles([
+    file(
+      'multi.flowculus.json',
+      JSON.stringify({ schemaVersion: 1, model, drawioXml: xml, drawioPageIndex: 1 }),
+    ),
+  ]);
+  expect(result.kind).toBe('model');
+  if (result.kind === 'model') {
+    expect(result.drawioSource?.pageIndex).toBe(1);
+    expect(result.model.name).toBe(model.name);
+  }
+});
+
 describe('importWorkspaceFiles', () => {
   it('does not read an already cancelled import', async () => {
     const controller = new AbortController();

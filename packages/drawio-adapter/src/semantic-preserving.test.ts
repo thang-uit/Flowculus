@@ -285,3 +285,14 @@ describe('semantic-preserving draw.io round trip', () => {
     expect(again.model.nodes.fork.metadata?.['flowculus-join-id']).toBe('join');
   });
 });
+
+it('exports the user-renamed process as the selected draw.io page name', async () => {
+  const xml =
+    '<mxfile><diagram id="one" name="IT Service Desk"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>';
+  const imported = await importDrawioXml(xml);
+  const output = await exportDrawioXml(
+    { ...imported.model, name: 'Quy trình của tôi' },
+    xml,
+  );
+  expect((await importDrawioXml(output)).model.name).toBe('Quy trình của tôi');
+});

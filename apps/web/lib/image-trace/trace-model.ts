@@ -1,6 +1,7 @@
 import { SEMANTIC_METADATA_KEYS, type ProcessModel } from '@flowculus/process-model';
 
 import type { TraceResult, TraceShape } from './trace-types';
+const MIN_TRACE_TASK_SIZE = { width: 120, height: 72 };
 export type {
   TraceCandidate,
   TraceConnector,
@@ -41,6 +42,16 @@ export function traceToProcessModel(result: TraceResult, name: string): ProcessM
       source: connector.source,
       target: connector.target,
       kind: connector.kind ?? 'sequence',
+      ...(connector.sourceSide || connector.targetSide
+        ? {
+            routing: {
+              style: 'orthogonal' as const,
+              waypoints: [],
+              sourceSide: connector.sourceSide,
+              targetSide: connector.targetSide,
+            },
+          }
+        : {}),
       metadata: {
         [SEMANTIC_METADATA_KEYS.inferredEdgeKind]: true,
         'flowculus-trace-confidence': connector.confidence,
@@ -78,12 +89,7 @@ export function mergeTracedModel(
       ...node,
       id,
       bounds: node.bounds
-        ? {
-            x: origin.x + node.bounds.x * scale,
-            y: origin.y + node.bounds.y * scale,
-            width: Math.max(20, node.bounds.width * scale),
-            height: Math.max(20, node.bounds.height * scale),
-          }
+        ? readableTraceBounds(node.kind, node.bounds, scale, origin)
         : undefined,
     };
   }
@@ -101,9 +107,60 @@ export function mergeTracedModel(
   return { model: { ...current, nodes, edges }, nodeIds: [...remap.values()] };
 }
 
+/** Keep detected centres while giving task labels and chips enough space. */
+function readableTraceBounds(
+  kind: ProcessModel['nodes'][string]['kind'],
+  bounds: NonNullable<ProcessModel['nodes'][string]['bounds']>,
+  scale: number,
+  origin: { x: number; y: number },
+) {
+  const task = kind === 'task' || kind === 'subprocess';
+  const minimum = kind === 'gateway' ? 56 : 44;
+  const width = Math.max(
+    task ? MIN_TRACE_TASK_SIZE.width : minimum,
+    bounds.width * scale,
+  );
+  const height = Math.max(
+    task ? MIN_TRACE_TASK_SIZE.height : minimum,
+    bounds.height * scale,
+  );
+  return {
+    x: origin.x + (bounds.x + bounds.width / 2) * scale - width / 2,
+    y: origin.y + (bounds.y + bounds.height / 2) * scale - height / 2,
+    width,
+    height,
+  };
+}
+
+/** Single incoming/outgoing paths suggest endpoint roles, still unconfirmed. */
+export function inferTraceEventKinds(result: TraceResult): TraceResult {
+  return {
+    ...result,
+    candidates: result.candidates.map((candidate) => {
+      if (candidate.kind !== 'event') return candidate;
+      const incoming = result.connectors.filter(
+        (edge) => edge.target === candidate.id,
+      ).length;
+      const outgoing = result.connectors.filter(
+        (edge) => edge.source === candidate.id,
+      ).length;
+      return {
+        ...candidate,
+        kind:
+          incoming === 0 && outgoing === 1
+            ? 'start'
+            : incoming === 1 && outgoing === 0
+              ? 'end'
+              : 'event',
+      };
+    }),
+  };
+}
+
 export function classifyContour(
   vertices: Array<{ x: number; y: number }>,
   circularity: number,
+  tipTolerance = 0.2,
 ): TraceShape | null {
   if (vertices.length === 4) {
     const xs = vertices.map((point) => point.x);
@@ -140,8 +197,8 @@ export function classifyContour(
     return tips.every((tip) =>
       vertices.some(
         (point) =>
-          Math.abs(point.x - tip.x) < width * 0.2 &&
-          Math.abs(point.y - tip.y) < height * 0.2,
+          Math.abs(point.x - tip.x) < width * tipTolerance &&
+          Math.abs(point.y - tip.y) < height * tipTolerance,
       ),
     )
       ? 'diamond'

@@ -1,12 +1,16 @@
 'use client';
 
 import { create } from 'zustand';
+import { useWorkspaceStore } from '@/lib/workspace-store';
+import { INITIAL_DOCUMENT_ID } from '@/lib/documents/document-types';
 import {
   markReferenceSelection,
   REMOVED_REFERENCE,
 } from '@/lib/image-trace/reference-selection';
 
 interface ImageReferenceState {
+  documentId: string;
+  switchDocument: (id: string) => void;
   url: string | null;
   blob: Blob | null;
   assetId: string | null;
@@ -47,6 +51,29 @@ interface ImageReferenceState {
 
 /** Transient local photo layer; the blob is never included in a model/export. */
 export const useImageReferenceStore = create<ImageReferenceState>((set, get) => ({
+  documentId: INITIAL_DOCUMENT_ID,
+  switchDocument: (documentId) => {
+    const old = get().url;
+    if (old) URL.revokeObjectURL(old);
+    set({
+      documentId,
+      url: null,
+      blob: null,
+      assetId: null,
+      requestId: get().requestId + 1,
+      name: '',
+      width: 0,
+      height: 0,
+      x: 0,
+      y: 0,
+      opacity: 0.45,
+      rotation: 0,
+      locked: true,
+      touched: false,
+      open: false,
+      storageError: false,
+    });
+  },
   url: null,
   blob: null,
   assetId: null,
@@ -73,7 +100,9 @@ export const useImageReferenceStore = create<ImageReferenceState>((set, get) => 
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const url = URL.createObjectURL(file);
-    const stored = markReferenceSelection(assetId);
+    const stored =
+      useWorkspaceStore.getState().draftStatus !== 'conflict' &&
+      markReferenceSelection(assetId, get().documentId);
     const old = get().url;
     if (old) URL.revokeObjectURL(old);
     set({
@@ -92,6 +121,7 @@ export const useImageReferenceStore = create<ImageReferenceState>((set, get) => 
       locked: true,
       touched: true,
     });
+    useWorkspaceStore.getState().setDocumentReference(get().documentId, true);
   },
   restoreImage: (asset) => {
     if (get().touched || get().blob) return;
@@ -100,6 +130,7 @@ export const useImageReferenceStore = create<ImageReferenceState>((set, get) => 
       assetId: asset.assetId ?? null,
       url: URL.createObjectURL(asset.blob),
     });
+    useWorkspaceStore.getState().setDocumentReference(get().documentId, true);
   },
   setOpacity: (opacity) => {
     if (Number.isFinite(opacity)) set({ opacity: Math.max(0.1, Math.min(1, opacity)) });
@@ -115,7 +146,9 @@ export const useImageReferenceStore = create<ImageReferenceState>((set, get) => 
   setOpen: (open) => set({ open }),
   setStorageError: (storageError) => set({ storageError }),
   clear: () => {
-    const stored = markReferenceSelection(REMOVED_REFERENCE);
+    const stored =
+      useWorkspaceStore.getState().draftStatus !== 'conflict' &&
+      markReferenceSelection(REMOVED_REFERENCE, get().documentId);
     const old = get().url;
     if (old) URL.revokeObjectURL(old);
     set({
@@ -135,5 +168,6 @@ export const useImageReferenceStore = create<ImageReferenceState>((set, get) => 
       y: 0,
       touched: true,
     });
+    useWorkspaceStore.getState().setDocumentReference(get().documentId, false);
   },
 }));

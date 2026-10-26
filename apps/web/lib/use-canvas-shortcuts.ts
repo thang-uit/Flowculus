@@ -9,13 +9,17 @@ import { useWorkspaceStore } from '@/lib/workspace-store';
 
 const isEditableTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
-  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+  (target.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+    Boolean(
+      target.closest('[role="dialog"],[role="menu"],[role="listbox"],[role="tab"]'),
+    ));
 
 /** Cmd/Ctrl+Z undo, Shift+Cmd/Ctrl+Z or Ctrl+Y redo, outside text inputs. */
 export function useHistoryShortcuts() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isEditableTarget(event.target)) return;
+      if (event.defaultPrevented || isEditableTarget(event.target)) return;
       if (!(event.metaKey || event.ctrlKey)) return;
       const key = event.key.toLowerCase();
       const state = useWorkspaceStore.getState();

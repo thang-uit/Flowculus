@@ -1,6 +1,8 @@
 'use client';
 
+import { AppButton } from '@/components/ui/AppButton';
 import { PaperPlaneTilt } from '@phosphor-icons/react';
+import { useState } from 'react';
 
 import { ColumnMappingDialog } from '@/components/mining/ColumnMappingDialog';
 import { MiningFilterPanel } from '@/components/mining/MiningFilterPanel';
@@ -8,6 +10,7 @@ import { MiningInsightsPanel } from '@/components/mining/MiningInsightsPanel';
 import { MiningMapView } from '@/components/mining/MiningMapView';
 import { MiningPanelResizeHandle } from '@/components/mining/MiningPanelResizeHandle';
 import { MiningSourcePanel } from '@/components/mining/MiningSourcePanel';
+import { MiningCreateProcessDialog } from '@/components/mining/MiningCreateProcessDialog';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { useMiningSession } from '@/lib/use-mining-session';
@@ -21,6 +24,8 @@ export function MiningWorkspace() {
   const session = useMiningSession();
   const result = useMiningStore((state) => state.result);
   const mappingTable = useMiningStore((state) => state.mappingTable);
+  const status = useMiningStore((state) => state.status);
+  const [namingProcess, setNamingProcess] = useState(false);
   const {
     workspaceRef,
     widths,
@@ -45,15 +50,16 @@ export function MiningWorkspace() {
         />
         <MiningFilterPanel />
         <section className="space-y-2 p-4">
-          <button
+          <AppButton
             type="button"
-            onClick={() => void session.sendToCanvas()}
-            disabled={!result}
-            className="focus-ring inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-semibold text-[var(--accent-ink)] transition-[filter] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => setNamingProcess(true)}
+            disabled={!result || status !== 'ready' || !!mappingTable}
+            variant="primary"
+            className="w-full"
           >
             <PaperPlaneTilt size={15} weight="bold" aria-hidden="true" />
             {copy.miningSendToCanvas}
-          </button>
+          </AppButton>
           <p className="text-[10.5px] leading-4 text-[var(--muted)]">
             {copy.miningSendToCanvasHint}
           </p>
@@ -82,6 +88,13 @@ export function MiningWorkspace() {
         onKeyDown={onKeyDown}
       />
       <MiningInsightsPanel onCheckConformance={() => void session.checkConformance()} />
+
+      {namingProcess ? (
+        <MiningCreateProcessDialog
+          onClose={() => setNamingProcess(false)}
+          onCreate={session.sendToCanvas}
+        />
+      ) : null}
 
       {mappingTable ? (
         <ColumnMappingDialog

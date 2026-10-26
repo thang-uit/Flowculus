@@ -2,7 +2,7 @@
 
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { createAnalysisSnapshot, serializeFlowculusFile } from '@flowculus/file-formats';
 import { checkSemanticGate } from '@flowculus/validation';
 
@@ -13,7 +13,7 @@ import { getWorkspaceCopy } from '@/lib/i18n';
 import { exportWorkspace, type WorkspaceExportFormat } from '@/lib/workspace-exports';
 import { useWorkspaceStore, type SemanticGateReason } from '@/lib/workspace-store';
 
-const STATUS_TIMEOUT_MS = 2600;
+import { showNotice, type NoticeTone } from '@/lib/ui/notice-store';
 
 /**
  * The single entry point for export and share. Both pass the semantic gate:
@@ -23,21 +23,17 @@ const STATUS_TIMEOUT_MS = 2600;
 export function useWorkspaceActions() {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timerRef.current != null) window.clearTimeout(timerRef.current);
+  const [pendingExport, setPendingExport] = useState<{
+    format: WorkspaceExportFormat;
+    documentId: string;
+    name: string;
+  } | null>(null);
+  const showStatus = useCallback(
+    (message: string, tone: NoticeTone = 'info') => {
+      if (usePreferencesStore.getState().locale === locale) showNotice(message, tone);
     },
-    [],
+    [locale],
   );
-
-  const showStatus = useCallback((message: string) => {
-    setStatusMessage(message);
-    if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => setStatusMessage(null), STATUS_TIMEOUT_MS);
-  }, []);
 
   const passGate = useCallback(
     (reason: SemanticGateReason) => {
@@ -51,13 +47,17 @@ export function useWorkspaceActions() {
     [copy.semantics, showStatus],
   );
 
-  const runExport = useCallback(
-    (format: WorkspaceExportFormat) => {
+  const performExport = useCallback(
+    (format: WorkspaceExportFormat, name?: string) => {
       const status = useWorkspaceStore.getState().analysisRuntimeStatus;
       const analysisReady = status === 'ready' || status === 'fallback';
       if (requiresAnalysisReport(format) && !analysisReady) {
         showStatus(copy.analysisExportWait);
         return;
+      }
+      if (name) {
+        const state = useWorkspaceStore.getState();
+        state.renameDocument(state.activeDocumentId, name);
       }
       const model = passGate('export');
       if (!model) return;
@@ -74,11 +74,11 @@ export function useWorkspaceActions() {
         locale,
         reportWindow,
       })
-        .then(() => showStatus(copy.localCopyExported))
+        .then(() => showStatus(copy.localCopyExported, 'success'))
         .catch((error: unknown) => {
           reportWindow?.close();
           console.error('Flowculus export failed', error);
-          showStatus(copy.exportError);
+          showStatus(copy.exportError, 'error');
         });
     },
     [copy, locale, passGate, showStatus],
@@ -94,6 +94,7 @@ export function useWorkspaceActions() {
         schemaVersion: 1,
         model,
         drawioXml: state.drawioSource?.xml,
+        drawioPageIndex: state.drawioSource?.pageIndex,
         analysisOptions: state.analysisOptions,
         ...(state.analysisRuntimeStatus === 'ready' ||
         state.analysisRuntimeStatus === 'fallback'
@@ -106,7 +107,7 @@ export function useWorkspaceActions() {
         showStatus(copy.shareSheetOpened);
       } else {
         downloadTextFile(filename, source, 'application/json');
-        showStatus(copy.localCopyExported);
+        showStatus(copy.localCopyExported, 'success');
       }
     } catch (error) {
       showStatus(
@@ -117,5 +118,27 @@ export function useWorkspaceActions() {
     }
   }, [copy, passGate, showStatus]);
 
-  return { runExport, share, statusMessage, showStatus };
+  const runExport = (format: WorkspaceExportFormat) => {
+    const state = useWorkspaceStore.getState();
+    setPendingExport({
+      format,
+      documentId: state.activeDocumentId,
+      name: state.processModel.name,
+    });
+  };
+  const confirmExport = (name: string) => {
+    if (!pendingExport) return;
+    const request = pendingExport;
+    setPendingExport(null);
+    if (useWorkspaceStore.getState().activeDocumentId !== request.documentId) return;
+    performExport(request.format, name);
+  };
+  return {
+    runExport,
+    share,
+    showStatus,
+    pendingExport,
+    confirmExport,
+    cancelExport: () => setPendingExport(null),
+  };
 }

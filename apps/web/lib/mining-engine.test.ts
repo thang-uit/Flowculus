@@ -72,6 +72,27 @@ describe('mining session', () => {
 });
 
 describe('mining session lifecycle', () => {
+  it('validates the explicit process title without replacing the source log name', () => {
+    const session = createMiningSession();
+    session({
+      type: 'load-preset',
+      presetId: 'it-service-desk',
+      filter: DEFAULT_DISCOVERY_FILTER,
+    });
+    for (const name of ['', '   ', 'x'.repeat(121), 'A\u0000B']) {
+      expect(() =>
+        session({ type: 'to-model', name, filter: DEFAULT_DISCOVERY_FILTER }),
+      ).toThrow('invalid-process-name');
+    }
+    const converted = session({
+      type: 'to-model',
+      name: '  Quy trình của tôi  ',
+      filter: DEFAULT_DISCOVERY_FILTER,
+    });
+    expect(converted.type === 'model' && converted.model.name).toBe('Quy trình của tôi');
+    const exported = session({ type: 'export-log' });
+    expect(exported.type === 'csv' && exported.logName).toBe('IT Service Desk');
+  });
   it('replaces cached discoveries when a different log is loaded', () => {
     const session = createMiningSession();
     session({

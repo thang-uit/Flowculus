@@ -1,6 +1,6 @@
 'use client';
 
-import { CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { PaletteToggle, PALETTE_IDS } from '@/components/palette/PaletteToggle';
 
 import { ShapePaletteGlyph } from '@/components/palette/ShapePaletteGlyph';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -87,7 +87,6 @@ export function WorkspaceRail() {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const paletteOpen = useWorkspaceStore((state) => state.paletteOpen);
-  const togglePalette = useWorkspaceStore((state) => state.togglePalette);
   const { insertShapeAtCentre } = useCanvasCommands();
   const items: PaletteItem[] = [
     { id: 'start', label: copy.entryPoint, hint: copy.startEventHint },
@@ -135,13 +134,13 @@ export function WorkspaceRail() {
         <div
           className={cn(
             'border-b border-[var(--border)]',
-            paletteOpen ? 'px-4 py-4' : 'p-2',
+            paletteOpen ? 'px-4 py-3' : 'p-2',
           )}
         >
           <div
             className={cn(
               'flex items-center',
-              paletteOpen ? 'justify-between gap-3' : 'justify-center',
+              paletteOpen ? 'items-start justify-between gap-2' : 'justify-center',
             )}
           >
             {paletteOpen ? (
@@ -154,24 +153,11 @@ export function WorkspaceRail() {
                 </p>
               </div>
             ) : null}
-            <Tooltip content={paletteOpen ? copy.collapsePalette : copy.expandPalette}>
-              <button
-                type="button"
-                onClick={togglePalette}
-                aria-label={paletteOpen ? copy.collapsePalette : copy.expandPalette}
-                title={paletteOpen ? copy.collapsePalette : copy.expandPalette}
-                className="focus-ring inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-[var(--border)] text-[var(--muted-strong)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] active:scale-[0.97]"
-              >
-                {paletteOpen ? (
-                  <CaretLeft size={15} aria-hidden="true" />
-                ) : (
-                  <CaretRight size={15} aria-hidden="true" />
-                )}
-              </button>
-            </Tooltip>
+            <PaletteToggle />
           </div>
         </div>
         <nav
+          id={PALETTE_IDS.desktop}
           aria-label={copy.processShapes}
           className={cn(
             'flex-1 overflow-y-auto scrollbar-thin',
@@ -195,6 +181,7 @@ export function WorkspaceRail() {
         ) : null}
       </aside>
       <nav
+        id={PALETTE_IDS.mobile}
         aria-label={copy.processShapes}
         aria-hidden={!paletteOpen}
         inert={!paletteOpen}

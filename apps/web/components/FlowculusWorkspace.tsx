@@ -62,6 +62,8 @@ export function FlowculusWorkspace({
   initialMode?: WorkspaceMode;
 }) {
   const routeReady = useWorkspaceRoute();
+  const restoringDrafts = useWorkspaceStore((state) => state.draftStatus === 'loading');
+  const activeDocumentId = useWorkspaceStore((state) => state.activeDocumentId);
   const storedMode = useWorkspaceStore((state) => state.mode);
   const mode = routeReady ? storedMode : initialMode;
   const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
@@ -88,7 +90,14 @@ export function FlowculusWorkspace({
         <div className="flex min-h-[100dvh] max-h-[100dvh] flex-col overflow-hidden overscroll-none bg-[var(--canvas)]">
           <WorkspaceHeader onImportFiles={handleImportFiles} />
           {mode === 'model' ? (
-            <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
+            <div
+              inert={restoringDrafts}
+              aria-busy={restoringDrafts}
+              role="tabpanel"
+              id={`document-panel-${activeDocumentId}`}
+              aria-labelledby={`document-tab-${activeDocumentId}`}
+              className="relative flex min-h-0 flex-1 flex-col lg:flex-row"
+            >
               <WorkspaceRail />
               <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
                 <section
@@ -96,7 +105,7 @@ export function FlowculusWorkspace({
                   aria-label={copy.canvasLabel}
                 >
                   <SectionErrorBoundary section="canvas">
-                    <ProcessCanvas />
+                    <ProcessCanvas key={activeDocumentId} />
                     <MinedModelNotice />
                     <CanvasFloatingControls />
                   </SectionErrorBoundary>
@@ -121,7 +130,7 @@ export function FlowculusWorkspace({
             <MobileInspectorDialog open={inspectorOpen} onOpenChange={setInspectorOpen} />
           ) : null}
           <FileDropOverlay copy={copy} onImportFiles={handleImportFiles} />
-          <ImageReferencePanel onImportFiles={handleImportFiles} />
+          <ImageReferencePanel key={activeDocumentId} onImportFiles={handleImportFiles} />
           <SemanticGateDialog />
         </div>
       </ReactFlowProvider>

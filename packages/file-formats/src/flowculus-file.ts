@@ -53,6 +53,8 @@ export interface FlowculusFile {
   schemaVersion: 1;
   model: ProcessModel;
   drawioXml?: string;
+  /** Active page in preserved multi-page draw.io source (legacy files default to 0). */
+  drawioPageIndex?: number;
   analysisOptions?: FlowculusAnalysisOptions;
   analysis?: FlowculusAnalysisSnapshot;
 }
@@ -90,5 +92,10 @@ export const parseFlowculusFile = (source: string): FlowculusFile => {
   ) {
     throw new Error('The embedded draw.io XML is too large.');
   }
+  if (
+    parsed.drawioPageIndex != null &&
+    (!Number.isInteger(parsed.drawioPageIndex) || (parsed.drawioPageIndex as number) < 0)
+  )
+    throw new Error('Invalid draw.io page index.');
   return parsed as unknown as FlowculusFile;
 };

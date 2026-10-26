@@ -1,4 +1,5 @@
 const KEY = 'flowculus-reference-image:selection';
+const scoped = (key: string, scope?: string) => (scope ? `${key}:${scope}` : key);
 const PRESENTATION_KEY = 'flowculus-reference-image:presentation';
 export const REMOVED_REFERENCE = 'removed';
 
@@ -12,10 +13,13 @@ export interface ReferencePresentation {
 }
 
 /** Tiny geometry checkpoint; the photo bytes remain in IndexedDB. */
-export function checkpointReferencePresentation(value: ReferencePresentation): boolean {
+export function checkpointReferencePresentation(
+  value: ReferencePresentation,
+  scope?: string,
+): boolean {
   try {
     localStorage.setItem(
-      PRESENTATION_KEY,
+      scoped(PRESENTATION_KEY, scope),
       JSON.stringify({
         assetId: value.assetId,
         x: value.x,
@@ -33,10 +37,11 @@ export function checkpointReferencePresentation(value: ReferencePresentation): b
 
 export function restoreReferencePresentation(
   value: ReferencePresentation,
+  scope?: string,
 ): ReferencePresentation {
   try {
     const candidate: unknown = JSON.parse(
-      localStorage.getItem(PRESENTATION_KEY) ?? 'null',
+      localStorage.getItem(scoped(PRESENTATION_KEY, scope)) ?? 'null',
     );
     if (!candidate || typeof candidate !== 'object') return value;
     const saved = candidate as Partial<ReferencePresentation>;
@@ -66,24 +71,24 @@ export function restoreReferencePresentation(
 }
 
 /** A synchronous marker prevents a deleted/replaced photo returning on fast reload. */
-export function markReferenceSelection(id: string): boolean {
+export function markReferenceSelection(id: string, scope?: string): boolean {
   try {
-    localStorage.setItem(KEY, id);
+    localStorage.setItem(scoped(KEY, scope), id);
     return true;
   } catch {
     return false;
   }
 }
 
-export function readReferenceSelection(): string | null {
+export function readReferenceSelection(scope?: string): string | null {
   try {
-    return localStorage.getItem(KEY);
+    return localStorage.getItem(scoped(KEY, scope));
   } catch {
     return null;
   }
 }
 
-export const referenceSelectionMatches = (assetId?: string): boolean => {
-  const selected = readReferenceSelection();
+export const referenceSelectionMatches = (assetId?: string, scope?: string): boolean => {
+  const selected = readReferenceSelection(scope);
   return selected === null || (selected !== REMOVED_REFERENCE && selected === assetId);
 };

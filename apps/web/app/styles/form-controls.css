@@ -29,33 +29,89 @@ input.flow-range::-moz-range-thumb {
 }
 
 input.flow-range:focus-visible,
-input.flow-checkbox:focus-visible {
+.app-checkbox__input:focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 3px;
 }
 
-input.flow-checkbox {
-  appearance: none;
-  display: grid;
-  width: 18px;
-  height: 18px;
+.app-checkbox {
+  position: relative;
+  display: inline-flex;
   flex: none;
-  place-content: center;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+}
+
+.app-checkbox__input {
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
+  border-radius: 0.4rem;
   background: var(--surface-raised);
   cursor: pointer;
 }
 
-input.flow-checkbox:checked {
+.app-checkbox__input:hover:not(:disabled),
+.app-checkbox__input:checked {
   border-color: var(--accent-strong);
+}
+
+.app-checkbox__input:checked {
   background: var(--accent);
 }
 
-input.flow-checkbox:checked::before {
-  width: 10px;
-  height: 7px;
-  content: '';
-  background: var(--accent-ink);
-  clip-path: polygon(0 45%, 20% 25%, 42% 53%, 85% 0, 100% 17%, 43% 100%);
+.app-checkbox__mark {
+  position: absolute;
+  inset: 3px;
+  color: var(--accent-ink);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.75);
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.app-checkbox__input:checked + .app-checkbox__mark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.app-checkbox__input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.app-checkbox__input:disabled + .app-checkbox__mark {
+  opacity: 0.5;
+}
+
+.app-checkbox__input:disabled:not(:checked) + .app-checkbox__mark {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-checkbox__mark {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .app-checkbox__input {
+    border-color: ButtonText;
+  }
+
+  .app-checkbox__input:checked {
+    forced-color-adjust: none;
+    border-color: Highlight;
+    background: Highlight;
+  }
+
+  .app-checkbox__mark {
+    forced-color-adjust: none;
+    color: HighlightText;
+  }
 }

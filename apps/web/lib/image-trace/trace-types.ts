@@ -1,4 +1,4 @@
-import type { ProcessNodeKind } from '@flowculus/process-model';
+import type { EdgeAttachmentSide, ProcessNodeKind } from '@flowculus/process-model';
 
 export type TraceShape = 'rectangle' | 'diamond' | 'ellipse';
 export interface TraceCandidate {
@@ -14,6 +14,8 @@ export interface TraceConnector {
   target: string;
   confidence: number;
   kind?: 'sequence' | 'message' | 'association';
+  sourceSide?: EdgeAttachmentSide;
+  targetSide?: EdgeAttachmentSide;
 }
 export interface TraceResult {
   width: number;

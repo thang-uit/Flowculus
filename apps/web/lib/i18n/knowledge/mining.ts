@@ -137,6 +137,10 @@ export const MINING: KnowledgeEntry[] = [
             kind: 'notice',
             text: 'Hiding activities projects traces and can create a direct A→C edge when B is hidden. That edge is not proof that a case skipped B. Frequency/duration filters are display choices; summary statistics remain based on the full log.',
           },
+          {
+            kind: 'paragraph',
+            text: 'Send to BPMN canvas asks you to name a new process tab. It converts the filtered directly-follows map, not the Alpha/Petri candidate. Branch frequencies suggest XOR routing, but observations alone do not establish the intended BPMN semantics. Review the inferred choices before saving or exporting.',
+          },
         ],
       },
       vi: {
@@ -164,6 +168,10 @@ export const MINING: KnowledgeEntry[] = [
           {
             kind: 'notice',
             text: 'Ẩn hoạt động làm phép chiếu trace, có thể tạo cạnh A→C khi B bị ẩn. Cạnh này không chứng minh ca đã bỏ B. Bộ lọc tần suất/thời gian chỉ đổi phần hiển thị; số liệu tổng quan vẫn dựa trên toàn bộ log.',
+          },
+          {
+            kind: 'paragraph',
+            text: 'Chuyển sang canvas BPMN yêu cầu bạn đặt tên cho tab quy trình mới. Chức năng này chuyển bản đồ luồng trực tiếp đã lọc, không chuyển mạng Alpha/Petri ứng viên. Tần suất nhánh gợi ý định tuyến XOR, nhưng dữ liệu quan sát chưa xác định được ngữ nghĩa BPMN mong muốn. Hãy rà soát các lựa chọn suy luận trước khi lưu tệp hoặc xuất.',
           },
         ],
       },

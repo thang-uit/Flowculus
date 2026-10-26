@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Trash } from '@phosphor-icons/react';
 import type { ProcessNodeKind } from '@flowculus/process-model';
 import { validateProcessGraph } from '@flowculus/validation';
+import { AppButton } from '@/components/ui/AppButton';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { ImageTracePreview } from '@/components/image-trace/ImageTracePreview';
 import { getWorkspaceCopy } from '@/lib/i18n';
@@ -232,10 +233,14 @@ export function ImageTraceReview({
           {draft.connectors.map((connector, index) => (
             <div
               key={`${connector.source}-${connector.target}-${index}`}
-              className="flex items-center justify-between rounded-lg border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--muted-strong)]"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] px-2 py-1.5 text-xs text-[var(--muted-strong)]"
             >
-              <span>
-                {connector.source} → {connector.target}
+              <span className="min-w-0 flex-1 break-words">
+                {draft.candidates.find((candidate) => candidate.id === connector.source)
+                  ?.label ?? connector.source}{' '}
+                →{' '}
+                {draft.candidates.find((candidate) => candidate.id === connector.target)
+                  ?.label ?? connector.target}
               </span>
               <AppSelect
                 id={`trace-edge-${index}`}
@@ -289,14 +294,14 @@ export function ImageTraceReview({
           </ul>
         </div>
       ) : null}
-      <button
+      <AppButton
         type="button"
         disabled={draft.candidates.length === 0}
         onClick={commit}
-        className="focus-ring rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-50"
+        variant="primary"
       >
         {copy.imageTraceCreate}
-      </button>
+      </AppButton>
     </div>
   );
 }

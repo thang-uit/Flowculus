@@ -28,6 +28,10 @@ export const WORKFLOW: KnowledgeEntry[] = [
               'Read diagnostics and confirm inferred semantics before exporting.',
             ],
           },
+          {
+            kind: 'paragraph',
+            text: 'On desktop, the compact yellow arrow at the top of Shapes collapses the palette to icons; click it again to expand labels. On phones, the matching yellow button lives in the bottom canvas toolbar, so the palette can always be reopened. This only changes the layout and preserves every shape on the canvas.',
+          },
           { kind: 'heading', text: 'Reshape a connector' },
           {
             kind: 'paragraph',
@@ -75,6 +79,10 @@ export const WORKFLOW: KnowledgeEntry[] = [
               'Đọc chẩn đoán và xác nhận ngữ nghĩa suy luận trước khi xuất tệp.',
             ],
           },
+          {
+            kind: 'paragraph',
+            text: 'Trên desktop, nút mũi tên vàng nhỏ ở đầu bảng Hình thu gọn bảng về các biểu tượng; bấm lại để hiện nhãn. Trên điện thoại, nút vàng tương ứng nằm ở thanh công cụ dưới canvas nên luôn mở lại được bảng hình. Thao tác chỉ đổi bố cục, giữ mọi hình trên canvas.',
+          },
           { kind: 'heading', text: 'Chỉnh đường nối' },
           {
             kind: 'paragraph',
@@ -95,7 +103,7 @@ export const WORKFLOW: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Bản nháp cục bộ giữ công việc đang dở kể cả khi chưa phân tích được. Lưu trên trình duyệt không thay thế bản sao lưu di chuyển được: xuất .flowculus.json để giữ đầy đủ hợp đồng mô hình được hỗ trợ.',
+            text: 'Bản nháp trong trình duyệt giữ công việc đang dở, kể cả khi chưa phân tích được. Để mở lại trên thiết bị hoặc trình duyệt khác, hãy lưu file .flowculus.json. File giữ mô hình và cấu hình tính toán; ảnh tham chiếu được lưu riêng trong trình duyệt.',
           },
         ],
       },
@@ -154,7 +162,7 @@ export const WORKFLOW: KnowledgeEntry[] = [
             rows: [
               [
                 '.flowculus.json',
-                'Sao lưu mô hình di chuyển được, giữ hình học, ngữ nghĩa và tùy chọn phân tích được hỗ trợ.',
+                'Bản sao mô hình để mở lại trên thiết bị khác, giữ vị trí hình, ngữ nghĩa và cấu hình tính toán được hỗ trợ.',
               ],
               [
                 '.drawio / XML',
@@ -195,6 +203,10 @@ export const WORKFLOW: KnowledgeEntry[] = [
             text: 'Upload a photo as a separate reference image. OpenCV detects candidate geometric shapes and connectors in a worker; review the result before bringing it into the model. This is approximate geometric tracing, not guaranteed BPMN interpretation or OCR.',
           },
           {
+            kind: 'paragraph',
+            text: 'The detector attempts to repair short gaps and follows connected ink through bends after masking shape outlines and labels. Broken strokes can still leave missing shapes or incorrect connectors. It leaves crossings touching more than two shapes for manual review. Direction is proposed left-to-right or top-to-bottom, not read from arrowheads, so reverse-direction drawings need correction. Gateway markers are not interpreted: check XOR, AND and OR yourself. Endpoint event roles are inferred from the proposed connections. Editable tasks keep their detected centres with a minimum size for readable labels; the result is not an exact visual copy.',
+          },
+          {
             kind: 'list',
             items: [
               'Use a sharp, evenly lit, straight-on photo with clear edges. Crop out unrelated tables and text.',
@@ -218,6 +230,10 @@ export const WORKFLOW: KnowledgeEntry[] = [
           {
             kind: 'paragraph',
             text: 'Tải ảnh làm tham chiếu riêng. OpenCV nhận diện ứng viên hình học và đầu nối trong worker; cần rà soát trước khi đưa vào mô hình. Đây là nhận dạng hình học gần đúng, chưa bảo đảm hiểu BPMN hoặc OCR.',
+          },
+          {
+            kind: 'paragraph',
+            text: 'Bộ nhận dạng thử nối các khe hở ngắn, che viền hình và chữ bên trong rồi lần theo nét nối qua góc rẽ. Nét đứt vẫn có thể khiến thiếu hình hoặc nối sai. Giao điểm chạm hơn hai hình được để lại cho người dùng rà soát. Chiều được đề xuất từ trái sang phải hoặc trên xuống dưới, chưa đọc đầu mũi tên nên sơ đồ đi ngược cần sửa lại. Ký hiệu bên trong gateway chưa được đọc: hãy tự kiểm tra XOR, AND và OR. Vai trò sự kiện đầu/cuối được suy ra từ các kết nối đề xuất. Tác vụ giữ tâm đã nhận dạng, có kích thước tối thiểu để đọc nhãn; kết quả chưa phải bản sao hình ảnh chính xác.',
           },
           {
             kind: 'list',

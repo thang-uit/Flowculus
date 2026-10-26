@@ -72,6 +72,7 @@ export const exportWorkspace = async (
           schemaVersion: 1,
           model,
           drawioXml,
+          drawioPageIndex: context.drawioSource?.pageIndex,
           analysisOptions: context.analysisOptions,
           ...(context.analysisReady ? { analysis: createAnalysisSnapshot(report) } : {}),
         }),

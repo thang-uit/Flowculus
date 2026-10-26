@@ -7,6 +7,7 @@ import { checkSemanticGate } from '@flowculus/validation';
 
 import { downloadTextFile } from '@/lib/browser-file-actions';
 import { exportFileName } from '@/lib/file-name';
+import { createMiningCanvasDocument, type MiningCanvasOutcome } from './mining-canvas';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningUpload } from '@/lib/use-mining-upload';
 import type { MiningDiscoveryResponse, MiningResponse } from '@/lib/mining-engine';
@@ -40,6 +41,7 @@ export function useMiningSession() {
   const pendingUpload = useMiningStore((state) => state.pendingUpload);
   const sequenceRef = useRef(0);
   const bootedRef = useRef(false);
+  const convertingRef = useRef(false);
   const { readFile, cancelFileRead } = useMiningUpload();
   useEffect(
     () => () => {
@@ -70,15 +72,17 @@ export function useMiningSession() {
         return;
       }
       const message =
-        reason instanceof Error && reason.message === 'file-too-large'
-          ? copy.fileTooLarge
-          : reason instanceof Error && reason.message === 'xlsx-timeout'
-            ? copy.resilience.miningTimeout
-            : reason instanceof Error && reason.message.startsWith('xlsx-')
-              ? copy.fileError
-              : reason instanceof Error
-                ? reason.message
-                : copy.fileError;
+        reason instanceof Error && reason.message === 'document-limit'
+          ? copy.documentLimit
+          : reason instanceof Error && reason.message === 'file-too-large'
+            ? copy.fileTooLarge
+            : reason instanceof Error && reason.message === 'xlsx-timeout'
+              ? copy.resilience.miningTimeout
+              : reason instanceof Error && reason.message.startsWith('xlsx-')
+                ? copy.fileError
+                : reason instanceof Error
+                  ? reason.message
+                  : copy.fileError;
       useMiningStore.getState().setStatus('error', message);
     },
     [copy],
@@ -238,27 +242,26 @@ export function useMiningSession() {
     [fail, inspectUpload, readFile],
   );
 
-  const sendToCanvas = useCallback(async () => {
-    const result = useMiningStore.getState().result;
-    if (!result) return;
-    try {
-      const response = await request({
-        type: 'to-model',
-        filter: useMiningStore.getState().filter,
-        name: result.logName,
-      });
-      if (response.type !== 'model') throw new Error('Unexpected mining response.');
-      useMiningStore.getState().setConversionWarnings(response.warnings);
-      const workspace = useWorkspaceStore.getState();
-      workspace.loadModel(response.model, {
-        drawioSource: null,
-        modelName: response.model.name,
-      });
-      workspace.setMode('model');
-    } catch (reason) {
-      fail(reason);
-    }
-  }, [fail, request]);
+  const sendToCanvas = useCallback(
+    async (name: string): Promise<MiningCanvasOutcome> => {
+      if (convertingRef.current) return 'unavailable';
+      convertingRef.current = true;
+      const sequence = sequenceRef.current;
+      try {
+        return await createMiningCanvasDocument(
+          name,
+          request,
+          () => sequence === sequenceRef.current,
+        );
+      } catch (reason) {
+        if (sequence === sequenceRef.current) fail(reason);
+        return 'failed';
+      } finally {
+        convertingRef.current = false;
+      }
+    },
+    [fail, request],
+  );
 
   const downloadLog = useCallback(async () => {
     try {

@@ -22,6 +22,7 @@ import {
   type ModelConformance,
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
+import { isValidDocumentName, normalizeDocumentName } from './documents/document-types';
 
 export type MiningRequest =
   | { type: 'load-preset'; presetId: MiningPresetId; filter: DiscoveryFilter }
@@ -156,10 +157,12 @@ export const createMiningSession = () => {
       case 'discover':
         return discovery(request.filter);
       case 'to-model': {
+        const name = normalizeDocumentName(request.name);
+        if (!isValidDocumentName(name)) throw new Error('invalid-process-name');
         const current = requireLog();
         const { dfg } = (discover ??= createProcessDiscovery(current))(request.filter);
         const converted = dfgToProcessModel(dfg, {
-          name: request.name,
+          name,
           hasStartTimes: current.hasStartTimes,
         });
         return { type: 'model', model: converted.model, warnings: converted.warnings };

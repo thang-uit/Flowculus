@@ -92,10 +92,7 @@ export function ProcessCanvas() {
       const rect = wrapperRef.current?.getBoundingClientRect();
       if (!rect) return;
       useWorkspaceStore.getState().setSelection(selection);
-      setContextMenu({
-        x: Math.max(4, Math.min(event.clientX - rect.left, rect.width - 216)),
-        y: Math.max(4, Math.min(event.clientY - rect.top, rect.height - 390)),
-      });
+      setContextMenu({ x: event.clientX, y: event.clientY });
     },
     [],
   );
@@ -177,7 +174,7 @@ export function ProcessCanvas() {
 
   useHistoryShortcuts();
   useFocusRequest(wrapperRef);
-  const clipboardStatus = useCanvasClipboard(wrapperRef);
+  useCanvasClipboard(wrapperRef);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<ProcessFlowNode>[]) =>
@@ -379,14 +376,6 @@ export function ProcessCanvas() {
         <CanvasContextMenu position={contextMenu} onClose={closeContextMenu} />
       ) : null}
       <CriticalChainLegend />
-      {clipboardStatus ? (
-        <div
-          role="status"
-          className="pointer-events-none absolute bottom-4 left-4 z-10 max-w-[min(22rem,calc(100%-2rem))] rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs font-medium text-[var(--text)] shadow-[var(--shadow-soft)]"
-        >
-          {clipboardStatus}
-        </div>
-      ) : null}
     </div>
   );
 }
