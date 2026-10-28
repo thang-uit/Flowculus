@@ -1,0 +1,3 @@
+# Both maintainers can review every area. A single owner approval is sufficient
+# when code-owner review is enabled in the main branch rule.
+* @thang-uit @hue-trinh

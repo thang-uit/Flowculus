@@ -35,6 +35,7 @@
 16. [Bảo mật và quyền riêng tư · Security and privacy](#16-bảo-mật-và-quyền-riêng-tư--security-and-privacy)
 17. [Changelog và ghi chú chuyển đổi · Changelog and migration notes](#17-changelog-và-ghi-chú-chuyển-đổi--changelog-and-migration-notes)
 18. [Lịch làm việc và bộ demo báo cáo · Work calendars and report study](#18-lịch-làm-việc-và-bộ-demo-báo-cáo--work-calendars-and-report-study)
+19. [Đóng góp cộng đồng · Community contributions](#19-đóng-góp-cộng-đồng--community-contributions)
 
 ---
 
@@ -425,13 +426,18 @@ Flowculus/
 │   └── xml-tree/                dependency-free XML
 ├── docs/                        architecture.md, adr/
 ├── AGENTS.md                    contributor and agent rules (English)
+├── CONTRIBUTING.md              contribution workflow (Vietnamese/English)
+├── LICENSE                      MIT terms
+├── SECURITY.md, CODE_OF_CONDUCT.md
+├── THIRD_PARTY_NOTICES.md        attribution for reused material
+├── .github/                     CI, owners, dependency updates, Issue/PR forms
 ├── scripts/                     scoped cache cleanup, external synthetic demo export
 └── .nvmrc, turbo.json, vitest.config.mts
 ```
 
 ## 8. Yêu cầu · Prerequisites
 
-- Node.js **22.x** thống nhất trong `.nvmrc`, package gốc, ứng dụng web và bộ kiểu Node · consistent runtime and Node types across the workspace and Vercel.
+- Node.js **22.23+ trong nhánh 22.x** thống nhất trong `.nvmrc`, package gốc, ứng dụng web và bộ kiểu Node · consistent runtime and Node types across the workspace and Vercel.
 - pnpm **11.22.0** qua Corepack (`corepack enable`) · via Corepack.
 - Trình duyệt hỗ trợ module Web Worker và IndexedDB (Chrome, Edge, Firefox, Safari bản hiện hành) · a browser with module workers and IndexedDB.
 
@@ -443,6 +449,7 @@ pnpm install --frozen-lockfile # cài đúng lockfile · reproducible install
 pnpm dev                # máy chủ phát triển · dev server (http://localhost:3000)
 pnpm test               # Vitest cho mọi package và app · all packages and the app
 pnpm lint               # ESLint (0 cảnh báo · 0 warnings)
+pnpm --filter @flowculus/web exec next typegen # tạo kiểu route cho checkout mới · fresh-checkout route types
 pnpm typecheck          # TypeScript cho mọi package · all packages
 pnpm graph:index        # lập chỉ mục GitNexus cục bộ · local code graph
 pnpm graph:check        # kiểm tra vòng import · circular-import check
@@ -601,7 +608,7 @@ BPMN → Petri/conformance hẹp hơn phân tích CT: tối đa 120 flow node/22
 - draw.io / diagrams.net file format: https://github.com/jgraph/drawio
 - IEEE 1849-2016 XES.
 
-Giấy phép · License: MIT.
+Giấy phép · License: [MIT](LICENSE). Thông báo phần tái sử dụng · [Third-party notices](THIRD_PARTY_NOTICES.md).
 
 ## 18. Lịch làm việc và bộ demo báo cáo · Work calendars and report study
 
@@ -625,3 +632,46 @@ Bộ báo cáo gồm `10_as_is.*`, `11_to_be.*`, log sai lệch `12_to_be_deviat
 The report kit contains twenty synthetic cases per scenario and a separate four-case deviation log. The exported manifest records SHA-256 checksums. Analytical and observed mean working CT match in regression tests. UAT is represented as a role in a single-process analytical projection; the model does not execute inter-participant BPMN messages. Fixed completion orders in the synthetic parallel branches limit what classical Alpha can rediscover.
 
 Thời lượng mô hình trên canvas, KPI và SVG giữ đơn vị phút/giờ, kể cả trên 24 giờ; không tự đổi thành ngày 24 giờ khi mô hình chưa khai báo độ dài ngày làm việc. Ví dụ 2.976 phút hiển thị 49,6 giờ. · Model duration chips, KPIs and SVG stay in minutes/hours beyond 24 hours; a model has no intrinsic day length. Numeric minute exports and calculations remain unchanged.
+
+## 19. Đóng góp cộng đồng · Community contributions
+
+Flowculus đón nhận báo lỗi, bản dịch, tài liệu, cải thiện trợ năng và code. Bạn có
+thể viết bằng tiếng Việt hoặc tiếng Anh. Bắt đầu ở [CONTRIBUTING.md](CONTRIBUTING.md),
+tìm [good first issue](https://github.com/thang-uit/Flowculus/labels/good%20first%20issue)
+hoặc [help wanted](https://github.com/thang-uit/Flowculus/labels/help%20wanted), rồi
+Fork → tạo nhánh → sửa và kiểm tra → gửi PR vào `main`. Không cần quyền write để
+đề xuất. Maintainer quyết định review và merge.
+
+Flowculus welcomes issues, documentation, translations, accessibility improvements
+and code. Read the contribution guide, fork the repository, make a focused change,
+verify it and open a PR targeting `main`. Vietnamese and English are both welcome.
+A contributor does not need write access to propose changes.
+
+- [Báo lỗi, đề xuất hoặc hỏi cách dùng · Issue forms](https://github.com/thang-uit/Flowculus/issues/new/choose).
+- [Quy tắc ứng xử · Code of conduct](CODE_OF_CONDUCT.md).
+- [Báo cáo bảo mật riêng · Security policy](SECURITY.md). Không đăng log công ty,
+  dữ liệu cá nhân hoặc secret lên Issue công khai.
+- [Hướng dẫn maintainer · Community maintenance](docs/community-maintenance.md),
+  gồm quyền, nhãn, review, bảo vệ nhánh và xử lý pipeline.
+
+Workflow [CI](.github/workflows/ci.yml) chạy format, test, lint không cảnh báo,
+route type generation, typecheck và production build kèm kiểm tra worker trên PR
+và push `main`/`dev`. Action ghim SHA, token chỉ đọc, không dùng secret deploy.
+Job ổn định là **Quality gates**, dùng cho branch protection sau lần CI đầu tiên
+trên GitHub. File workflow chưa được push thì CI chưa hoạt động trên repo. Browser
+E2E chưa nằm trong pipeline, contributor vẫn cần kiểm tra UI liên quan.
+
+The CI uses read-only permissions and pinned actions. It runs the project checks
+without deployment secrets. **Quality gates** is the stable required-check name,
+configured after its first hosted run. Local success is distinct from GitHub CI
+and does not replace UI testing. Dependabot proposes dependency and action updates
+through reviewed PRs, without automatic merging.
+
+Code do nhóm và contributor phát triển dùng [MIT](LICENSE), cho phép sử dụng,
+sửa đổi và phân phối theo điều kiện giữ thông báo bản quyền/giấy phép. Các thư
+viện, font và phần tái sử dụng giữ giấy phép riêng. `private: true` trong package
+chặn xuất bản npm ngoài ý muốn, không làm GitHub repo thành Private.
+
+The project uses MIT for its own code. Third-party licences remain in effect.
+The package's `private: true` prevents accidental npm publication and does not
+change the public visibility of the GitHub repository.

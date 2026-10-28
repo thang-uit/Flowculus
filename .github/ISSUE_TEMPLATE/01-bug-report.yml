@@ -1,0 +1,63 @@
+name: Báo lỗi · Bug report
+description: Mô tả lỗi có thể tái hiện · Report reproducible incorrect behaviour.
+title: '[Bug]: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bạn có thể viết bằng tiếng Việt hoặc tiếng Anh. Tìm Issue tương tự trước khi gửi.
+        Không đăng log thật, thông tin cá nhân hoặc secret. Dùng ví dụ tổng hợp tối thiểu.
+        For undisclosed security vulnerabilities, use SECURITY.md rather than this public form.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Khu vực · Affected area
+      options:
+        - Canvas và Pool/Lane · Editor
+        - Công thức và validation · Calculation
+        - Import, export và lưu thiết bị · Files
+        - Process Mining
+        - Ảnh tham chiếu và nhận dạng · Image Trace
+        - Bản nháp và tab quy trình · Documents
+        - Ngôn ngữ, theme, trợ năng · UI
+        - Kiến thức và tài liệu · Documentation
+        - Khác · Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Các bước tái hiện · Steps to reproduce
+      description: Bắt đầu từ tab trống hoặc file tổng hợp, rồi mô tả từng thao tác.
+      placeholder: |
+        1. Mở ...
+        2. Thêm hoặc nhập ...
+        3. Thao tác ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Kết quả mong đợi · Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Kết quả thực tế · Actual behaviour
+      description: Nếu sai số liệu, ghi đầu vào, đơn vị, cơ sở thời gian và phép đối soát.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Môi trường · Environment
+      description: URL hoặc commit, trình duyệt/phiên bản, hệ điều hành, kích thước màn hình, ngôn ngữ và theme.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Ảnh, lỗi console hoặc file tổng hợp · Optional evidence
+      description: Chỉ đính kèm dữ liệu bạn có quyền công khai. Remove sensitive details before uploading.

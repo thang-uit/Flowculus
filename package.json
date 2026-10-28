@@ -29,5 +29,14 @@
     "turbo": "^2.10.11",
     "typescript": "^5.9.3",
     "vitest": "^4.1.12"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thang-uit/Flowculus.git"
+  },
+  "homepage": "https://flowculus.vercel.app",
+  "bugs": {
+    "url": "https://github.com/thang-uit/Flowculus/issues"
   }
 }

@@ -1,0 +1,26 @@
+name: Tài liệu và bản dịch · Documentation
+description: Sửa hướng dẫn, thuật ngữ hoặc bài học · Improve documentation and translations.
+title: '[Docs]: '
+labels: [documentation]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Trang hoặc file · Page or file
+      description: URL, tên bài học, tiêu đề hoặc đường dẫn file trong repo.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Nội dung chưa đúng hoặc khó hiểu · What needs improvement
+      description: Có thể viết tiếng Việt hoặc tiếng Anh.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Đề xuất và nguồn tham khảo · Proposed correction and references
+      description: Với công thức hoặc ngữ nghĩa BPMN, ghi giả định và nguồn kiểm chứng.
+    validations:
+      required: true

@@ -251,3 +251,12 @@ check passed unless you ran it.
 - Alignment and replay have separate budgets and method names. Disclose compatible-case-only coverage for prefix precision and transition-frequency generalization. Do not claim alternative alignments are impossible.
 - Project demo data belongs in exported files outside the web bundle. Keep retired regression fixtures test-only. `pnpm demo:export` writes deterministic synthetic inputs, expected evidence and checksums to a chosen directory.
 - No new production dependency was added for BPMN/Petri; the internal BPMN package reuses xml-tree and validation. Comparison runs in a separate bundled worker.
+
+## 15. Community contributions and CI
+
+- Read CONTRIBUTING.md for the public contribution workflow. Community copy accepts Vietnamese and English. Keep Issue/PR templates and maintainer instructions consistent with actual commands.
+- Project-authored contributions use MIT. Preserve third-party attribution and never relicense dependencies implicitly. Package private flags prevent npm publication and must remain enabled.
+- CI uses pull_request with read-only contents permission, pinned action SHAs, locked installs and GitHub-hosted runners. Never execute fork code under pull_request_target or expose deployment secrets to it.
+- The stable hosted check is Quality gates. Update branch protection deliberately if that name changes. Server-side settings are separate from version-controlled files and must not be described as active before verification.
+- Run Next.js route type generation before typecheck on a fresh checkout. Do not run typecheck concurrently with a Next.js build that rewrites generated types.
+- Changes to formulas, file compatibility, semantic gates or persistence still need the existing regression and UI verification. No CI success is a claim of complete browser testing.

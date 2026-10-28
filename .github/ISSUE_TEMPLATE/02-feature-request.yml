@@ -1,0 +1,44 @@
+name: Đề xuất tính năng · Feature request
+description: Giải thích nhu cầu và hành vi mong muốn · Explain the user need.
+title: '[Feature]: '
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Một đề xuất tốt bắt đầu từ nhu cầu sử dụng. Vietnamese or English is welcome.
+        Maintainers discuss scope before accepting major architecture, format or dependency changes.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Người dùng đang gặp vấn đề gì? · User problem
+      description: Mô tả tình huống thực tế và ai cần tính năng này. Do not include confidential company data.
+    validations:
+      required: true
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: Thao tác và kết quả mong muốn · Proposed behaviour
+      description: Mô tả cách user thực hiện và biết việc đã thành công.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Điều kiện hoàn thành · Acceptance criteria
+      description: Nêu tình huống chính và trường hợp lỗi quan trọng cần hỗ trợ.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Cách xử lý hiện tại hoặc tham khảo · Alternatives and references
+      description: Với BPMN/công thức, dẫn nguồn và phân biệt kiến thức chuẩn với đề xuất UI.
+  - type: dropdown
+    id: participation
+    attributes:
+      label: Bạn có muốn cùng thực hiện? · Participation
+      options:
+        - Chỉ đề xuất · Suggestion only
+        - Có thể gửi PR · I can contribute a PR
+        - Cần hướng dẫn để bắt đầu · I would like guidance

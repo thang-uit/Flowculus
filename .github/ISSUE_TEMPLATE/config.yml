@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Báo cáo bảo mật riêng · Private security reporting
+    url: https://github.com/thang-uit/Flowculus/security/advisories/new
+    about: Không đăng lỗ hổng chưa xử lý vào Issue công khai. See SECURITY.md if private reporting is unavailable.
+  - name: Hướng dẫn đóng góp · Contribution guide
+    url: https://github.com/thang-uit/Flowculus/blob/main/CONTRIBUTING.md
+    about: Cách chạy dự án, chọn việc, kiểm tra và gửi Pull Request.
+  - name: Kiến thức và công thức · Knowledge library
+    url: https://flowculus.vercel.app/knowledge
+    about: Các khái niệm, công thức, giả định và hướng dẫn sử dụng Flowculus.

@@ -1,0 +1,23 @@
+name: Hỏi cách sử dụng · Question
+description: Hỏi về thao tác, giới hạn hoặc cách đọc kết quả · Ask a usage question.
+title: '[Question]: '
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Xem README và https://flowculus.vercel.app/knowledge trước khi gửi.
+        Vietnamese or English is welcome. Use synthetic examples and do not post private logs.
+  - type: textarea
+    id: question
+    attributes:
+      label: Bạn cần hiểu điều gì? · Your question
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Bạn đã thử gì? · Context and attempts
+      description: Nếu hỏi cách tính, ghi đầu vào, đơn vị, cơ sở thời gian và phần kết quả đang xem.
+    validations:
+      required: true
