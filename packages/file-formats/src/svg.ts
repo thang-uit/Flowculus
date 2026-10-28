@@ -80,12 +80,12 @@ const escapeText = (value: string): string =>
 
 const fixed = (value: number): string => String(Math.round(value * 100) / 100);
 
-/** Compact duration label shared with the canvas chips (minutes in, `6m`/`2.5h`/`3d` out). */
+/** Compact duration label shared with the canvas chips (minutes in, `6m`/`2.5h`/`72h` out). */
 export const formatCompactMinutes = (minutes: number): string => {
   if (!Number.isFinite(minutes)) return '–';
   if (Math.abs(minutes) < 60) return `${Number(minutes.toFixed(1))}m`;
-  if (Math.abs(minutes) < 60 * 24) return `${Number((minutes / 60).toFixed(1))}h`;
-  return `${Number((minutes / 1440).toFixed(1))}d`;
+  // Models have no intrinsic day length: keep hours so working time is not read as 24-hour days.
+  return `${Number((minutes / 60).toFixed(1))}h`;
 };
 
 export const wrapLabel = (
@@ -318,7 +318,11 @@ export const processModelToSvg = (
   const highlightEdges = new Set(options.highlightEdgeIds ?? []);
   const dashedHighlight = options.highlightQuality === 'assumption';
   const nodes = Object.values(model.nodes);
-  const rects = nodes.map(getNodeBounds);
+  const containers = Object.values(model.containers ?? {});
+  const rects = [
+    ...nodes.map(getNodeBounds),
+    ...containers.map((container) => container.bounds),
+  ];
   const routes = Object.values(model.edges).flatMap((edge) => {
     const source = model.nodes[edge.source];
     const target = model.nodes[edge.target];
@@ -370,6 +374,12 @@ export const processModelToSvg = (
       renderNode(node, highlightNodes.has(node.id), palette, dashedHighlight),
     )
     .join('');
+  const containerSvg = containers
+    .map((container) => {
+      const bounds = container.bounds;
+      return `<g><rect x="${bounds.x}" y="${bounds.y}" width="${bounds.width}" height="${bounds.height}" fill="none" stroke="${palette.border}" stroke-width="1.4"/><text x="${bounds.x + 12}" y="${bounds.y + 20}" fill="${palette.text}" font-size="12">${escapeText(container.label)}</text></g>`;
+    })
+    .join('');
   const title = `<title>${escapeText(model.name)}</title>`;
   const legend = showLegend
     ? textBlock(
@@ -384,6 +394,6 @@ export const processModelToSvg = (
   return {
     width,
     height,
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${fixed(minX)} ${fixed(minY)} ${width} ${height}" role="img">${title}${defs}<rect x="${fixed(minX)}" y="${fixed(minY)}" width="${width}" height="${height}" fill="${palette.background}" />${legend}${edgesSvg}${nodesSvg}</svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${fixed(minX)} ${fixed(minY)} ${width} ${height}" role="img">${title}${defs}<rect x="${fixed(minX)}" y="${fixed(minY)}" width="${width}" height="${height}" fill="${palette.background}" />${legend}${containerSvg}${edgesSvg}${nodesSvg}</svg>`,
   };
 };

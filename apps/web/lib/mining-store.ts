@@ -4,6 +4,10 @@ import { create } from 'zustand';
 
 import {
   DEFAULT_DISCOVERY_FILTER,
+  ELAPSED_TIME_POLICY,
+  DEFAULT_WORK_CALENDAR,
+  type WorkCalendar,
+  type TimePolicy,
   type ColumnMapping,
   type DiscoveryFilter,
   type MiningConversionWarning,
@@ -12,7 +16,11 @@ import {
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
 
-import type { MiningDiscoveryResponse, MiningTableResponse } from '@/lib/mining-engine';
+import type {
+  MiningDiscoveryResponse,
+  MiningTableResponse,
+  MiningConformanceResponse,
+} from '@/lib/mining-engine';
 
 export type MiningStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type DfgEdgeMetric = 'frequency' | 'duration';
@@ -36,10 +44,18 @@ interface MiningState {
   /** The uploaded file waiting for its column mapping. */
   mappingTable: (MiningTableResponse & { source: string }) | null;
   result: MiningDiscoveryResponse | null;
-  conformance: { result: ModelConformance; model: ProcessModel } | null;
+  conformance: {
+    result: ModelConformance;
+    model: ProcessModel;
+    evidence: MiningConformanceResponse;
+    optionsKey: string;
+  } | null;
   conformanceError: string | null;
   checkingConformance: boolean;
   filter: DiscoveryFilter;
+  timePolicy: TimePolicy;
+  workCalendar: WorkCalendar;
+  setTimePolicy: (policy: TimePolicy) => void;
   selectedVariantId: string | null;
   edgeMetric: DfgEdgeMetric;
   conversionWarnings: MiningConversionWarning[];
@@ -48,7 +64,11 @@ interface MiningState {
   setStatus: (status: MiningStatus, error?: string | null) => void;
   setMappingTable: (table: MiningState['mappingTable']) => void;
   setResult: (result: MiningDiscoveryResponse, replay?: MiningReplay) => void;
-  setConformance: (result: ModelConformance, model: ProcessModel) => void;
+  setConformance: (
+    evidence: MiningConformanceResponse,
+    model: ProcessModel,
+    optionsKey: string,
+  ) => void;
   setConformanceError: (message: string | null) => void;
   startConformance: () => void;
   setFilter: (filter: Partial<DiscoveryFilter>) => void;
@@ -71,6 +91,16 @@ export const useMiningStore = create<MiningState>((set, get) => ({
   conformanceError: null,
   checkingConformance: false,
   filter: DEFAULT_DISCOVERY_FILTER,
+  timePolicy: ELAPSED_TIME_POLICY,
+  workCalendar: structuredClone(DEFAULT_WORK_CALENDAR),
+  setTimePolicy: (timePolicy) =>
+    set((state) => ({
+      timePolicy,
+      workCalendar:
+        timePolicy.basis === 'working'
+          ? structuredClone(timePolicy.calendar)
+          : state.workCalendar,
+    })),
   selectedVariantId: null,
   edgeMetric: 'frequency',
   conversionWarnings: [],
@@ -99,9 +129,9 @@ export const useMiningStore = create<MiningState>((set, get) => ({
           ? null
           : state.selectedVariantId,
     })),
-  setConformance: (result, model) =>
+  setConformance: (evidence, model, optionsKey) =>
     set({
-      conformance: { result, model },
+      conformance: { result: evidence.result, model, evidence, optionsKey },
       conformanceError: null,
       checkingConformance: false,
     }),

@@ -1,4 +1,5 @@
 import type { Locale } from '@/lib/i18n/types';
+import { COLLABORATION_MINING } from '@/lib/i18n/knowledge/collaboration-mining';
 import { BASICS } from '@/lib/i18n/knowledge/basics';
 import { ANALYSIS } from '@/lib/i18n/knowledge/analysis';
 import { MINING } from '@/lib/i18n/knowledge/mining';
@@ -15,6 +16,7 @@ export const KNOWLEDGE_CATEGORIES: KnowledgeCategory[] = [
 ];
 export const KNOWLEDGE_ENTRIES = [
   ...BASICS,
+  ...COLLABORATION_MINING,
   ...ANALYSIS,
   ...MINING,
   ...DOCUMENTS,

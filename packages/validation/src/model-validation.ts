@@ -2,6 +2,7 @@ import { isSequenceFlowEdge, type ProcessModel } from '@flowculus/process-model'
 
 import { nodeParams, type Diagnostic } from './diagnostics';
 import { processModelSchema } from './schema';
+import { validateCollaboration } from './collaboration';
 
 const TIME_TOLERANCE = 1e-9;
 const PROBABILITY_TOLERANCE = 1e-6;
@@ -31,10 +32,10 @@ export const validateModelStructure = (model: unknown): ModelStructureResult => 
   }
 
   const value = parsed.data as ProcessModel;
-  const diagnostics: Diagnostic[] = [];
+  const diagnostics: Diagnostic[] = validateCollaboration(value);
 
   for (const edge of Object.values(value.edges)) {
-    if (!value.nodes[edge.source]) {
+    if (!Object.hasOwn(value.nodes, edge.source)) {
       diagnostics.push({
         code: 'edge-missing-source',
         severity: 'error',
@@ -43,7 +44,7 @@ export const validateModelStructure = (model: unknown): ModelStructureResult => 
         params: { edgeId: edge.id, nodeId: edge.source },
       });
     }
-    if (!value.nodes[edge.target]) {
+    if (!Object.hasOwn(value.nodes, edge.target)) {
       diagnostics.push({
         code: 'edge-missing-target',
         severity: 'error',

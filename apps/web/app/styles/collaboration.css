@@ -1,0 +1,38 @@
+.process-container {
+  width: 100%;
+  height: 100%;
+  border: 1.5px solid var(--muted);
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  pointer-events: auto;
+}
+.process-container[data-kind='lane'] {
+  border-color: var(--border);
+  background: transparent;
+}
+.process-container[data-selected] {
+  border-color: var(--accent);
+}
+.process-container__label {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 36px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-inline-start: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.process-container[data-orientation='vertical'] .process-container__label {
+  inset: 0 0 auto;
+  width: auto;
+  height: 36px;
+  writing-mode: horizontal-tb;
+  transform: none;
+}

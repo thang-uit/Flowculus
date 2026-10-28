@@ -53,7 +53,15 @@ const nodeToCsvRow = (node: ProcessNode): string[] => {
     csvValue(node.bounds?.y),
     csvValue(node.bounds?.width),
     csvValue(node.bounds?.height),
-    csvValue(node.metadata ? JSON.stringify(node.metadata) : undefined),
+    csvValue(
+      node.metadata || node.poolId || node.laneId
+        ? JSON.stringify({
+            ...node.metadata,
+            ...(node.poolId ? { 'flowculus-pool-id': node.poolId } : {}),
+            ...(node.laneId ? { 'flowculus-lane-id': node.laneId } : {}),
+          })
+        : undefined,
+    ),
   ];
 };
 
@@ -96,7 +104,19 @@ export const processModelToNodesCsv = (model: ProcessModel): string => {
       'height',
       'metadata_json',
     ],
-    ...Object.values(model.nodes).map(nodeToCsvRow),
+    ...Object.values(model.nodes).map((node, index) =>
+      nodeToCsvRow(
+        index === 0 && model.containers
+          ? {
+              ...node,
+              metadata: {
+                ...node.metadata,
+                'flowculus-containers': JSON.stringify(model.containers),
+              },
+            }
+          : node,
+      ),
+    ),
   ];
   return rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
 };
@@ -137,7 +157,7 @@ const parseMetadata = (
   value: string | undefined,
 ): Record<string, string | number | boolean> => {
   if (!value) return {};
-  if (value.length > 20_000) throw new Error('CSV metadata is too large.');
+  if (value.length > 200_000) throw new Error('CSV metadata is too large.');
   let parsed: unknown;
   try {
     parsed = JSON.parse(value);
@@ -520,8 +540,29 @@ export const parseProcessCsv = (
     };
   }
 
+  let containers: ProcessModel['containers'];
+  for (const node of Object.values(nodes)) {
+    const frames = node.metadata?.['flowculus-containers'];
+    if (typeof frames === 'string') {
+      try {
+        containers = JSON.parse(frames);
+      } catch {
+        throw new Error('Invalid CSV containers');
+      }
+    }
+    if (typeof node.metadata?.['flowculus-pool-id'] === 'string')
+      node.poolId = node.metadata['flowculus-pool-id'];
+    if (typeof node.metadata?.['flowculus-lane-id'] === 'string')
+      node.laneId = node.metadata['flowculus-lane-id'];
+    if (node.metadata) {
+      delete node.metadata['flowculus-containers'];
+      delete node.metadata['flowculus-pool-id'];
+      delete node.metadata['flowculus-lane-id'];
+    }
+  }
   return {
-    schemaVersion: 1,
+    ...(containers ? { containers } : {}),
+    schemaVersion: containers ? 2 : 1,
     id: `csv-${Date.now().toString(36)}`,
     name,
     nodes,

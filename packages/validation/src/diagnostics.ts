@@ -23,6 +23,11 @@ export type DiagnosticScope =
 export const DIAGNOSTIC_CODES = [
   // Model structure and input data
   'schema-invalid',
+  'invalid-container',
+  'invalid-membership',
+  'cross-pool-sequence',
+  'invalid-message-flow',
+  'process-scope-required',
   'edge-missing-source',
   'edge-missing-target',
   'processing-exceeds-cycle-time',

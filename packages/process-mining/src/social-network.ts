@@ -10,6 +10,8 @@ export interface ResourceCentrality {
   inDegree: number;
   outDegree: number;
   handoffs: number;
+  incomingHandoffs: number;
+  outgoingHandoffs: number;
   betweenness: number;
   closeness: number;
   eigenvector: number;
@@ -170,6 +172,14 @@ export function buildSocialNetwork(log: EventLog): SocialNetwork {
     eventCount: eventCounts.get(id) ?? 0,
     inDegree: incoming.get(id)?.size ?? 0,
     outDegree: outgoing.get(id)?.size ?? 0,
+    incomingHandoffs: [...(incoming.get(id)?.values() ?? [])].reduce(
+      (sum, value) => sum + value,
+      0,
+    ),
+    outgoingHandoffs: [...(outgoing.get(id)?.values() ?? [])].reduce(
+      (sum, value) => sum + value,
+      0,
+    ),
     handoffs: handoffs.reduce(
       (sum, edge) => sum + (edge.source === id || edge.target === id ? edge.count : 0),
       0,

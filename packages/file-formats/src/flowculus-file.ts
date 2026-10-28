@@ -50,7 +50,7 @@ export const createAnalysisSnapshot = (
 });
 
 export interface FlowculusFile {
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
   model: ProcessModel;
   drawioXml?: string;
   /** Active page in preserved multi-page draw.io source (legacy files default to 0). */
@@ -65,21 +65,24 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   value != null && typeof value === 'object' && !Array.isArray(value);
 
 export const serializeFlowculusFile = (file: FlowculusFile): string =>
-  JSON.stringify(file, null, 2);
+  JSON.stringify({ ...file, schemaVersion: file.model.schemaVersion }, null, 2);
 
 export const parseFlowculusFile = (source: string): FlowculusFile => {
   const parsed: unknown = JSON.parse(source);
   if (!isRecord(parsed)) {
     throw new Error('The file does not contain a Flowculus object.');
   }
-  if (parsed.schemaVersion !== 1 || !isRecord(parsed.model)) {
+  if (
+    (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2) ||
+    !isRecord(parsed.model)
+  ) {
     throw new Error('Unsupported Flowculus file schema.');
   }
   const model = parsed.model;
   if (
     typeof model.id !== 'string' ||
     typeof model.name !== 'string' ||
-    model.schemaVersion !== 1 ||
+    (model.schemaVersion !== 1 && model.schemaVersion !== 2) ||
     !isRecord(model.nodes) ||
     !isRecord(model.edges)
   ) {

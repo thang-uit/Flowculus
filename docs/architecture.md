@@ -11,6 +11,7 @@ apps/web
   -> analysis-engine   -> validation, process-model, formula-renderer
   -> file-formats      -> analysis-engine, graph-layout, process-model
   -> process-mining    -> file-formats, process-model, xml-tree
+  -> bpmn-adapter      -> validation, process-model, xml-tree
   -> drawio-adapter    -> process-model, xml-tree
   -> validation        -> process-model
   -> graph-layout, formula-renderer, process-model, xml-tree (leaf packages)
@@ -66,6 +67,11 @@ The canvas is native React Flow (`@xyflow/react`); see
   select and toast primitives. Menus share keyboard/dismissal behavior; selects
   retain listbox semantics. Dialogs trap and restore focus; nested Select Escape
   closes the list before its dialog. Canvas shortcuts do not run behind overlays.
+- The incumbent visual authority is `app/globals.css`: yellow accent and neutral
+  light/dark surfaces, self-hosted Plus Jakarta Sans, compact operational controls.
+  `AppButton`, `AppSelect` and `AppDialog` own shared variants, listbox and modal
+  behavior; feature code supplies domain content. Knowledge equations use native
+  MathML through `KnowledgeMath`, with prose and a separate text-copy action.
 - Tab dragging uses local pointer state and animation-frame transforms, with one
   store commit on release. Touch hold, scrolling, cancellation and keyboard/menu
   alternatives use the same pure ordering function.
@@ -136,9 +142,15 @@ between the worker, the store, the UI and every export unchanged
 - `workers/mining.worker.ts` hosts the stateful mining session.
   `useMiningClient` adds a 90 s timeout, `cancel()` and bounded restarts;
   `useMiningSession` maps aborts to a cleared session and a localized message.
+- `workers/xlsx-log.worker.ts` extracts only the first worksheet, with a 10 MB
+  file limit; cancelled extraction terminates its worker.
+- `workers/comparison.worker.ts` runs `compareProcessScenarios` for two confirmed
+  documents and their analysis options. `ScenarioComparison` cancels on selection
+  changes/close, times out after 20 s and hides results invalidated by later edits.
 - Workers are bundled by webpack (`next build --webpack`); see
   [ADR 0004](adr/0004-webpack-for-module-workers.md).
-  `scripts/verify-worker-bundle.mjs` fails the build otherwise.
+  `apps/web/scripts/verify-worker-bundle.mjs` requires all five bundled workers
+  and rejects raw worker source assets.
 - `workers/image-trace.worker.ts` loads OpenCV on demand for approximate geometric
   tracing, with bounded 1600 px processing and a 45 s timeout. Arrowhead direction,
   gateway markers and text are not read. Crossings and broken strokes can require
@@ -151,7 +163,9 @@ between the worker, the store, the UI and every export unchanged
 
 - Import decodes plain, compressed and multi-page files, computes absolute
   bounds through containers, classifies shapes from style (`describeBpmnShape`)
-  and flags every guess. Text, images, pools and lanes are presentation only.
+  and flags every guess. Text and images remain presentation only. Flowculus
+  container metadata restores pool/lane records and node membership; other draw.io
+  containers remain preserved in the source XML.
 - Export patches the source XML. Untouched cells, `UserObject`s, styles,
   pages and waypoints of unmoved flows are kept; the edited page is written
   uncompressed; unconfirmed guesses are not written back. The guarantee is
@@ -171,7 +185,7 @@ split into `MiningSourcePanel`, `MiningFilterPanel`, `MiningMapView` and
 
 ## Exports and reports
 
-`lib/workspace-exports.ts` writes `.drawio`, `.flowculus.json` (with
+`lib/workspace-exports.ts` writes `.bpmn`, `.drawio`, `.flowculus.json` (with
 `createAnalysisSnapshot`, CTE unit `ratio`), nodes/edges CSV (with
 `effective_cycle_time_minutes` and `cycle_time_source`), SVG, PNG and JPEG
 (rendered from the model), the PDF report (`print-report.ts`) and the image
@@ -193,3 +207,17 @@ timeout, main-thread fallback) and an offline badge (`use-online-status`).
   `useX`; other modules: `kebab-case.ts`.
 - Types `PascalCase`, functions `camelCase`, module invariants
   `UPPER_SNAKE_CASE`, CSS variables semantic kebab-case.
+
+## Collaboration and portable BPMN
+
+Version-2 ProcessModel adds serialisable container records independently of executable nodes. Pool/Lane membership survives native JSON, clipboard, CSV metadata and draw.io container metadata; v1 documents remain readable. React Flow uses relative parent coordinates, while the domain retains absolute bounds. A drag commits once; invalid cross-pool sequence changes are rejected atomically. Pool/lane resize, lane ordering, keyboard nudge and clipboard edits preserve membership. Removing a frame keeps work; cutting a selected frame copies/removes its explicit contents.
+
+Analysis selects a single process through `scopeProcessModel` and `processPoolId`; it never sums participant durations. BPMN message flows are excluded from control flow. `bpmn-adapter` reads bounded namespace-aware BPMN XML and DI, rejects declarations/unsupported execution semantics and writes standard BPMN with namespaced time/probability extensions. Its exporter asserts semantic confirmation. This is a BPMN subset, not a full workflow execution engine.
+
+## Petri evidence and model conformance
+
+`process-mining/src/petri` owns net types, firing, Alpha/BPMN-to-Petri conversion, footprint, reachability, PNML export, trace alignment and quality variants. `alignment-conformance.ts` aggregates log/reference results; `performance-standards.ts` owns service-standard parsing and comparison. The UI draws from the same net used by the runtime. Verification distinguishes successful final markings from erroneous deadlocks; a truncated search returns inconclusive rather than a proof. Reachability explores at most 2,000 markings by default and cuts off token growth above 32 per place. These workflow completion checks do not provide general liveness/invariants or business-correctness proofs.
+
+The mining worker caches Alpha evidence per log, exposes bounded optimal unit-cost alignment and service-standard comparison. Reference identity, process scope and activity mapping are explicit. `ActivityMappingEditor` searches the full log vocabulary while mounting at most 100 matching rows. BPMN-to-Petri supports a narrower XOR/AND subset than analytical CT; unsupported message/OR/parameter-rework semantics withhold conformance. Fitness uses the stated alignment normalisation; prefix precision and transition-frequency generalization use only exactly compatible cases with disclosed coverage. Simplicity uses mean arc degree. Partial analysis withholds conclusions. JSON evidence exports derived results; event logs remain a separate explicit download. PNML import, arbitrary Petri-to-BPMN conversion, business calendars, log-vs-log comparison and BPR tagging are not implemented.
+
+`comparison.worker.ts` runs two analytical model scenarios off the main thread. All five workers are verified by the build script. Model comparison is distinct from measured pre/post intervention effects. Data for the project demonstration is generated outside the app by `pnpm demo:export`; fixtures used to verify generation are test-only, with no project-specific runtime preset. Expected metrics come from the same engine plus explicit scenario assertions, not independent PM4Py validation. Validating the generated BPMN against the OMG XML schema checks its structure, not full execution conformance.

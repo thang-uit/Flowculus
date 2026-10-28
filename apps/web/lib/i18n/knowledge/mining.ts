@@ -2,6 +2,68 @@ import type { KnowledgeEntry } from '@/lib/knowledge/types';
 
 export const MINING: KnowledgeEntry[] = [
   {
+    id: 'work-calendar',
+    category: 'mining',
+    content: {
+      en: {
+        title: 'Choose the clock for mining',
+        summary: 'Separate elapsed time from working time before comparing durations.',
+        keywords: [
+          'calendar',
+          'working hours',
+          'weekend',
+          'shifts',
+          'UTC',
+          'holidays',
+          'sprint',
+        ],
+        blocks: [
+          {
+            kind: 'paragraph',
+            text: 'Elapsed calendar time includes nights and weekends. Working time counts only the overlap with configured weekdays, shifts and holidays. Configure the clock in the log source panel. Timestamp order and conformance do not change.',
+          },
+          {
+            kind: 'example',
+            title: 'Friday to Monday',
+            text: 'With Mon–Fri 08:00–12:00 and 13:00–17:00 at UTC+07:00, Friday 16:00 to Monday 09:00 is 65 elapsed hours and 2 working hours. A two-week sprint contains 10 working days and 80 nominal hours per person; it does not set feature CT.',
+          },
+          {
+            kind: 'notice',
+            text: 'The same clock applies to lead time, measured service, handover, variants and standards. Activity spans do not prove hands-on effort. Use the same time basis in model inputs. The calendar uses a fixed UTC offset, has no per-resource or automatic DST schedule, and is session-only.',
+          },
+        ],
+      },
+      vi: {
+        title: 'Chọn lịch đo thời gian Mining',
+        summary: 'Phân biệt thời gian trôi qua với giờ làm việc trước khi so sánh.',
+        keywords: [
+          'lịch',
+          'giờ làm việc',
+          'cuối tuần',
+          'ca làm',
+          'UTC',
+          'ngày nghỉ',
+          'sprint',
+        ],
+        blocks: [
+          {
+            kind: 'paragraph',
+            text: 'Thời gian lịch liên tục gồm cả buổi tối và cuối tuần. Giờ làm việc chỉ tính phần giao với các thứ, ca làm và ngày nghỉ đã cấu hình. Chọn lịch trong bảng nguồn log. Timestamp, thứ tự trace và kết quả conformance giữ nguyên.',
+          },
+          {
+            kind: 'example',
+            title: 'Từ thứ 6 đến thứ 2',
+            text: 'Với lịch thứ 2–thứ 6, 08:00–12:00 và 13:00–17:00, UTC+07:00, từ thứ 6 lúc 16:00 đến thứ 2 lúc 09:00 là 65 giờ liên tục nhưng chỉ 2 giờ làm việc. Sprint hai tuần có 10 ngày làm việc, 80 giờ danh nghĩa/người; không tự xác định CT tính năng.',
+          },
+          {
+            kind: 'notice',
+            text: 'Lead time, thời lượng xử lý, bàn giao, biến thể và định mức dùng chung lịch đang chọn. Khoảng start/end chưa chứng minh toàn bộ là giờ công. Nhập thời gian mô hình theo cùng cơ sở đo. Lịch dùng UTC cố định, chưa có lịch riêng từng người hay tự đổi giờ mùa; cấu hình chỉ giữ trong phiên.',
+          },
+        ],
+      },
+    },
+  },
+  {
     id: 'event-log',
     category: 'mining',
     content: {
@@ -192,7 +254,7 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Time measurements',
             expression:
               'Handover(A→B) = max(0, start(B) − complete(A)); Service(B) = complete(B) − start(B)',
-            note: 'H is hand-over delay, S is service time, and t denotes an event timestamp. When B has no start timestamp, its completion is used instead; the hand-over includes B’s work. Overlapping observed activities produce zero hand-over delay.',
+            note: 'H is hand-over delay, S is service time, and t denotes an event timestamp. When B has no start timestamp, its completion is used instead; the hand-over includes B’s work. Overlapping observed activities produce zero hand-over delay. These subtraction formulas describe elapsed time; working mode measures each interval against the configured calendar.',
           },
           {
             kind: 'formula',
@@ -219,7 +281,7 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Số đo thời gian',
             expression:
               'Bàn giao(A→B) = max(0, bắt đầu(B) − hoàn thành(A)); Xử lý(B) = hoàn thành(B) − bắt đầu(B)',
-            note: 'H là độ trễ bàn giao, S là thời gian xử lý, t là mốc thời gian của sự kiện. Thiếu lúc B bắt đầu thì dùng lúc B hoàn thành; số đo bàn giao chứa cả công việc của B. Các hoạt động chồng thời gian cho độ trễ bàn giao bằng 0.',
+            note: 'H là độ trễ bàn giao, S là thời gian xử lý, t là mốc thời gian của sự kiện. Thiếu lúc B bắt đầu thì dùng lúc B hoàn thành; số đo bàn giao chứa cả công việc của B. Các hoạt động chồng thời gian cho độ trễ bàn giao bằng 0. Công thức trừ timestamp mô tả thời gian liên tục; chế độ giờ làm việc đo phần giao của từng khoảng với lịch đã cấu hình.',
           },
           {
             kind: 'formula',
@@ -301,7 +363,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Open the intended BPMN reference in Canvas, review inferred semantics, then use Check vs BPMN in Mining. Labels must match after normalization. Token replay checks whether each observed task is enabled in the current reference state.',
+            text: 'Open the intended BPMN reference in Model, confirm any inferred semantics, then select it in Mining. Choose the process pool and check the activity mapping. A unique, exactly matching task label maps automatically. Duplicate labels and different names need an explicit choice. Alignment compares the observed sequence with a valid model execution.',
           },
           {
             kind: 'table',
@@ -322,7 +384,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'The bounded checker supports tasks/subprocesses and declared XOR/AND routing. It examines at most 2,000 cases, 20,000 events and 500 replay states. Unsupported semantics or exceeded state bounds withhold a score; omitted cases are reported. Log discovery alone cannot define a violation.',
+            text: 'Alignment fitness measures deviation cost. It is not the percentage of completely matching cases. Read both the matching-case count and the coverage before drawing a conclusion. Limits or unsupported semantics withhold fitness. Missing events can also reflect incomplete logging, so discovery alone cannot establish a business violation.',
           },
         ],
       },
@@ -341,7 +403,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Mở BPMN chuẩn cần đối chiếu trên Canvas, rà soát ngữ nghĩa suy luận, rồi dùng tab Đối chiếu BPMN trong Khai phá. Tên phải khớp sau chuẩn hóa. Replay token kiểm tra hoạt động quan sát có được phép chạy ở trạng thái hiện tại của mô hình chuẩn hay không.',
+            text: 'Mở BPMN chuẩn trong Mô hình, xác nhận các ngữ nghĩa suy luận, rồi chọn tài liệu đó trong Khai phá. Chọn pool cần xét và kiểm tra ánh xạ hoạt động. Nhãn task giống hoàn toàn và duy nhất được gán tự động. Nhãn trùng hoặc khác tên cần chọn rõ. Alignment đối chiếu chuỗi sự kiện với một cách thực hiện hợp lệ trong mô hình.',
           },
           {
             kind: 'table',
@@ -362,7 +424,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Bộ kiểm định có giới hạn hỗ trợ task/subprocess, XOR/AND đã khai báo; tối đa 2.000 ca, 20.000 sự kiện và 500 trạng thái replay. Ngữ nghĩa chưa hỗ trợ hoặc vượt giới hạn trạng thái sẽ không có điểm; ca bỏ qua được thống kê. Chỉ khám phá từ log không xác định được vi phạm.',
+            text: 'Fitness alignment đo mức lệch theo chi phí, không phải tỷ lệ ca khớp hoàn toàn. Cần đọc cả số ca khớp và phạm vi đã xét trước khi kết luận. Vượt giới hạn hoặc ngữ nghĩa chưa hỗ trợ thì không có fitness. Thiếu sự kiện còn có thể do log chưa đầy đủ, nên chỉ khám phá từ log chưa xác định được vi phạm nghiệp vụ.',
           },
         ],
       },

@@ -1,4 +1,5 @@
 import type { AnalysisOptions, AnalysisReport } from '@flowculus/analysis-engine';
+import { exportBpmnXml } from '@flowculus/bpmn-adapter';
 import { exportDrawioXml } from '@flowculus/drawio-adapter';
 import {
   createAnalysisSnapshot,
@@ -18,6 +19,7 @@ import { downloadAnalysisReportImage } from '@/lib/report-image';
 import type { DrawioSource } from '@/lib/workspace-store';
 
 export type WorkspaceExportFormat =
+  | 'bpmn'
   | 'drawio'
   | 'svg'
   | 'png'
@@ -59,6 +61,13 @@ export const exportWorkspace = async (
   const currency = getModelCurrency(Object.values(model.nodes));
 
   switch (format) {
+    case 'bpmn':
+      downloadTextFile(
+        fileName('diagram', 'bpmn'),
+        exportBpmnXml(model),
+        'application/xml',
+      );
+      return;
     case 'drawio': {
       const xml = await exportDrawioXml(model, context.drawioSource?.xml);
       downloadTextFile(fileName('diagram', 'drawio'), xml, 'application/xml');

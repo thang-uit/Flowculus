@@ -2,7 +2,6 @@
 
 import {
   CircleNotch,
-  Code,
   DownloadSimple,
   Headset,
   ShoppingCart,
@@ -23,7 +22,6 @@ const PRESET_ICONS: Record<MiningPresetId, typeof ShoppingCart> = {
   'order-to-cash': ShoppingCart,
   'procure-to-pay': Truck,
   'it-service-desk': Headset,
-  'is6003-delivery': Code,
 };
 
 /** Presets, log upload/download, and the loading (cancellable) and error states. */

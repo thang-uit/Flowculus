@@ -6,7 +6,9 @@ import { makeCanvasClipboard, pasteCanvasClipboard } from '@/lib/canvas-clipboar
 import { copySelectedNodes, readCanvasClipboard } from '@/lib/canvas-clipboard-runtime';
 import { showNotice } from '@/lib/ui/notice-store';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { moveNodes, removeElements } from '@/lib/model-editing';
+import { removeElements } from '@/lib/model-editing';
+import { nudgeCollaboration } from '@/lib/collaboration-editing';
+import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
@@ -113,16 +115,14 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
         if (!dx && !dy) return;
         event.preventDefault();
         const step = event.shiftKey ? 10 : 1;
-        const positions = Object.fromEntries(
-          state.selectedNodeIds.map((id) => {
-            const bounds = state.processModel.nodes[id]?.bounds;
-            return [
-              id,
-              { x: (bounds?.x ?? 0) + dx * step, y: (bounds?.y ?? 0) + dy * step },
-            ];
-          }),
+        const next = nudgeCollaboration(
+          state.processModel,
+          state.selectedNodeIds,
+          dx * step,
+          dy * step,
         );
-        state.commitModel(moveNodes(state.processModel, positions));
+        if (next) state.commitModel(next);
+        else announce(getCollaborationCopy(locale).invalid);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -130,5 +130,5 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
       active = false;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [copy, wrapperRef]);
+  }, [copy, locale, wrapperRef]);
 }

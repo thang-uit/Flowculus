@@ -17,7 +17,7 @@ export const BASICS: KnowledgeEntry[] = [
           { kind: 'notation' },
           {
             kind: 'notice',
-            text: 'Flowculus implements a BPMN subset. Pool/lane rendering, boundary-event execution and full BPMN simulation are not supported. The notation below follows BPMN 2.0.2; calculation support is listed separately. Yellow highlights are analysis overlays, not new BPMN types. Event, gateway and sequence-flow outlines stay solid. Correct symbols still require valid connections, conditions and semantics.',
+            text: 'Flowculus implements a BPMN subset. Pool/lane organisation and BPMN XML exchange are available. Boundary-event execution and full BPMN simulation are not supported. The notation below follows BPMN 2.0.2; calculation support is listed separately. Yellow highlights are analysis overlays, not new BPMN types. Event, gateway and sequence-flow outlines stay solid. Correct symbols still require valid connections, conditions and semantics.',
           },
         ],
       },
@@ -33,7 +33,7 @@ export const BASICS: KnowledgeEntry[] = [
           { kind: 'notation' },
           {
             kind: 'notice',
-            text: 'Flowculus hỗ trợ một tập con BPMN. Chưa vẽ pool/lane, chưa thực thi boundary event và chưa mô phỏng đầy đủ BPMN. Ký hiệu dưới đây được đối chiếu theo BPMN 2.0.2; khả năng tính toán được nêu riêng. Màu vàng là phần tô sáng phân tích, không phải một loại BPMN mới. Nét liền của sự kiện, gateway và luồng tuần tự luôn được giữ nguyên. Hình đúng ký hiệu vẫn cần kiểm tra kết nối, điều kiện và ngữ nghĩa.',
+            text: 'Flowculus hỗ trợ một tập con BPMN. Có tổ chức Pool/Lane và trao đổi BPMN XML. Chưa thực thi boundary event hoặc mô phỏng đầy đủ BPMN. Ký hiệu dưới đây được đối chiếu theo BPMN 2.0.2; khả năng tính toán được nêu riêng. Màu vàng là phần tô sáng phân tích, không phải một loại BPMN mới. Nét liền của sự kiện, gateway và luồng tuần tự luôn được giữ nguyên. Hình đúng ký hiệu vẫn cần kiểm tra kết nối, điều kiện và ngữ nghĩa.',
           },
         ],
       },

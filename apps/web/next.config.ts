@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     '@flowculus/analysis-engine',
+    '@flowculus/bpmn-adapter',
     '@flowculus/drawio-adapter',
     '@flowculus/file-formats',
     '@flowculus/formula-renderer',

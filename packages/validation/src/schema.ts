@@ -25,6 +25,8 @@ const nodeSchema = z.object({
     'annotation',
     'unknown',
   ]),
+  poolId: z.string().min(1).optional(),
+  laneId: z.string().min(1).optional(),
   gatewayKind: z.enum(['xor', 'and', 'or', 'eventBased', 'complex']).optional(),
   durationMinutes: z.number().finite().nonnegative().optional(),
   processingMinutes: z.number().finite().nonnegative().optional(),
@@ -69,16 +71,41 @@ const edgeSchema = z.object({
 /** Structural (serialization) schema of a `ProcessModel`, schema version 1. */
 export const processModelSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.union([z.literal(1), z.literal(2)]),
     id: z.string().min(1),
     name: z.string().min(1),
     nodes: z.record(z.string(), nodeSchema),
     edges: z.record(z.string(), edgeSchema),
     metadata: metadataSchema,
+    containers: z
+      .record(
+        z.string(),
+        z.object({
+          id: z.string().min(1),
+          label: z.string().trim().min(1).max(120),
+          kind: z.enum(['pool', 'lane']),
+          parentId: z.string().optional(),
+          processId: z.string().optional(),
+          orientation: z.enum(['horizontal', 'vertical']),
+          bounds: boundsSchema,
+          blackBox: z.boolean().optional(),
+        }),
+      )
+      .optional(),
   })
   .superRefine((model, context) => {
-    for (const collection of ['nodes', 'edges'] as const)
-      for (const [key, element] of Object.entries(model[collection]))
+    if (
+      model.schemaVersion === 1 &&
+      model.containers &&
+      Object.keys(model.containers).length
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['schemaVersion'],
+        message: 'Containers require schema version 2.',
+      });
+    for (const collection of ['nodes', 'edges', 'containers'] as const)
+      for (const [key, element] of Object.entries(model[collection] ?? {}))
         if (key !== element.id)
           context.addIssue({
             code: 'custom',

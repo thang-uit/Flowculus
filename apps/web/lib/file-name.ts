@@ -38,7 +38,10 @@ export function exportFileName(
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[đĐ]/g, 'd')
       .toLowerCase()
-      .replace(/\.(?:flowculus\.json|drawio|csv|json|xes|xml|png|jpe?g|svg)$/i, '')
+      .replace(
+        /\.(?:flowculus\.json|bpmn|pnml|drawio|csv|json|xes|xml|png|jpe?g|svg)$/i,
+        '',
+      )
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 72)

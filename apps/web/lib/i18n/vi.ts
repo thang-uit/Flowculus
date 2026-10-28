@@ -476,10 +476,6 @@ export const VI: WorkspaceCopy = {
       name: 'IT Service Desk',
       description: 'Phiếu hỗ trợ có leo thang và mở lại',
     },
-    'is6003-delivery': {
-      name: 'Nhật ký đồ án IS6003',
-      description: 'FEAT_301/302 trong báo cáo môn học (Jira + Git)',
-    },
   },
   miningResetFilters: 'Đặt lại bộ lọc',
   miningSendToCanvas: 'Chuyển sang canvas BPMN',

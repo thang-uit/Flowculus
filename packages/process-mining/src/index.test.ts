@@ -1,3 +1,4 @@
+import { is6003Log } from './__fixtures__/is6003';
 import { describe, expect, it } from 'vitest';
 
 import { analyzeProcess } from '@flowculus/analysis-engine';
@@ -407,10 +408,8 @@ describe('presets', () => {
       const first = generatePresetLog(preset.id);
       const second = generatePresetLog(preset.id);
       expect(second.events).toEqual(first.events);
-      if (preset.id !== 'is6003-delivery') {
-        expect(first.events.length).toBeGreaterThan(1500);
-        expect(first.events.length).toBeLessThan(6000);
-      }
+      expect(first.events.length).toBeGreaterThan(1500);
+      expect(first.events.length).toBeLessThan(6000);
       const discovery = discoverProcess(first);
       const { model } = dfgToProcessModel(discovery.dfg, {
         name: first.name,
@@ -425,7 +424,7 @@ describe('presets', () => {
   });
 
   it('reproduces the IS6003 report log', () => {
-    const log = generatePresetLog('is6003-delivery');
+    const log = is6003Log();
     const discovery = discoverProcess(log);
     expect(discovery.stats.caseCount).toBe(2);
     expect(discovery.stats.eventCount).toBe(15);

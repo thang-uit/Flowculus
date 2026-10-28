@@ -19,6 +19,7 @@ import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 export function AnalysisStatusBar() {
+  const version = useWorkspaceStore((state) => state.processModel.schemaVersion);
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const analysisRuntimeStatus = useWorkspaceStore((state) => state.analysisRuntimeStatus);
@@ -134,7 +135,7 @@ export function AnalysisStatusBar() {
         ) : null}
         <span className="hidden items-center gap-1.5 font-mono text-[10px] sm:inline-flex">
           <Code size={14} aria-hidden="true" />
-          {copy.schema} 1.0
+          {copy.schema} {version}.0
         </span>
       </div>
       <span className="sr-only" key={analysisRevision} aria-live="polite">

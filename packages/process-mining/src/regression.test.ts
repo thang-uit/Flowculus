@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { is6003Log } from './__fixtures__/is6003';
 import { analyzeProcess } from '@flowculus/analysis-engine';
 
 import {
@@ -52,4 +53,17 @@ describe('preset regression pins', () => {
       expect(report.costPerExecution).toBeCloseTo(pinned.cost, 6);
     });
   });
+});
+
+it('retains the retired report log as a test fixture outside the runtime presets', () => {
+  const log = is6003Log();
+  const { model } = dfgToProcessModel(discoverProcess(log).dfg, {
+    name: log.name,
+    hasStartTimes: log.hasStartTimes,
+  });
+  const report = analyzeProcess(model);
+  const pin = PINNED['is6003-delivery'];
+  expect(report.cycleTimeMinutes).toBeCloseTo(pin.ct, 6);
+  expect(report.theoreticalCycleTimeMinutes).toBeCloseTo(pin.tct, 6);
+  expect(report.cycleTimeEfficiency).toBeCloseTo(pin.cte, 9);
 });

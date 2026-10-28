@@ -116,7 +116,7 @@ const pruneSelection = (
   nodeIds: string[],
   edgeId: string | null,
 ) => ({
-  selectedNodeIds: nodeIds.filter((id) => model.nodes[id]),
+  selectedNodeIds: nodeIds.filter((id) => model.nodes[id] || model.containers?.[id]),
   selectedEdgeId: edgeId && model.edges[edgeId] ? edgeId : null,
 });
 

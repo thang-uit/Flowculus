@@ -1,3 +1,4 @@
+import { createDurationClock, type TimePolicy } from './business-calendar';
 import {
   type Bottleneck,
   type DfgActivity,
@@ -40,7 +41,8 @@ const minOf = (values: number[], fallback = 0): number =>
   );
 
 /** Groups events into cases ordered by time (ties keep file order). */
-export const buildTraces = (log: EventLog): Trace[] => {
+export const buildTraces = (log: EventLog, timePolicy?: TimePolicy): Trace[] => {
+  const duration = createDurationClock(timePolicy);
   const byCase = new Map<string, Array<{ event: MiningEvent; order: number }>>();
   log.events.forEach((event, order) => {
     const list = byCase.get(event.caseId) ?? [];
@@ -63,17 +65,10 @@ export const buildTraces = (log: EventLog): Trace[] => {
       events,
       startTime,
       endTime,
-      durationMs: Math.max(0, endTime - startTime),
+      durationMs: duration(startTime, endTime),
     };
   });
 };
-
-/**
- * Delay attributed to the transition a → b: from a's completion to b's start
- * when start times exist (pure waiting), otherwise to b's completion.
- */
-const transitionDuration = (from: MiningEvent, to: MiningEvent): number =>
-  Math.max(0, eventStart(to) - from.completeTime);
 
 const variantKey = (activities: string[]): string => activities.join('\u0001');
 
@@ -121,7 +116,11 @@ interface EdgeAccumulator {
 }
 
 /** Builds the Directly-Follows Graph of (possibly projected) traces. */
-export const buildDirectlyFollowsGraph = (traces: Trace[]): DirectlyFollowsGraph => {
+export const buildDirectlyFollowsGraph = (
+  traces: Trace[],
+  timePolicy?: TimePolicy,
+): DirectlyFollowsGraph => {
+  const duration = createDurationClock(timePolicy);
   const activities = new Map<
     string,
     {
@@ -150,7 +149,7 @@ export const buildDirectlyFollowsGraph = (traces: Trace[]): DirectlyFollowsGraph
       entry.frequency += 1;
       entry.cases.add(trace.caseId);
       if (event.startTime != null)
-        entry.services.push(event.completeTime - event.startTime);
+        entry.services.push(duration(event.startTime, event.completeTime));
       if (event.cost != null) entry.costs.push(event.cost);
       if (event.resource) {
         entry.resources.set(
@@ -172,7 +171,7 @@ export const buildDirectlyFollowsGraph = (traces: Trace[]): DirectlyFollowsGraph
         durations: [],
       };
       edge.frequency += 1;
-      edge.durations.push(transitionDuration(event, next));
+      edge.durations.push(duration(event.completeTime, eventStart(next)));
       edges.set(key, edge);
     });
   });
@@ -319,6 +318,7 @@ export const filterDirectlyFollowsGraph = (
   traces: Trace[],
   dfg: DirectlyFollowsGraph,
   filter: DiscoveryFilter,
+  timePolicy?: TimePolicy,
 ): {
   dfg: DirectlyFollowsGraph;
   hiddenActivityCount: number;
@@ -343,6 +343,7 @@ export const filterDirectlyFollowsGraph = (
               events: trace.events.filter((event) => kept.has(event.activity)),
             }))
             .filter((trace) => trace.events.length > 0),
+          timePolicy,
         );
 
   const edgeThreshold = projected.maxEdgeFrequency * minEdgeShare;

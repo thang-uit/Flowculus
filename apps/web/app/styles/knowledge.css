@@ -114,6 +114,10 @@
   outline: none;
   color: var(--text);
 }
+.knowledge-search-field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
 .knowledge-search-field input::placeholder {
   color: var(--muted-strong);
 }

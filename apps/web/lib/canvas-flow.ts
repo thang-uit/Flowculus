@@ -7,6 +7,7 @@ import {
   type ProcessEdge,
   type ProcessModel,
   type ProcessNode,
+  type ProcessContainer,
 } from '@flowculus/process-model';
 
 /**
@@ -17,9 +18,10 @@ import {
 export interface ProcessFlowNodeData extends Record<string, unknown> {
   node: ProcessNode;
   critical: boolean;
+  container?: ProcessContainer;
 }
 
-export type ProcessFlowNode = Node<ProcessFlowNodeData, 'process'>;
+export type ProcessFlowNode = Node<ProcessFlowNodeData, 'process' | 'container'>;
 
 export interface ProcessFlowEdgeData extends Record<string, unknown> {
   edge: ProcessEdge;
@@ -32,20 +34,78 @@ export const toFlowNodes = (
   model: ProcessModel,
   criticalNodeIds: ReadonlySet<string>,
   selectedNodeIds: ReadonlySet<string>,
-): ProcessFlowNode[] =>
-  Object.values(model.nodes).map((node) => {
+): ProcessFlowNode[] => [
+  ...Object.values(model.containers ?? {})
+    .sort((left, right) => Number(left.kind === 'lane') - Number(right.kind === 'lane'))
+    .map((container): ProcessFlowNode => {
+      const parent = container.parentId
+        ? model.containers?.[container.parentId]
+        : undefined;
+      return {
+        id: container.id,
+        type: 'container',
+        draggable: container.kind === 'pool',
+        deletable: false,
+        connectable: false,
+        parentId: parent?.id,
+        position: {
+          x: container.bounds.x - (parent?.bounds.x ?? 0),
+          y: container.bounds.y - (parent?.bounds.y ?? 0),
+        },
+        width: container.bounds.width,
+        height: container.bounds.height,
+        zIndex: container.kind === 'pool' ? -2 : -1,
+        selected: selectedNodeIds.has(container.id),
+        data: {
+          node: {
+            id: container.id,
+            label: container.label,
+            kind: 'annotation',
+            bounds: container.bounds,
+          },
+          container,
+          critical: false,
+        },
+      };
+    }),
+  ...Object.values(model.nodes).map((node): ProcessFlowNode => {
     const bounds = getNodeBounds(node);
+    const parent = model.containers?.[node.laneId ?? node.poolId ?? ''];
     return {
       id: node.id,
       type: 'process',
-      position: { x: bounds.x, y: bounds.y },
+      parentId: parent?.id,
+      position: {
+        x: bounds.x - (parent?.bounds.x ?? 0),
+        y: bounds.y - (parent?.bounds.y ?? 0),
+      },
       width: bounds.width,
       height: bounds.height,
       selected: selectedNodeIds.has(node.id),
-      zIndex: node.kind === 'annotation' || node.kind === 'data' ? 0 : 1,
+      zIndex: 1,
       data: { node, critical: criticalNodeIds.has(node.id) },
     };
-  });
+  }),
+];
+
+export function absoluteCanvasPositions(
+  nodes: ProcessFlowNode[],
+): Record<string, { x: number; y: number }> {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const positions: Record<string, { x: number; y: number }> = {};
+  const resolve = (id: string, depth = 0): { x: number; y: number } => {
+    if (positions[id]) return positions[id];
+    const node = byId.get(id);
+    if (!node || depth > 3) return { x: 0, y: 0 };
+    const parent = node.parentId ? resolve(node.parentId, depth + 1) : { x: 0, y: 0 };
+    return (positions[id] = {
+      x: node.position.x + parent.x,
+      y: node.position.y + parent.y,
+    });
+  };
+  for (const node of nodes) resolve(node.id);
+  return positions;
+}
 
 /** Ids of the SVG markers rendered once by the canvas (styled through CSS tokens). */
 export const FLOW_MARKER_IDS = {

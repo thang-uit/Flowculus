@@ -12,7 +12,7 @@ const list = (dir) => (existsSync(dir) ? readdirSync(dir) : []);
 const rawWorkers = list(join(root, 'media')).filter((file) =>
   /\.worker\.[\w-]+\.(ts|tsx)$/.test(file),
 );
-const requiredWorkers = ['analysis', 'mining', 'image-trace', 'xlsx'];
+const requiredWorkers = ['analysis', 'mining', 'image-trace', 'xlsx', 'comparison'];
 const chunks = list(join(root, 'chunks'));
 const workerChunks = requiredWorkers.flatMap((worker) =>
   chunks.filter((file) => new RegExp(`^flowculus-${worker}\\.[\\w-]+\\.js$`).test(file)),

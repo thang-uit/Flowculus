@@ -12,6 +12,16 @@ const kind = (params: DiagnosticParams): string =>
   String(params.gatewayKind ?? '').toUpperCase();
 
 export const DIAGNOSTICS_VI: Record<DiagnosticCode, Formatter> = {
+  'invalid-container': () =>
+    'Pool hoặc lane có khung cha không hợp lệ hoặc trùng định danh.',
+  'invalid-membership': () => 'Bước quy trình phải thuộc pool và lane hợp lệ.',
+  'cross-pool-sequence': () =>
+    'Sequence flow không được đi qua hai pool. Dùng message flow giữa các bên tham gia.',
+  'invalid-message-flow': () =>
+    'Message flow phải nối các phần tử phù hợp thuộc hai pool khác nhau.',
+  'process-scope-required': () =>
+    'Chọn một pool quy trình để phân tích. Không suy ra thời gian phối hợp từ message flow.',
+
   'schema-invalid': (p) =>
     `Mô hình có giá trị không hợp lệ tại ${String(p.path || 'gốc')}.`,
   'edge-missing-source': (p) =>

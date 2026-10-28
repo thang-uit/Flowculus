@@ -1,9 +1,10 @@
 'use client';
 
+import { useMiningDuration } from '@/lib/use-mining-duration';
 import type { TraceVariant } from '@flowculus/process-mining';
 
 import { cn } from '@/lib/cn';
-import { formatDurationMs, formatPercent } from '@/lib/format';
+import { formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
@@ -12,6 +13,7 @@ const MAX_VISIBLE_VARIANTS = 50;
 
 /** Trace variants ranked by frequency; selecting one highlights it on the map. */
 export function VariantExplorer({ variants }: Readonly<{ variants: TraceVariant[] }>) {
+  const formatDurationMs = useMiningDuration();
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const selectedId = useMiningStore((state) => state.selectedVariantId);

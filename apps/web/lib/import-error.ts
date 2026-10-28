@@ -1,8 +1,19 @@
+import { getCollaborationCopy } from './i18n/collaboration-copy';
+import { usePreferencesStore } from './use-preferences-store';
+import { BpmnFormatError } from '@flowculus/bpmn-adapter';
 import { ProcessCsvNumberError } from '@flowculus/file-formats';
 
 import type { WorkspaceCopy } from '@/lib/i18n';
 
 export const describeImportError = (error: unknown, copy: WorkspaceCopy): string => {
+  if (error instanceof BpmnFormatError) {
+    const words = getCollaborationCopy(usePreferencesStore.getState().locale);
+    return error.code === 'unsupported'
+      ? words.bpmnUnsupported
+      : error.code === 'limit'
+        ? words.bpmnLimit
+        : words.bpmnInvalid;
+  }
   if (error instanceof ProcessCsvNumberError)
     return copy.invalidCsvNumber(error.section, error.row, error.column);
   if (error instanceof Error) {

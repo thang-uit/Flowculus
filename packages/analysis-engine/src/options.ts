@@ -1,4 +1,5 @@
 export interface AnalysisOptions {
+  processPoolId?: string;
   arrivalRatePerHour?: number;
   workInProcess?: number;
   workingHoursPerDay?: number;
@@ -22,6 +23,11 @@ const isPositive = (candidate: unknown): boolean =>
 export const isAnalysisOptions = (value: unknown): value is AnalysisOptions => {
   if (value == null || typeof value !== 'object' || Array.isArray(value)) return false;
   const options = value as Record<string, unknown>;
+  if (
+    options.processPoolId != null &&
+    (typeof options.processPoolId !== 'string' || !options.processPoolId)
+  )
+    return false;
   if (!isNonNegative(options.arrivalRatePerHour)) return false;
   if (!isNonNegative(options.workInProcess)) return false;
   if (!isPositive(options.workingHoursPerDay)) return false;

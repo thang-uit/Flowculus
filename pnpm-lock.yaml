@@ -30,6 +30,9 @@ importers:
       '@flowculus/analysis-engine':
         specifier: workspace:*
         version: link:../../packages/analysis-engine
+      '@flowculus/bpmn-adapter':
+        specifier: workspace:*
+        version: link:../../packages/bpmn-adapter
       '@flowculus/drawio-adapter':
         specifier: workspace:*
         version: link:../../packages/drawio-adapter
@@ -127,6 +130,22 @@ importers:
       '@flowculus/validation':
         specifier: workspace:*
         version: link:../validation
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/bpmn-adapter:
+    dependencies:
+      '@flowculus/process-model':
+        specifier: workspace:*
+        version: link:../process-model
+      '@flowculus/validation':
+        specifier: workspace:*
+        version: link:../validation
+      '@flowculus/xml-tree':
+        specifier: workspace:*
+        version: link:../xml-tree
     devDependencies:
       typescript:
         specifier: ^5.9.3

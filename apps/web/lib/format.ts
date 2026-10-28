@@ -2,7 +2,7 @@ import { formatCompactMinutes } from '@flowculus/file-formats';
 
 import type { Locale } from '@/lib/i18n';
 
-/** `35.2 minutes` below two hours, `13.8d` / `6.5h` beyond, for KPI read-outs. */
+/** `35.2 minutes` below two hours, `331.2h` / `6.5h` beyond, for KPI read-outs. */
 export const formatCycleMinutes = (
   value: number | null | undefined,
   unit: string,
@@ -14,7 +14,7 @@ export const formatCycleMinutes = (
     : formatCompactMinutes(value);
 };
 
-/** Compact duration for KPI chips ("35.2m", "1.3h", "12.7d"). */
+/** Compact duration for KPI chips ("35.2m", "1.3h", "304.8h"). */
 export const formatKpiMinutes = (
   value: number | null | undefined,
   emptyValue: string,

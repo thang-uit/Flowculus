@@ -20,7 +20,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm run test && pnpm run format:check && pnpm run lint && pnpm run typecheck && pnpm run build",
-    "dev:web": "pnpm --filter @flowculus/web dev"
+    "dev:web": "pnpm --filter @flowculus/web dev",
+    "demo:export": "node scripts/export-study-kit.mjs",
+    "demo:export:small-fixture": "node scripts/export-demo-kit.mjs"
   },
   "devDependencies": {
     "prettier": "^3.9.10",

@@ -5,10 +5,12 @@ import { PaperPlaneTilt } from '@phosphor-icons/react';
 import { useState } from 'react';
 
 import { ColumnMappingDialog } from '@/components/mining/ColumnMappingDialog';
+import { MiningTimeControls } from './MiningTimeControls';
 import { MiningFilterPanel } from '@/components/mining/MiningFilterPanel';
 import { MiningInsightsPanel } from '@/components/mining/MiningInsightsPanel';
 import { MiningMapView } from '@/components/mining/MiningMapView';
 import { MiningPanelResizeHandle } from '@/components/mining/MiningPanelResizeHandle';
+import { MiningEvidenceExport } from './MiningEvidenceExport';
 import { MiningSourcePanel } from '@/components/mining/MiningSourcePanel';
 import { MiningCreateProcessDialog } from '@/components/mining/MiningCreateProcessDialog';
 import { getWorkspaceCopy } from '@/lib/i18n';
@@ -48,7 +50,9 @@ export function MiningWorkspace() {
           onDownloadLog={() => void session.downloadLog()}
           onCancel={session.cancel}
         />
+        <MiningTimeControls />
         <MiningFilterPanel />
+        <MiningEvidenceExport />
         <section className="space-y-2 p-4">
           <AppButton
             type="button"
@@ -87,7 +91,12 @@ export function MiningWorkspace() {
         onPointerEnd={onPointerEnd}
         onKeyDown={onKeyDown}
       />
-      <MiningInsightsPanel onCheckConformance={() => void session.checkConformance()} />
+      <MiningInsightsPanel
+        request={session.request}
+        onCheckConformance={(model, options) =>
+          void session.checkConformance(model, options)
+        }
+      />
 
       {namingProcess ? (
         <MiningCreateProcessDialog

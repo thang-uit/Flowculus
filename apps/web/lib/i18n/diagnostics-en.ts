@@ -12,6 +12,16 @@ const kind = (params: DiagnosticParams): string =>
   String(params.gatewayKind ?? '').toUpperCase();
 
 export const DIAGNOSTICS_EN: Record<DiagnosticCode, Formatter> = {
+  'invalid-container': () =>
+    'A pool or lane has an invalid parent or duplicate identity.',
+  'invalid-membership': () => 'A process step must belong to a valid pool and lane.',
+  'cross-pool-sequence': () =>
+    'Sequence flows cannot cross participant pools. Use a message flow between participants.',
+  'invalid-message-flow': () =>
+    'A message flow must connect eligible elements in different participant pools.',
+  'process-scope-required': () =>
+    'Choose one process pool to analyse. Collaboration timing is not inferred from messages.',
+
   'schema-invalid': (p) =>
     `The model has an invalid value at ${String(p.path || 'its root')}.`,
   'edge-missing-source': (p) =>

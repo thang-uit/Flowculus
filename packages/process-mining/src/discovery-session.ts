@@ -1,3 +1,4 @@
+import { type TimePolicy, ELAPSED_TIME_POLICY } from './business-calendar';
 import {
   buildDirectlyFollowsGraph,
   buildTraces,
@@ -14,16 +15,20 @@ import {
 } from './types';
 
 /** Prepare one immutable log once; slider changes only rebuild its filtered map. */
-export const createProcessDiscovery = (log: EventLog) => {
-  const traces = buildTraces(log);
+export const createProcessDiscovery = (
+  log: EventLog,
+  timePolicy: TimePolicy = ELAPSED_TIME_POLICY,
+) => {
+  const traces = buildTraces(log, timePolicy);
   const variants = buildVariants(traces);
-  const fullDfg = buildDirectlyFollowsGraph(traces);
+  const fullDfg = buildDirectlyFollowsGraph(traces, timePolicy);
   const stats = computeLogStats(log, traces, variants);
   const bottlenecks = findBottlenecks(fullDfg);
 
   return (filter: DiscoveryFilter = DEFAULT_DISCOVERY_FILTER): ProcessDiscovery => {
-    const filtered = filterDirectlyFollowsGraph(traces, fullDfg, filter);
+    const filtered = filterDirectlyFollowsGraph(traces, fullDfg, filter, timePolicy);
     return {
+      timePolicy,
       stats,
       dfg: filtered.dfg,
       variants,
@@ -39,4 +44,5 @@ export const createProcessDiscovery = (log: EventLog) => {
 export const discoverProcess = (
   log: EventLog,
   filter: DiscoveryFilter = DEFAULT_DISCOVERY_FILTER,
-): ProcessDiscovery => createProcessDiscovery(log)(filter);
+  timePolicy: TimePolicy = ELAPSED_TIME_POLICY,
+): ProcessDiscovery => createProcessDiscovery(log, timePolicy)(filter);

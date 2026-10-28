@@ -479,10 +479,6 @@ export const EN: WorkspaceCopy = {
       name: 'IT Service Desk',
       description: 'Tickets with escalation and reopen loops',
     },
-    'is6003-delivery': {
-      name: 'IS6003 delivery log',
-      description: 'FEAT_301/302 from the course report (Jira + Git)',
-    },
   },
   miningResetFilters: 'Reset filters',
   miningSendToCanvas: 'Send to BPMN canvas',

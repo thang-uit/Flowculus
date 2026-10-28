@@ -2,16 +2,21 @@
 
 import { useRef, useState, type KeyboardEvent } from 'react';
 
+import { StandardsPanel } from './StandardsPanel';
+import type { MiningRequest, MiningResponse } from '@/lib/mining-engine';
 import { BottleneckList } from '@/components/mining/BottleneckList';
+import { PetriNetView } from './PetriNetView';
+import { FootprintTable } from './FootprintTable';
 import { AlphaPetriPanel } from '@/components/mining/AlphaPetriPanel';
-import { ModelConformancePanel } from '@/components/mining/ModelConformancePanel';
+import { ReferenceConformancePanel } from './ReferenceConformancePanel';
+import type { ProcessModel } from '@flowculus/process-model';
+import type { ConformanceOptions } from '@flowculus/process-mining';
 import { ResourceCentralityTable } from '@/components/mining/ResourceCentralityTable';
 import { VariantExplorer } from '@/components/mining/VariantExplorer';
 import { cn } from '@/lib/cn';
 import { formatDurationMs } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 const TABS = ['variants', 'bottlenecks', 'resources', 'alpha', 'conformance'] as const;
@@ -20,16 +25,17 @@ type SideTab = (typeof TABS)[number];
 /** Variants and bottlenecks of the current discovery, as tabs. */
 export function MiningInsightsPanel({
   onCheckConformance,
-}: Readonly<{ onCheckConformance: () => void }>) {
+  request,
+}: Readonly<{
+  request: (request: MiningRequest) => Promise<MiningResponse>;
+  onCheckConformance: (model: ProcessModel, options: ConformanceOptions) => void;
+}>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const discovery = useMiningStore((state) => state.result?.discovery);
   const socialNetwork = useMiningStore((state) => state.result?.socialNetwork);
+  const evidence = useMiningStore((state) => state.result);
   const alpha = useMiningStore((state) => state.result?.alpha);
-  const conformance = useMiningStore((state) => state.conformance);
-  const conformanceError = useMiningStore((state) => state.conformanceError);
-  const checkingConformance = useMiningStore((state) => state.checkingConformance);
-  const processModel = useWorkspaceStore((state) => state.processModel);
   const [tab, setTab] = useState<SideTab>('variants');
   const tabListRef = useRef<HTMLDivElement>(null);
 
@@ -118,18 +124,23 @@ export function MiningInsightsPanel({
                 {` ${copy.miningNoStartTimes}`}
               </p>
               <BottleneckList bottlenecks={discovery.bottlenecks} />
+              <StandardsPanel request={request} />
             </>
           ) : tab === 'resources' && socialNetwork ? (
             <ResourceCentralityTable network={socialNetwork} />
           ) : tab === 'alpha' && alpha ? (
-            <AlphaPetriPanel result={alpha} />
+            <div className="space-y-5">
+              <AlphaPetriPanel result={alpha} />
+              <FootprintTable footprint={evidence?.footprint ?? null} />
+              {evidence?.petri?.status === 'ready' ? (
+                <PetriNetView
+                  net={evidence.petri.net}
+                  verification={evidence.verification}
+                />
+              ) : null}
+            </div>
           ) : tab === 'conformance' ? (
-            <ModelConformancePanel
-              result={conformance?.model === processModel ? conformance.result : null}
-              error={conformanceError}
-              checking={checkingConformance}
-              onCheck={onCheckConformance}
-            />
+            <ReferenceConformancePanel onCheck={onCheckConformance} />
           ) : null
         ) : null}
         {discovery ? (

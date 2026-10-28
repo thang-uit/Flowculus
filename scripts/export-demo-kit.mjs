@@ -1,0 +1,130 @@
+import { registerHooks, stripTypeScriptTypes } from 'node:module';
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+
+// Node 22's built-in TypeScript transform keeps demo tooling dependency-free.
+registerHooks({
+  resolve(specifier, context, next) {
+    try {
+      return next(specifier, context);
+    } catch (error) {
+      if (specifier.startsWith('.') && context.parentURL?.startsWith('file:')) {
+        const candidate = new URL(`${specifier}.ts`, context.parentURL);
+        if (existsSync(candidate)) return { url: candidate.href, shortCircuit: true };
+      }
+      throw error;
+    }
+  },
+  load(url, context, next) {
+    if (url.startsWith('file:') && url.endsWith('.ts'))
+      return {
+        format: 'module',
+        source: stripTypeScriptTypes(readFileSync(new URL(url), 'utf8'), {
+          mode: 'transform',
+          sourceUrl: url,
+        }),
+        shortCircuit: true,
+      };
+    return next(url, context);
+  },
+});
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const target = resolve(process.argv[2] ?? resolve(root, 'output/demo/small-fixture'));
+if (existsSync(target) && !existsSync(resolve(target, 'manifest.json')))
+  throw Error(
+    'The target exists without a generated manifest. Choose an empty directory.',
+  );
+const load = (path) => import(pathToFileURL(resolve(root, path)).href);
+const { deliveryModel, deliveryLog, DELIVERY_EXPECTATIONS } = await load(
+  'packages/process-mining/src/__fixtures__/software-delivery.ts',
+);
+const { exportBpmnXml } = await load('packages/bpmn-adapter/src/index.ts');
+const { checkSemanticGate } = await load('packages/validation/src/index.ts');
+const { analyzeProcess } = await load('packages/analysis-engine/src/index.ts');
+const { serializeFlowculusFile } = await load('packages/file-formats/src/index.ts');
+const {
+  alignmentConformance,
+  buildSocialNetwork,
+  discoverProcess,
+  eventLogToCsv,
+  bpmnToPetri,
+  verifyPetri,
+  petriToPnml,
+} = await load('packages/process-mining/src/index.ts');
+const model = deliveryModel();
+const gate = checkSemanticGate(model);
+if (!gate.ok) throw Error('Demo model requires semantic review');
+const log = deliveryLog();
+const alignment = alignmentConformance(log, model);
+const network = buildSocialNetwork(log);
+const discovery = discoverProcess(log);
+const converted = bpmnToPetri(model);
+if (converted.status !== 'ready') throw Error('Unsupported demo semantics');
+const files = {
+  '01_software_delivery_standard.bpmn': exportBpmnXml(gate.model),
+  '01_software_delivery_standard.flowculus.json': serializeFlowculusFile({
+    schemaVersion: 2,
+    model,
+    analysisOptions: { processPoolId: 'team' },
+  }),
+  '02_software_delivery_events.csv': eventLogToCsv(log),
+  '03_task_standards.csv':
+    'activity,max_service_minutes\nTest integrated build,90\nApprove release,60\n',
+  'expected/case_expectations.csv':
+    'case_id,scenario,expected_compatible\n' +
+    DELIVERY_EXPECTATIONS.map(
+      (item) =>
+        `${item.caseId},${item.kind},${['valid', 'valid-parallel-order', 'valid-correction', 'long-qa-wait'].includes(item.kind)}`,
+    ).join('\n') +
+    '\n',
+  'expected/metrics.json': JSON.stringify(
+    {
+      dataset: 'synthetic-demonstration-v1',
+      analysis: analyzeProcess(model),
+      alignment,
+      resources: network,
+      stats: discovery.stats,
+      verification: verifyPetri(converted.net),
+    },
+    null,
+    2,
+  ),
+  'expected/reference.pnml': petriToPnml(converted.net),
+  'README_DEMO_VI.md': `# Bộ demo Flowculus\n\nĐây là dữ liệu tổng hợp cho thuyết trình, không phải số đo năng suất hoặc hiệu quả triển khai thực tế.\n\n1. Mở file 01_software_delivery_standard.bpmn bằng Mở/Import. Chọn pool Delivery team.\n2. Chuyển Mining, tải 02_software_delivery_events.csv; ánh xạ các cột gợi ý, xác nhận start/completion/resource.\n3. Xem DFG, biến thể, chặng chậm và mạng nhân sự. In-degree đếm nguồn gửi khác nhau; lượt đầu vào đếm số lần bàn giao đến.\n4. Chọn đối chiếu với quy trình vừa mở, rồi xem fitness và từng alignment.\n5. CASE_001/002/003/008 phù hợp mô hình; CASE_004 thiếu QA, CASE_005 sai thứ tự, CASE_006 có hoạt động ngoài chuẩn, CASE_007 chưa hoàn tất bản ghi.\n6. Rework chỉ tối đa một lần, được vẽ bằng Correct defect → Retest correction riêng. Hai nhánh Backend/Mobile được phép hoàn thành theo hai thứ tự.\n7. CASE_008 có thời gian chờ QA dài; điều đó không tự chứng minh QA là nguyên nhân.\n8. Xem Petri chuẩn, token và kiểm chứng. Petri Alpha được khám phá từ log lẫn ca sai lệch có thể khác mô hình chuẩn.\n9. Tệp expected chỉ phục vụ kiểm tra; không upload để ép điểm số. Chỉ số được web tính từ model/log.\n\nLog có ${log.events.length} sự kiện, ${DELIVERY_EXPECTATIONS.length} ca. Alignment: ${alignment.compatibleCases}/${alignment.examinedCases} ca tương thích, fitness=${alignment.fitness}. Thời gian ISO có múi giờ; đơn vị phân tích trong JSON là phút.\n\nFile định mức thời gian xử lý chỉ dùng để trình diễn sau khi nạp định mức. File .flowculus.json giữ cấu hình phân tích riêng; .bpmn là BPMN XML với extension Flowculus cho thời gian và xác suất. Công cụ BPMN khác có thể bỏ qua extension.\n`,
+};
+for (const [path, content] of Object.entries(files)) {
+  const output = resolve(target, path);
+  mkdirSync(dirname(output), { recursive: true });
+  writeFileSync(output, content);
+}
+writeFileSync(
+  resolve(target, 'manifest.json'),
+  JSON.stringify(
+    {
+      generator: 'Flowculus demo-kit v1',
+      sourceBaseCommit: execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: root,
+        encoding: 'utf8',
+      }).trim(),
+      sourceState:
+        'Current working files; expected metrics generated by the same engine, scenario assertions in tests. Not independently validated by a second engine.',
+      provenance: 'synthetic',
+      timeUnit: 'ISO timestamps; model minutes',
+      seed: 'deterministic scenario schedules v1',
+      files: Object.fromEntries(
+        Object.entries(files).map(([path, content]) => [
+          path,
+          createHash('sha256').update(content).digest('hex'),
+        ]),
+      ),
+    },
+    null,
+    2,
+  ),
+);
+process.stdout.write(
+  `Demo kit exported: ${target}\nCases: ${alignment.examinedCases}; compatible: ${alignment.compatibleCases}; fitness: ${alignment.fitness}\n`,
+);

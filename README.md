@@ -34,8 +34,51 @@
 15. [Ma trận kiểm thử và giới hạn đã biết · Testing matrix and known limitations](#15-ma-trận-kiểm-thử-và-giới-hạn-đã-biết--testing-matrix-and-known-limitations)
 16. [Bảo mật và quyền riêng tư · Security and privacy](#16-bảo-mật-và-quyền-riêng-tư--security-and-privacy)
 17. [Changelog và ghi chú chuyển đổi · Changelog and migration notes](#17-changelog-và-ghi-chú-chuyển-đổi--changelog-and-migration-notes)
+18. [Lịch làm việc và bộ demo báo cáo · Work calendars and report study](#18-lịch-làm-việc-và-bộ-demo-báo-cáo--work-calendars-and-report-study)
 
 ---
+
+## Pool/Lane, BPMN XML và bộ demo bằng file · File-based demonstration
+
+**Tiếng Việt.** Nút Pool/Lane trên canvas mở quản lý các bên tham gia và trách nhiệm. Pool đầu tiên bao mô hình hiện có; thêm lane, đổi tên, đổi hướng, sắp thứ tự và gán các bước đang chọn. Pool/lane hỗ trợ đổi kích thước và sao chép; phím mũi tên dịch các bước hoặc cả pool; di chuyển pool giữ nội dung; bỏ khung giữ các công việc. Sequence flow không qua pool; message flow không trở thành đường thực thi. Nếu có nhiều pool nội bộ, chọn pool cần phân tích. Pool BPMN khác với nhóm nguồn lực dùng tính công suất.
+
+**English.** The canvas Pool/Lane control manages participants and responsibility. The first pool wraps the existing model; add, rename, orient and reorder lanes or assign selected steps. Resize and copy frames; keyboard-nudge steps or entire pools; moving a pool carries its contents; removing a frame preserves steps. Sequence flow stays within a process and message flow is not control flow. Choose a pool for analysis when several internal processes exist. BPMN pools are distinct from capacity resource pools.
+
+- **Mở/xuất `.bpmn` · Import/export:** BPMN 2.0 XML với namespace chuẩn, task, none events, XOR/AND/OR theo phạm vi, lane/participant, sequence/message và BPMN DI. XML không có DI được bố trí xác định. Construct thực thi chưa hỗ trợ bị từ chối có thông báo, không bị làm phẳng. Boundary/timer, nested subprocess và message tới pool hộp đen chưa được adapter thực thi/chuyển đổi. · Standard BPMN namespaces and DI, supported tasks/events/gateways and responsibility frames. Unsupported execution semantics are rejected rather than flattened; this is not full BPMN 2.0 support.
+- **Lưu thiết bị · Device file:** `.flowculus.json` v2 khi có container; v1 tiếp tục mở được. Metadata thời gian/xác suất riêng trong BPMN dùng namespace Flowculus, các công cụ khác có thể bỏ qua. · Native JSON retains analysis settings; namespaced BPMN extensions are optional to other tools.
+- **Mining:** chọn tài liệu chuẩn/process và ánh xạ hoạt động; xem footprint, Petri, firing token và xuất PNML. Kiểm chứng tách riêng với conformance; đồ thị từ chính log không tự là quy trình chuẩn. · Choose a reference document/process and activity mapping; explore footprint, Petri firing and PNML export. Verification and log conformance are separate claims.
+- **Độ đo · Metrics:** In-degree = nguồn gửi khác nhau; incoming handoffs = tổng lượt đến. Betweenness dùng đường có hướng không trọng số; Closeness theo khoảng cách đi ra; Eigenvector dùng chiếu vô hướng; PageRank có trọng số bàn giao. Các quan hệ được suy ra từ sự kiện kế tiếp có resource khác nhau, không tự chứng minh trách nhiệm hoặc quan hệ nhân quả. · These are structural/observed measures, not productivity ratings.
+- **Định mức · Standards:** tab Điểm nghẽn nhận CSV `activity,max_service_minutes`, đo thời lượng trên sự kiện có start/end bằng cơ sở thời gian đang chọn. Không tự chứng minh giờ công hay SLA chờ. · Service standards use the selected elapsed/working clock, exclude missing starts, and do not prove hands-on labour or waiting-time SLA.
+- **So sánh · Scenarios:** nút so sánh chọn hai tài liệu, chạy engine trong worker và xuất JSON. Đây là so sánh giải tích, không tự chứng minh mức cải thiện thực nghiệm. · Analytical comparisons do not establish deployed improvements.
+
+```mermaid
+flowchart LR
+  BPMN[File BPMN chuẩn] --> REF[Mô hình tham chiếu]
+  LOG[File event log] --> DISC[DFG và Alpha]
+  DISC --> PETRI[Petri khám phá]
+  REF --> CHECK[Replay và alignment]
+  LOG --> CHECK
+  LOG --> PERF[Hiệu năng và mạng nhân sự]
+```
+
+**Bộ demo đồ án được xuất ra ngoài web · Demo assets stay outside the app.** Không còn preset IS6003 trong bundle. Các ví dụ chung chỉ nạp khi được chọn; người dùng tự vẽ/import/upload dữ liệu riêng. · Project-specific data is not bundled as an app preset.
+
+```bash
+# Từ repository root, Node 22.23+; không đổi phiên bản sản phẩm.
+# From the repository root; does not change product versions.
+pnpm demo:export
+# Mặc định: output/demo/report-study/
+# Hoặc chọn thư mục xuất / or choose an output directory:
+pnpm demo:export /absolute/path/to/demo-kit
+```
+
+Bộ báo cáo gồm mô hình As-Is/To-Be (`10_as_is`, `11_to_be`) ở dạng BPMN và JSON, hai log 20 ca, log 4 ca thử sai lệch, định mức, lịch, kết quả mong đợi và checksum. As-Is có 160 sự kiện, To-Be có 166. CT theo giờ làm việc là 101,2 và 49,6 giờ. Upload mô hình rồi upload log tương ứng. Kết quả mong đợi chỉ phục vụ đối soát, không upload để ép điểm số. Dữ liệu được tạo theo kịch bản, chưa phải số đo của doanh nghiệp. Xem [hướng dẫn demo](docs/report-study-guide.md) và [lịch làm việc](#18-lịch-làm-việc-và-bộ-demo-báo-cáo--work-calendars-and-report-study).
+
+**English.** The report kit includes As-Is/To-Be models, twenty synthetic cases per scenario (160/166 events), a separate four-case deviation log, standards, calendar, expected evidence and checksums. Mean working CT is 101.2/49.6 hours. Expected evidence is produced by the same engine, checked against scenario assertions and independent timestamp arithmetic, and has not been validated by PM4Py. It is not an input to the app or a measured company outcome.
+
+Bộ kiểm thử nhỏ độc lập dùng `pnpm demo:export:small-fixture`, xuất vào `output/demo/small-fixture/`. Bộ này có 8 ca, 48 sự kiện, 4 ca khớp, fitness 93,75%, phục vụ kiểm thử ứng dụng và ảnh minh họa bên dưới. Không dùng bộ nhỏ để giải thích số liệu của báo cáo. · The separate eight-case regression fixture is for app verification and the screenshots below. It is not the report study dataset.
+
+**Các chỉ số chất lượng · Quality definitions.** Fitness alignment = `1 − Σcost / Σ(trace length + shortest model completion cost)` với model/log move hữu hình = 1, synchronous/silent = 0. Precision prefix đếm nhãn enabled ngoài các nhãn kế tiếp quan sát, có trọng số và xét kết thúc; generalization theo `1 − mean(1/√transition frequency)` (chưa thấy: phạt 1), chỉ trên ca khớp hoàn toàn với coverage được hiển thị. Simplicity = `1/(1 + max(mean arc degree − 2, 0))`. Đây là các biến thể đã công bố, không gọi là mọi chỉ số conformance chuẩn duy nhất. · The methods and compatible-case subset are explicit; they are not interchangeable with every evaluation algorithm. Formula references: [PM4Py generalization](https://github.com/process-intelligence-solutions/pm4py/blob/master/pm4py/algo/evaluation/generalization/variants/token_based.py), [arc-degree simplicity](https://github.com/process-intelligence-solutions/pm4py/blob/master/pm4py/algo/evaluation/simplicity/variants/arc_degree.py), [OMG BPMN 2.0.2](https://www.omg.org/spec/BPMN/2.0.2/).
 
 ## 1. Giới thiệu và phạm vi · Product and scope
 
@@ -43,7 +86,7 @@
 
 - **Model**: canvas BPMN gốc (React Flow). Mỗi chỉnh sửa được ghi vào mô hình ngữ nghĩa, rồi Web Worker tính lại phân tích.
 - **Mining** (`/mining`): nạp nhật ký sự kiện (CSV, TSV, XLSX, JSON, XES), xem đồ thị directly-follows, mạng bàn giao nhân sự, biến thể, điểm nghẽn, Alpha Miner/Petri và đối chiếu log với BPMN hiện có, rồi chuyển mô hình đã khai phá sang canvas.
-- **Kiến thức** (`/knowledge`): 22 chủ đề Anh/Việt về BPMN, công thức, Mining và cách sử dụng; tìm kiếm không dấu, mục lục, sơ đồ, công thức sao chép được và ví dụ làm lại chạy bằng engine thật.
+- **Kiến thức** (`/knowledge`): 27 chủ đề Anh/Việt về BPMN, công thức, Mining và cách sử dụng; tìm kiếm không dấu, mục lục, sơ đồ, công thức sao chép được và ví dụ làm lại chạy bằng engine thật.
 - **Dự án** (`/about`): giới thiệu sản phẩm, hai nhà phát triển và liên kết GitHub đã xác minh.
 
 **Nhà phát triển · Developers**: [Chu Nam Thắng](https://github.com/thang-uit) (`thang-uit`) và [Trịnh Thuận Huê](https://github.com/hue-trinh) (tên hiển thị · display handle: `hue.trinh`). Kho mã · repository: [thang-uit/Flowculus](https://github.com/thang-uit/Flowculus).
@@ -52,7 +95,7 @@ Mọi kết quả đều kèm mức chất lượng (`exact`, `assumption`, `sim
 
 **English.** Flowculus is a browser-only, zero-backend workspace for drawing business processes, mining them from event logs and analysing cycle time quantitatively, following chapter 7 of _Fundamentals of Business Process Management_ (Dumas et al., 2nd ed.). **Model** mode is a native React Flow BPMN canvas whose edits update a semantic model that a Web Worker re-analyses; **Mining** (`/mining`) loads CSV/TSV/XLSX/JSON/XES event logs, shows the directly-follows graph, resource handoff network, variants, bottlenecks, Alpha Miner/Petri candidates and conformance against the current BPMN model. Every result carries a quality (`exact`, `assumption`, `simulation-required`) plus the findings behind it; when no analytic value exists, the number is withheld rather than guessed. Flowculus is not a simulator and does not implement full BPMN 2.0.
 
-The **Knowledge** page (`/knowledge`) provides 22 bilingual topics, accent-insensitive search, contents navigation, diagrams, copyable formulas and an isolated rework example using the actual engine. **About** (`/about`) introduces the product, its two developers and the verified repository links. Click the Flowculus brand to open project navigation from either workspace; the reading pages have their own navigation, language and theme controls.
+The **Knowledge** page (`/knowledge`) provides 27 bilingual topics, accent-insensitive search, contents navigation, diagrams, copyable formulas and an isolated rework example using the actual engine. **About** (`/about`) introduces the product, its two developers and the verified repository links. Click the Flowculus brand to open project navigation from either workspace; the reading pages have their own navigation, language and theme controls.
 
 **Điều hướng · Navigation.** Chuyển **Mô hình / Khai phá** bằng thanh chọn trên header; menu logo chỉ chứa **Kiến thức, Dự án và GitHub**, không lặp lại hai chế độ. Các liên kết tới không gian vẽ trên trang đọc dùng cùng tên **Mô hình**. · Use the header switch for **Model / Mining**. The brand menu contains only **Knowledge, About and GitHub**. Reading pages use the same **Model** label when linking back to the editor.
 
@@ -100,26 +143,27 @@ The **Knowledge** page (`/knowledge`) provides 22 bilingual topics, accent-insen
 | Phân tích · Analysis                     | CT, TCT, CTE (tỉ lệ), chi phí, CPM, chuỗi găng, đếm đường đi, công suất theo nhóm nguồn lực, hàng đợi M/M/c, định luật Little, chất lượng theo từng chỉ số · CT, TCT, CTE (ratio), cost, CPM, critical chain, path count, capacity per pool, M/M/c queues, Little's Law, per-metric quality                                                                                         |
 | Chẩn đoán · Diagnostics                  | Mã ổn định có mức độ, ảnh hưởng chất lượng và đường dẫn; bấm để nhảy tới phần tử · stable codes with severity, quality impact and path; click to focus the element                                                                                                                                                                                                                  |
 | draw.io                                  | Nhập file thường, nén, nhiều trang; xuất bằng cách vá XML gốc (giữ ngữ nghĩa, không cam kết giống từng byte) · import plain, compressed and multi-page files; export patches the original XML (semantic-preserving, not byte-for-byte)                                                                                                                                              |
-| Xuất · Export                            | `.drawio`, `.flowculus.json`, CSV nút/cạnh, SVG, PNG, JPEG, báo cáo PDF và báo cáo ảnh; tệp mô hình/ảnh sơ đồ không cần chờ worker, báo cáo phân tích cần kết quả hiện tại · `.drawio`, `.flowculus.json`, nodes/edges CSV, SVG, PNG, JPEG, PDF and image reports; model/diagram files do not wait for analysis, generated reports require a current result                         |
-| Khai phá · Mining                        | URL `/mining`, 4 log mẫu, CSV/XLSX/JSON/XES, ánh xạ cột, DFG, biến thể, điểm nghẽn, mạng Resource và các độ đo trung tâm, Alpha Miner/Petri ứng viên, replay với BPMN hiện có, DFG → BPMN có đánh dấu suy luận · direct route, sample/uploaded logs, mapping, DFG, variants, bottlenecks, resource centrality, Alpha/Petri candidates, BPMN conformance and inferred DFG conversion |
+| Xuất · Export                            | `.bpmn`, `.drawio`, `.flowculus.json`, CSV nút/cạnh, SVG, PNG, JPEG, báo cáo PDF và báo cáo ảnh; tệp mô hình/ảnh sơ đồ không cần chờ worker, báo cáo phân tích cần kết quả hiện tại · `.bpmn`, `.drawio`, `.flowculus.json`, nodes/edges CSV, SVG, PNG, JPEG, PDF and image reports; model/diagram files do not wait for analysis, generated reports require a current result       |
+| Khai phá · Mining                        | URL `/mining`, 3 log mẫu, CSV/XLSX/JSON/XES, ánh xạ cột, DFG, biến thể, điểm nghẽn, mạng Resource và các độ đo trung tâm, Alpha Miner/Petri ứng viên, replay với BPMN hiện có, DFG → BPMN có đánh dấu suy luận · direct route, sample/uploaded logs, mapping, DFG, variants, bottlenecks, resource centrality, Alpha/Petri candidates, BPMN conformance and inferred DFG conversion |
 | Giao diện · UI                           | Sáng/tối, Anh/Việt, 320 px → màn hình rộng, bàn phím, giảm chuyển động · light/dark, English/Vietnamese, 320 px to wide screens, keyboard, reduced motion                                                                                                                                                                                                                           |
 
-**Thao tác Mining · Mining workflow.** Mở `/mining`, chọn log mẫu hoặc tải CSV/TSV/XLSX/JSON/XES, rồi xác nhận ánh xạ mã ca, hoạt động và thời điểm hoàn thành. Với CSV, ba cột tối thiểu là `caseId`, `activity`, `timestamp`; `startTimestamp` và `resource` là tuỳ chọn. Mỗi trường ánh xạ phải dùng một cột riêng; dòng thiếu dữ liệu bắt buộc bị bỏ qua, thời điểm bắt đầu sai được thống kê và không dùng để tính thời gian. Trên desktop có thể kéo hai vạch giữa ba vùng để đổi độ rộng; dùng phím ←/→ (giữ Shift để tăng bước), Home/End khi vạch được focus. Trên màn hình nhỏ, ba vùng xếp dọc. Tab **Điểm nghẽn** xếp hạng thời gian trung bình theo chặng bàn giao và hoạt động; thiếu thời điểm bắt đầu thì thời gian chặng có thể gồm cả thời gian xử lý bước sau. Tab **Đối chiếu BPMN** cần mô hình chuẩn hiện có đã xác nhận; sai thứ tự gợi ý khả năng nhảy bước, lặp hoặc sai nhánh, chứ không tự xác định chắc chắn bước nào đã bị bỏ. Các bước hợp lệ kế tiếp và ca ví dụ giúp người dùng kiểm tra log với quy trình chuẩn.
+**Thao tác Mining · Mining workflow.** Mở `/mining`, chọn log mẫu hoặc tải CSV/TSV/XLSX/JSON/XES, rồi xác nhận ánh xạ mã ca, hoạt động và thời điểm hoàn thành. Với CSV, ba cột tối thiểu là `caseId`, `activity`, `timestamp`; `startTimestamp` và `resource` là tuỳ chọn. Mỗi trường ánh xạ phải dùng một cột riêng; dòng thiếu dữ liệu bắt buộc bị bỏ qua, thời điểm bắt đầu sai được thống kê và không dùng để tính thời gian. Trên desktop có thể kéo hai vạch giữa ba vùng để đổi độ rộng; dùng phím ←/→ (giữ Shift để tăng bước), Home/End khi vạch được focus. Trên màn hình nhỏ, ba vùng xếp dọc. Tab **Điểm nghẽn** xếp hạng thời gian trung bình theo chặng bàn giao và hoạt động; thiếu thời điểm bắt đầu thì thời gian chặng có thể gồm cả thời gian xử lý bước sau. Tab **Đối chiếu BPMN** cho chọn tài liệu chuẩn đã xác nhận và process/pool, rồi ánh xạ hoạt động từ log sang task. Tìm kiếm xét toàn bộ tên hoạt động, mỗi lần hiển thị tối đa 100 hàng ánh xạ. Alignment hiển thị một cách giải thích tối ưu có chi phí thấp nhất; có thể tồn tại cách giải thích tối ưu khác nên không tự xác định chắc chắn bước nào đã bị bỏ.
 
-**English.** Open `/mining`, choose a sample or upload CSV/TSV/XLSX/JSON/XES, then map case ID, activity and completion timestamp. The minimum CSV columns are `caseId`, `activity`, `timestamp`; `startTimestamp` and `resource` are optional. Each mapping must use a distinct column; rows missing required data are skipped, while invalid start times are counted and excluded from timing. On desktop, drag either divider to resize the three regions; focused dividers support Left/Right (Shift for larger steps) and Home/End. Smaller screens stack the regions. **Bottlenecks** ranks mean hand-over and service times; without a start timestamp, a hand-over may also include the next step's service time. **BPMN conformance** requires the currently open confirmed reference model. An unexpected order can suggest a skipped step, repetition or wrong branch, but does not prove exactly which step was omitted; the suggested next steps and example cases support manual review.
+**English.** Open `/mining`, choose a sample or upload CSV/TSV/XLSX/JSON/XES, then map case ID, activity and completion timestamp. The minimum CSV columns are `caseId`, `activity`, `timestamp`; `startTimestamp` and `resource` are optional. Each mapping must use a distinct column; rows missing required data are skipped, while invalid start times are counted and excluded from timing. On desktop, drag either divider to resize the three regions; focused dividers support Left/Right (Shift for larger steps) and Home/End. Smaller screens stack the regions. **Bottlenecks** ranks mean hand-over and service times; without a start timestamp, a hand-over may also include the next step's service time. **BPMN conformance** selects a confirmed open reference document and process/pool, with explicit log-activity to task mapping. Search covers the full activity vocabulary while mounting at most 100 mapping rows at a time. Alignment shows one minimum-cost explanation; other optimal explanations may exist, so it does not prove which business step was omitted.
 
 **Tập con BPMN được hỗ trợ · Supported BPMN subset**
 
-| Phần tử · Element                                                                                               | Trạng thái · Status                                                                                          |
-| :-------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- |
-| Start/end event, task, collapsed subprocess (xem như một hoạt động · treated as one activity)                   | Hỗ trợ · supported                                                                                           |
-| Intermediate event có thời gian · timed intermediate event                                                      | Hỗ trợ như độ trễ · supported as a delay                                                                     |
-| XOR, AND, OR gateway dạng khối (single-entry/single-exit)                                                       | Hỗ trợ; điểm hội tụ phải được chứng minh hoặc ghép rõ · supported; joins must be proven or explicitly paired |
-| Vòng lặp/rework qua gateway · loops and rework                                                                  | Hỗ trợ qua điểm bất động kỳ vọng · supported via expected-visit fixed point                                  |
-| Event-based, complex gateway khi tách nhánh · as splits                                                         | `simulation-required`                                                                                        |
-| Nhiều start event, khối không cấu trúc, join không khớp · multiple starts, unstructured blocks, unmatched joins | `simulation-required` + chẩn đoán · diagnostic                                                               |
-| Boundary event, terminate end event                                                                             | Giữ trong file, không mô hình hoá (`assumption`) · kept in the file, not modelled                            |
-| Pool/lane, data object, annotation, message flow, association                                                   | Giữ khi xuất, bỏ qua khi phân tích · preserved on export, ignored by analysis                                |
+| Phần tử · Element                                                                                               | Trạng thái · Status                                                                                                  |
+| :-------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------- |
+| Start/end event, task, collapsed subprocess (xem như một hoạt động · treated as one activity)                   | Hỗ trợ · supported                                                                                                   |
+| Intermediate event có thời gian · timed intermediate event                                                      | Hỗ trợ như độ trễ · supported as a delay                                                                             |
+| XOR, AND, OR gateway dạng khối (single-entry/single-exit)                                                       | Hỗ trợ; điểm hội tụ phải được chứng minh hoặc ghép rõ · supported; joins must be proven or explicitly paired         |
+| Vòng lặp/rework qua gateway · loops and rework                                                                  | Hỗ trợ qua điểm bất động kỳ vọng · supported via expected-visit fixed point                                          |
+| Event-based, complex gateway khi tách nhánh · as splits                                                         | `simulation-required`                                                                                                |
+| Nhiều start event, khối không cấu trúc, join không khớp · multiple starts, unstructured blocks, unmatched joins | `simulation-required` + chẩn đoán · diagnostic                                                                       |
+| Boundary event, terminate end event                                                                             | Giữ trong file, không mô hình hoá (`assumption`) · kept in the file, not modelled                                    |
+| Pool/lane (membership)                                                                                          | Giữ trách nhiệm và phạm vi process; không cộng thời gian khung · responsibility and process scope, no frame duration |
+| Data object, annotation, message flow, association                                                              | Giữ khi xuất, không là control flow · preserved on export, excluded from control flow                                |
 
 ## 3. Hình ảnh và sơ đồ · Screenshots and diagrams
 
@@ -144,6 +188,14 @@ Ví dụ bên dưới là mô hình được chủ động nhập vào canvas. �
 
 </details>
 
+Pool/Lane dùng hộp thoại và ô chọn dùng chung; chọn rõ process trước khi phân tích. · Pool/Lane uses the shared dialog and select controls with explicit process scope.
+
+![Quản lý Pool/Lane · Pool/Lane management](docs/images/pools-lanes.webp)
+
+Ví dụ Mining dưới đây dùng bộ demo tổng hợp bên ngoài: fitness alignment 93,75%, 4/8 ca khớp hoàn toàn. Đây là kết quả của đầu vào minh họa, không phải số đo triển khai thực tế. · This external synthetic example yields 93.75% alignment fitness with 4/8 exactly compatible cases; it is not a measured production outcome.
+
+![Đối chiếu quy trình chuẩn · Reference alignment](docs/images/mining-reference.webp)
+
 ![Thư viện kiến thức · Knowledge library](docs/images/knowledge.webp)
 
 ![Ví dụ làm lại tương tác · Interactive rework example](docs/images/rework.webp)
@@ -165,7 +217,7 @@ Các ký hiệu được đối chiếu với [OMG BPMN 2.0.2](https://www.omg.o
 
 **Chọn / Bàn tay.** Chọn cho phép kéo hình và kéo vùng trống để chọn nhiều phần tử trên desktop. Bàn tay kéo nền hoặc hình để di chuyển khung nhìn, không dịch mô hình; tay nắm chỉnh hình/đường tạm ẩn. Trên màn hình cảm ứng, kéo nền ưu tiên di chuyển khung nhìn. Cả desktop và thanh công cụ di động dùng cùng nút chuyển chế độ, có tooltip hướng dẫn. · Select moves shapes and provides desktop marquee selection. Hand pans the view without moving model geometry and hides editing handles. Touch background drags pan the view. Both layouts share the same tool switch and explanatory tooltips.
 
-**Giới hạn.** Gateway theo sự kiện/phức tạp có ký hiệu và giữ dữ liệu nhưng chưa được engine giải tích thực thi; intermediate event không có trigger cụ thể; subprocess được tính như một hoạt động tổng hợp. Mục làm lại là preset tham số `r` riêng của Flowculus, không phải loại phần tử BPMN mới. Chưa vẽ pool/lane nên luồng thông điệp chưa được xác nhận đúng ranh giới bên tham gia. Flowculus hỗ trợ một tập con và không tuyên bố tuân thủ toàn bộ BPMN. · Event-based/complex execution, typed intermediate-event triggers, nested subprocess execution and participant-boundary validation are outside the supported subset. Rework is a Flowculus task preset. This is not a claim of full BPMN conformance.
+**Giới hạn.** Gateway theo sự kiện/phức tạp có ký hiệu và giữ dữ liệu nhưng chưa được engine giải tích thực thi; intermediate event không có trigger cụ thể; subprocess được tính như một hoạt động tổng hợp. Mục làm lại là preset tham số `r` riêng của Flowculus, không phải loại phần tử BPMN mới. Pool/lane có cấu trúc riêng và validation ranh giới; chưa tính thời gian phối hợp thông điệp giữa nhiều pool. Flowculus hỗ trợ một tập con và không tuyên bố tuân thủ toàn bộ BPMN. · Event-based/complex execution, typed intermediate-event triggers, nested subprocess execution and message-collaboration execution are outside the supported subset. Rework is a Flowculus task preset. This is not a claim of full BPMN conformance.
 
 ### Công thức, đường nối và tên tệp · Equations, connectors and file names
 
@@ -327,7 +379,7 @@ Mô hình trống có trạng thái `empty`: CT/TCT/CTE/chi phí là `null` và 
 
 **Thao tác canvas · Canvas editing.** Chọn các shape rồi `Cmd/Ctrl+C`, `X`, `V` hoặc `D` để sao chép/cắt/dán/nhân bản; `Cmd/Ctrl+A` chọn tất cả, phím mũi tên dịch 1 px (`Shift` = 10 px), Delete xóa, `Cmd/Ctrl+Z`/`Shift+Z` hoàn tác/làm lại. Clipboard nội bộ được kiểm tra cấu trúc, tạo ID mới, chỉ giữ edge có đủ hai đầu và ánh xạ lại join. Menu chuột phải trên hình hỗ trợ copy/cut/paste, duplicate, align, distribute, snap-to-grid, zoom tới vùng chọn và xóa. Chọn edge để đổi kiểu gấp khúc/thẳng/cong, đổi shape và chọn điểm đầu/cuối Trên/Phải/Dưới/Trái hoặc Tự động trong Inspector; đổi sang shape khác sẽ xóa điểm uốn cũ để tránh đường chạy lệch. Kéo tay nắm giữa đoạn để chỉnh đường; nhấp đúp lên edge để thêm điểm uốn, kéo điểm để chỉnh, Alt-nhấp hoặc Delete để xóa. SVG, CSV, JSON và draw.io giữ thông tin đường nối theo khả năng của từng định dạng. Công thức trong bảng kết quả có nút sao chép. · Canvas shortcuts, validated clipboard cloning, draggable connector bend points, endpoint reconnection, route styles, export round-trip and copyable formulas are supported.
 
-- **Nhập · Import**: file thường, nén (deflate-raw + base64 + URI) và nhiều trang. Hình không có metadata `flowculus-*` được phân loại từ style và **gắn cờ suy luận** (`flowculus-inferred-*`): loại phần tử, loại gateway, loại luồng, xác suất đọc từ nhãn. Ảnh, chữ, pool/lane là phần trình bày. Nhập CSV và mô hình khai phá cũng gắn cờ tương tự · plain, compressed and multi-page files; shapes without Flowculus metadata are classified from their style and flagged as inferred; CSV import and mined models are flagged the same way.
+- **Nhập · Import**: file thường, nén (deflate-raw + base64 + URI) và nhiều trang. Hình không có metadata `flowculus-*` được phân loại từ style và **gắn cờ suy luận** (`flowculus-inferred-*`): loại phần tử, loại gateway, loại luồng, xác suất đọc từ nhãn. Ảnh/chữ là phần trình bày; Pool/Lane có metadata Flowculus được khôi phục thành container có membership. Container draw.io khác vẫn được bảo toàn trong XML. Nhập CSV và mô hình khai phá cũng gắn cờ tương tự · plain, compressed and multi-page files; shapes without Flowculus metadata are classified from their style and flagged as inferred; CSV import and mined models are flagged the same way.
 - **Cổng xác nhận · Semantic gate**: còn mục chưa xác nhận thì mọi lệnh **Export** và **Share** bị chặn bởi một hộp thoại song ngữ có số lượng và nút "Review in Inspector". Inspector cho xác nhận từng mục, hoặc "Confirm all remaining…" qua bước xác nhận thứ hai. Xác nhận ghi `flowculus-confirmed`. Lớp xuất cấp thấp chỉ nhận `ConfirmedProcessModel` và kiểm tra lại. Chỉnh sửa, phân tích và bản nháp cục bộ vẫn hoạt động khi bị chặn · while anything is pending, Export and Share open a bilingual blocked dialog with the count and "Review in Inspector"; confirm per item or "Confirm all remaining…" behind a second step; confirmation records `flowculus-confirmed`; the low-level exporter accepts only a `ConfirmedProcessModel` and re-checks it; editing, analysis and the local draft keep working.
 - **Xuất · Export (round-trip)**: vá XML gốc. Giữ nguyên ô không xác định, `UserObject`, style, nhãn HTML, waypoint của luồng không đổi và các trang khác (trang nén vẫn nén). Trang đang sửa được ghi **không nén**. Phỏng đoán chưa xác nhận **không** bao giờ được ghi lại như thuộc tính tường minh; ngữ nghĩa đã xác nhận và ghép join thì được ghi để lần nhập sau không cần xác nhận lại. Đây là **bảo toàn ngữ nghĩa**, không phải "lossless từng byte" · patches the original XML; keeps unknown cells, styles, HTML labels, waypoints of unchanged flows and other pages (still compressed); the edited page is written uncompressed; unconfirmed guesses are never written back as explicit attributes, confirmed ones are. This is **semantic preservation**, not byte-for-byte.
 
@@ -354,26 +406,26 @@ Flowculus/
 │   │   ├── image-trace/         review panel for local OpenCV candidates
 │   │   ├── mining/              source, filters, map, insights, column mapping
 │   │   ├── scenario/            scenario fields, capacity table, queue summary
-│   │   ├── semantics/           gate dialog, review panel, confirmed chip
-│   │   └── ui/                  shared primitives (tooltip, quality badge, error boundary…)
+│   │   └── semantics/           gate dialog, review panel, confirmed chip
 │   ├── lib/                     store, hooks, exports, report content, i18n/, worker supervisor
 │   │   ├── knowledge/           typed catalog, search, project facts and example fixtures
 │   │   └── i18n/knowledge/      English/Vietnamese articles and reading UI copy
 │   ├── scripts/                 verify-worker-bundle.mjs (build guard)
-│   └── workers/                 analysis, mining, image-trace workers
+│   └── workers/                 analysis, mining, image-trace, XLSX, comparison
 ├── packages/
 │   ├── analysis-engine/         formulas, structure proofs, quality, CPM, chain, capacity, queues
 │   ├── validation/              schema, diagnostics, graph checks, semantic confirmation
 │   ├── process-model/           domain types and metadata keys
+│   ├── bpmn-adapter/            bounded standard BPMN XML/DI import/export
 │   ├── drawio-adapter/          draw.io decode/classify/patch export
 │   ├── file-formats/            .flowculus.json, CSV, SVG, auto layout
-│   ├── process-mining/          log parsing, DFG, variants, bottlenecks, DFG → BPMN
+│   ├── process-mining/          logs, DFG, Alpha/Petri, reachability, alignment, quality, standards
 │   ├── formula-renderer/        formula AST
 │   ├── graph-layout/            layered layout, orthogonal routing
 │   └── xml-tree/                dependency-free XML
 ├── docs/                        architecture.md, adr/
 ├── AGENTS.md                    contributor and agent rules (English)
-├── scripts/                     dọn cache cục bộ có giới hạn · scoped local cache cleanup
+├── scripts/                     scoped cache cleanup, external synthetic demo export
 └── .nvmrc, turbo.json, vitest.config.mts
 ```
 
@@ -419,7 +471,7 @@ flowchart LR
   Gates --> Preview["Local production review → Vercel Preview"]
 ```
 
-Kết quả và giới hạn đợt rà soát: [báo cáo GitNexus và chuẩn bị Vercel](docs/review-gitnexus-2026-10-25.md). · Findings and limits: [GitNexus and Vercel preparation review](docs/review-gitnexus-2026-10-25.md).
+Kết quả mới nhất: [rà soát số liệu, bộ demo và bản phát hành](docs/review-2026-10-28.md). Tham khảo thêm [đợt GitNexus và chuẩn bị Vercel trước đó](docs/review-gitnexus-2026-10-25.md). · Latest findings and limits: [report, demo and release review](docs/review-2026-10-28.md), with the earlier Vercel preparation review retained for context.
 
 ## 10. Biến môi trường · Environment variables
 
@@ -432,7 +484,8 @@ Flowculus **không cần file env hay biến môi trường ứng dụng**. Cấ
 - **Analysis worker** (`createWorkerSupervisor`): yêu cầu mới nhất thắng; yêu cầu cũ chạy quá 750 ms bị huỷ bằng cách khởi động lại worker; quá 20 s thì dừng và báo; worker lỗi được khởi động lại tối đa 2 lần liên tiếp rồi mới chuyển sang tính trên luồng chính · latest request wins, stale runs over 750 ms are cancelled by restarting the worker, 20 s timeout, at most 2 consecutive restarts before the main-thread fallback.
 - **Mining worker** (`useMiningClient`): timeout 90 s, nút **Cancel** khi đang tải, khởi động lại có giới hạn. Worker giữ nhật ký nên khi huỷ/lỗi, phiên khai phá được xoá và cần nạp lại · 90 s timeout, a Cancel button while loading, bounded restart; aborts clear the session because the worker holds the log.
 - Mining chuẩn bị trace, biến thể, số liệu và DFG gốc một lần cho mỗi log; kéo bộ lọc chỉ dựng lại bản đồ đã lọc. Nạp log mới xoá kết quả đã chuẩn bị của log cũ; bảng nhập thô được giải phóng sau khi ánh xạ thành công. · Mining prepares traces, variants, statistics and the original DFG once per log; filters reuse them. Loading another log invalidates the prepared result and successful mapping releases the raw table.
-- Build kiểm tra đủ bốn worker (analysis, mining, Image Trace, XLSX) đã được đóng gói thành JavaScript; Image Trace worker chỉ tải khi nhận dạng, giới hạn 45 s và hủy bằng cách terminate. Gói OpenCV.js khoảng 25 MB chưa nén nằm ngoài đường tải ban đầu. · Workers are separately bundled; image detection loads lazily, has a 45 s timeout and terminates on cancel. Its OpenCV chunk is about 25 MB uncompressed and outside the initial load.
+- Build kiểm tra đủ năm worker (analysis, mining, Image Trace, XLSX, comparison) đã được đóng gói thành JavaScript; Image Trace worker chỉ tải khi nhận dạng, giới hạn 45 s và hủy bằng cách terminate. Gói OpenCV.js khoảng 25 MB chưa nén nằm ngoài đường tải ban đầu. · Workers are separately bundled; image detection loads lazily, has a 45 s timeout and terminates on cancel. Its OpenCV chunk is about 25 MB uncompressed and outside the initial load.
+- **Comparison worker**: chạy hai mô hình giải tích đã xác nhận trong worker riêng, giới hạn 20 s; đổi lựa chọn hoặc đóng hộp thoại sẽ dừng worker. Thay mô hình/cấu hình làm kết quả cũ không còn hợp lệ. · Runs two confirmed model scenarios in a separate worker with a 20 s timeout; changing the selection or closing cancels it, and model/settings changes invalidate stale results.
 - **Bản nháp · Drafts**: lưu tất cả tab và tab đang chọn trong IndexedDB (dự phòng localStorage), debounce 650 ms và checkpoint khi rời trang. Bản nháp đơn cũ được chuyển đổi, giữ mô hình và nguồn draw.io. Undo/redo giữ tối đa 100 bước riêng mỗi tab trong bộ nhớ. Khi Web Locks khả dụng, chỉ một cửa sổ editor ghi bản nháp; cửa sổ khác báo xung đột và vẫn lưu file được. · All open tabs and the active tab are persisted with a 650 ms debounce and a page-exit checkpoint. Existing single drafts migrate without discarding user content. Each tab has a bounded, memory-only undo history. Web Locks prevents concurrent browser editor windows from silently overwriting the shared session; secondary windows display a conflict and retain device saving.
 - **Trang đọc · Reading pages**: ngôn ngữ dùng store nhẹ và lưu tùy chọn cục bộ; đổi theme dùng provider chung. Nội dung không gọi API tìm kiếm và không tải OpenCV/XLSX. Ví dụ tính toán chỉ tải khi cuộn gần chương tương ứng, chạy độc lập với bản vẽ. Mở Kiến thức/Dự án từ workspace sẽ mở tab mới, giữ nguyên mô hình và phiên Mining (log, bộ lọc, kết quả) ở tab gốc. Khi rời editor, bản nháp vẫn được checkpoint. · Reading preferences are lightweight and shared, search is local, and the isolated calculation example loads near its chapter. Knowledge/About links from the workspace open a separate tab, keeping the live model and Mining session (log, filters, results) in the original tab. Leaving the editor also checkpoints the latest draft.
 - **CSV mô hình · Model CSV**: chọn cặp nút/cạnh theo thứ tự bất kỳ; ô số sai được báo theo bảng/dòng/cột. CSV giữ các trường số, tiền tệ, metadata ngữ nghĩa và điểm uốn; dùng `.flowculus.json` để sao lưu hợp đồng mô hình đầy đủ · select nodes/edges in either order; invalid numbers report table/row/column. CSV preserves supported numeric fields, currency, semantic metadata and bend points; use `.flowculus.json` for a complete model backup.
@@ -488,13 +541,15 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 
 **Dependency.** Đã cập nhật bản vá Zustand, PostCSS và Prettier; bộ kiểu Node khớp Node 22. ESLint 9.39.5 (chỉ công cụ phát triển) đã hết hỗ trợ, nhưng các plugin `react`, `jsx-a11y` và `import` của cấu hình Next hiện chưa khai báo hỗ trợ ESLint 10. Giữ phiên bản tương thích, không ép peer dependency. React 19.2/TypeScript 5/Vitest 4 vẫn giữ các phiên bản đang kiểm chứng; nâng major cần đợt chuyển đổi riêng. · Patch updates are applied; Node types match production. ESLint 9 remains a development-only compatibility exception pending plugin support for ESLint 10. Runtime and major toolchain upgrades require a separate migration.
 
-**Giới hạn đã biết · Known limitations**: chưa có CSP (cần nonce cho script của Next.js); chưa có test e2e tự động trong CI (kịch bản Playwright chạy thủ công); không có mô phỏng; pool/lane không được vẽ; boundary event không được mô hình hoá; xuất PDF dùng hộp thoại in của trình duyệt. · No CSP yet, no automated e2e in CI, no simulation, pools/lanes not drawn, boundary events not modelled, PDF uses the browser print dialog.
+**Giới hạn đã biết · Known limitations**: chưa có CSP (cần nonce cho script của Next.js); chưa có test e2e tự động trong CI (kịch bản Playwright chạy thủ công); không có mô phỏng; pool/lane có editor, không thực thi phối hợp thông điệp; boundary event không được mô hình hoá; xuất PDF dùng hộp thoại in của trình duyệt. · No CSP yet, no automated e2e in CI, no simulation, pool/lane editor with no message-collaboration execution, boundary events not modelled, PDF uses the browser print dialog.
 
 **Image Trace và draw.io-like editing.** OpenCV là bộ nhận dạng hình học gần đúng, không chứng minh BPMN đúng; review/validation vẫn bắt buộc. Chưa đọc đầu mũi tên, chữ hay ký hiệu XOR/AND/OR; sơ đồ đi ngược có thể bị đảo chiều. Nét hở có thể làm thiếu hình hoặc nối sai; giao điểm nhiều nhánh có thể bị bỏ qua. Canvas có clipboard, nudge, route thủ công và đổi đầu nối bằng cách kéo hoặc chọn trong Inspector. Sao chép riêng màu/kiểu dáng shape chưa có vì model hiện chưa lưu style riêng cho từng shape. · OpenCV is approximate; review remains required. Arrowheads, text and gateway markers are not read; reversed drawings can get the wrong direction, broken strokes can miss shapes or create wrong connectors, and ambiguous crossings can be omitted. Shape style copying is unsupported because the model has no per-shape visual style yet.
 
-**Giới hạn Mining · Mining limits.** XLSX chỉ đọc trang đầu, tối đa 10 MB; log tối đa 500.000 dòng. Alpha Miner cổ điển đưa ra _place ứng viên_, không bảo đảm tìm đúng vòng lặp ngắn, nhiễu hoặc nhánh không thấy trong log. Mạng Resource và độ đo trung tâm mô tả bàn giao quan sát được, không chứng minh trách nhiệm hay nguyên nhân. Tab **Đối chiếu BPMN** so log với mô hình đang mở bằng replay token cho task/subprocess và gateway XOR/AND đã khai báo; tên hoạt động phải khớp, mô hình dùng ngữ nghĩa không hỗ trợ hoặc vượt giới hạn sẽ không có điểm. Tối đa 2.000 ca, 20.000 sự kiện và 500 trạng thái replay được xét; số ca bỏ qua được hiển thị. Đồ thị khám phá từ chính log không được dùng làm chuẩn để kết luận vi phạm. Khi chia sẻ, trình duyệt gửi tệp `.flowculus.json` nếu hỗ trợ chia sẻ tệp, còn lại tải tệp về; URL `/mining` chỉ mở tab, không chứa mô hình hoặc log.
+**Giới hạn Mining · Mining limits.** XLSX đọc trang đầu tối đa 10 MB, log tối đa 500.000 dòng. Alpha cổ điển giới hạn 16 hoạt động/2.000 ứng viên; self/short loop có thể làm Petri/replay không khả dụng. Petri verification duyệt tối đa 2.000 marking với giới hạn tăng token; chạm trần trả chưa kết luận. Alignment tối ưu chi phí đơn vị tối đa 200 ca, 10.000 sự kiện, 4.000 trạng thái xét mỗi trace; fitness bị giữ lại nếu không phân tích đủ. UI ghi phương pháp, coverage và một cách giải thích tối ưu, không khẳng định duy nhất bước bị bỏ. Quy trình chuẩn được chọn độc lập với mô hình khám phá. Gửi tới canvas vẫn là DFG → BPMN dự thảo, không phải Petri → BPMN bảo toàn hành vi.
 
-**English.** XLSX reads the first sheet only, up to 10 MB; event logs are capped at 500,000 rows. Classical Alpha Miner produces candidate places and cannot reliably recover short loops, noise or unseen branches. Resource centrality describes observed handoffs, not responsibility or causation. The **BPMN conformance** tab replays the log against the currently open model for tasks/subprocesses and declared XOR/AND gateways; activity names must match. Unsupported semantics or exceeded bounds withhold a score. Replay examines up to 2,000 cases, 20,000 events and 500 states, with omitted cases reported. The discovered graph is not treated as a normative reference. Share sends a `.flowculus.json` file where file sharing is supported and otherwise downloads it; `/mining` selects the tab but carries neither model nor log.
+BPMN → Petri/conformance hẹp hơn phân tích CT: tối đa 120 flow node/220 sequence flow, hỗ trợ routing XOR/AND, không nhận OR, rework dạng tham số hay thực thi message flow. Chưa có nhập PNML, chuyển Petri tùy ý sang BPMN, kiểm chứng liveness/invariant tổng quát, so sánh log với log hoặc gắn thẻ BPR. · BPMN → Petri/conformance has a narrower subset than CT analysis: at most 120 flow nodes/220 sequence flows, XOR/AND routing, no OR, parameter-based rework or message execution. PNML import, arbitrary Petri → BPMN conversion, general liveness/invariants, log-vs-log comparison and BPR tagging are not implemented.
+
+**English.** XLSX reads the first sheet up to 10 MB; logs are capped at 500,000 rows. Classical Alpha is bounded to 16 activities/2,000 candidates and may withhold Petri/replay for self/short loops. Verification explores at most 2,000 markings with token-growth bounds; cut-offs are inconclusive. Unit-cost optimal alignment examines at most 200 cases, 10,000 events and 4,000 states per trace; incomplete analysis withholds fitness. The view declares the method, coverage and one optimal explanation. The chosen approved reference is separate from discovery. Send to canvas remains inferred DFG → BPMN, not a behaviour-preserving Petri conversion.
 
 ## 16. Bảo mật và quyền riêng tư · Security and privacy
 
@@ -505,6 +560,10 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 - Không theo dõi file env; không đưa secret vào repository · no tracked environment files or committed secrets.
 
 ## 17. Changelog và ghi chú chuyển đổi · Changelog and migration notes
+
+- **2026-10-28:** đồng bộ lịch làm việc và hai bộ demo, dùng thư mục xuất được Git bỏ qua. Sửa ánh xạ nhãn đặc biệt và loại trừ khả năng sự kiện ngoài chuẩn trùng mã task. Kiến thức phân biệt fitness alignment với tỷ lệ ca khớp, giải thích giới hạn của Petri và dữ liệu tổng hợp. · Synchronized calendars and demo exports, isolated special activity labels from task IDs, and clarified conformance and verification scope.
+
+- **2026-10-27:** thêm Pool/Lane và phạm vi process, BPMN XML có giới hạn, bằng chứng Petri/alignment, định mức xử lý và so sánh hai mô hình trong worker. Thêm bốn chủ đề Kiến thức; giữ theme vàng/trung tính, Plus Jakarta Sans và các control dùng chung. Bộ demo đồ án chuyển thành file tổng hợp xuất ngoài bundle; ảnh workspace/knowledge được chụp lại từ bản production cục bộ. Không thêm dependency production bên ngoài cho BPMN/Petri. · Added scoped collaboration, bounded BPMN XML, Petri/alignment evidence, service standards and worker-based analytical scenario comparison, with four Knowledge topics and refreshed production captures. The incumbent UI remains; project-specific demo files stay outside the web bundle.
 
 - Thêm workspace nhiều quy trình, đặt tên, đóng có xác nhận, lưu thiết bị và tự lưu file theo khả năng trình duyệt; bảo toàn mô hình cũ khi import/Mining. Tách dịch vụ tài liệu, lưu trữ và giao diện; khôi phục bản nháp cũ và giữ ảnh đúng tab. File JSON thêm `drawioPageIndex` tùy chọn để giữ trang nguồn đang mở; file cũ mặc định trang đầu. · Added independent process tabs, naming, guarded closing, device saving and opt-in native file auto-save. Imports/Mining preserve existing work. Migrates legacy drafts and isolates photos. The additive `drawioPageIndex` JSON field retains the selected source page; legacy files default to the first page.
 
@@ -533,7 +592,7 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 - CSV thêm cột `effective_cycle_time_minutes` và `cycle_time_source` (sau `waiting_minutes`); bộ đọc CSV cũ vẫn đọc được vì cột được nhận theo tên · CSV gains two columns, read by name.
 - Export/Share bị chặn cho tới khi xác nhận ngữ nghĩa suy luận · export/share require confirmation of inferred semantics.
 - Build dùng webpack để đóng gói worker; cấu hình Vercel chuyển vào `apps/web/vercel.json` · webpack build for workers; Vercel config moved.
-- Số liệu của mô hình mẫu và 4 preset khai phá giữ nguyên (đã ghim bằng test) · starter and mining preset numbers are unchanged and pinned.
+- Số liệu mẫu hồi quy cũ tiếp tục được ghim trong test; runtime chỉ còn ba log mẫu chung, chủ động chọn mới nạp. · Legacy regression evidence stays pinned in tests; the runtime offers three general-purpose logs loaded only by explicit selection.
 
 ## Tham khảo · References
 
@@ -543,3 +602,26 @@ Lý do sửa cấu hình: `vercel.json` cũ ở thư mục gốc đặt `framewo
 - IEEE 1849-2016 XES.
 
 Giấy phép · License: MIT.
+
+## 18. Lịch làm việc và bộ demo báo cáo · Work calendars and report study
+
+Mining có hai cơ sở đo: **Thời gian lịch liên tục** (mặc định, giữ hành vi cũ) và **Giờ làm việc**. Chọn trong bảng nguồn log, sau đó cấu hình độ lệch UTC, thứ làm việc, tối đa 8 ca không chồng nhau mỗi ngày và ngày nghỉ. Mặc định thứ 2–thứ 6, 08:00–12:00 / 13:00–17:00, UTC+07:00. Lịch loại trừ ngoài ca, cuối tuần và ngày nghỉ; không thay timestamp, thứ tự trace, độ trung tâm hay logic conformance. Lịch dùng độ lệch UTC cố định, chưa tự xử lý DST và lịch riêng cho từng resource. Cấu hình lịch nằm trong phiên Mining, chưa lưu giữa các lần tải trang.
+
+Mining offers **Elapsed calendar time** (backward-compatible default) and **Working time**. The source panel configures a fixed UTC offset, weekdays, up to eight non-overlapping daily shifts, and holidays. All lead-time, service-time, handover and standards measurements use the same clock. Timestamp ordering and conformance stay unchanged. Per-resource calendars, automatic daylight-saving changes, and persisted calendar preferences are not implemented.
+
+**Sprint không phải CT.** Hai tuần theo lịch trên là 10 ngày làm việc, 80 giờ danh nghĩa/người. TCT theo cấu trúc AND lấy nhánh dài nhất, còn tổng giờ công cộng tất cả các nhánh. Muốn đối chiếu mô hình với log, nhập thời gian mô hình theo cùng phút làm việc.
+
+**Sprint duration is not feature CT.** Two weeks contain ten working days and 80 nominal hours per person. TCT uses the process structure, including AND `max`; person-hours sum effort across parallel branches. Model inputs and mining durations must use the same time basis.
+
+```bash
+pnpm demo:export
+# Default output: output/demo/report-study
+# Or an explicit destination:
+node scripts/export-study-kit.mjs /absolute/path/to/study-kit
+```
+
+Bộ báo cáo gồm `10_as_is.*`, `11_to_be.*`, log sai lệch `12_to_be_deviations.csv`, định mức, lịch và `expected/study_metrics.json`. Mỗi log chuẩn có 20 ca **tổng hợp**; không phải dữ liệu Jira/Git sản xuất. As-Is: CT 101,2h, TCT 69,2h, CTE 68,38%. To-Be: CT 49,6h, TCT 41,6h, CTE 83,87%; tổng giờ công 62,6 giờ-người. Mỗi khối sửa nội bộ/UAT tối đa một lần. Các số liệu này minh họa giả định thiết kế, chưa chứng minh hiệu quả công ty.
+
+The report kit contains twenty synthetic cases per scenario and a separate four-case deviation log. The exported manifest records SHA-256 checksums. Analytical and observed mean working CT match in regression tests. UAT is represented as a role in a single-process analytical projection; the model does not execute inter-participant BPMN messages. Fixed completion orders in the synthetic parallel branches limit what classical Alpha can rediscover.
+
+Thời lượng mô hình trên canvas, KPI và SVG giữ đơn vị phút/giờ, kể cả trên 24 giờ; không tự đổi thành ngày 24 giờ khi mô hình chưa khai báo độ dài ngày làm việc. Ví dụ 2.976 phút hiển thị 49,6 giờ. · Model duration chips, KPIs and SVG stay in minutes/hours beyond 24 hours; a model has no intrinsic day length. Numeric minute exports and calculations remain unchanged.

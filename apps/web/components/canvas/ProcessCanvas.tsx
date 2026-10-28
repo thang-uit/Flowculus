@@ -35,6 +35,11 @@ import {
 import { FlowMarkers } from '@/components/canvas/FlowMarkers';
 import { ImageReferenceLayer } from '@/components/canvas/ImageReferenceLayer';
 import { ImageReferenceToolbar } from '@/components/canvas/ImageReferenceToolbar';
+import { ProcessContainerView } from './ProcessContainerView';
+import { applyCollaborationPositions } from '@/lib/collaboration-editing';
+import { showNotice } from '@/lib/ui/notice-store';
+import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
+import { absoluteCanvasPositions } from '@/lib/canvas-flow';
 import { ProcessNodeView } from '@/components/canvas/ProcessNodeView';
 import { SequenceFlowEdge } from '@/components/canvas/SequenceFlowEdge';
 import {
@@ -45,7 +50,7 @@ import {
   type ProcessFlowNode,
 } from '@/lib/canvas-flow';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { addNodeAt, moveNodes, removeElements, replaceEdge } from '@/lib/model-editing';
+import { addNodeAt, removeElements, replaceEdge } from '@/lib/model-editing';
 import { SHAPE_DRAG_MIME, isSemanticShapeTool } from '@/lib/shape-tools';
 import { useFocusRequest, useHistoryShortcuts } from '@/lib/use-canvas-shortcuts';
 import { useCanvasClipboard } from '@/lib/use-canvas-clipboard';
@@ -54,7 +59,7 @@ import { useMediaQuery } from '@/lib/use-media-query';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-const nodeTypes = { process: ProcessNodeView };
+const nodeTypes = { process: ProcessNodeView, container: ProcessContainerView };
 const edgeTypes = { flow: SequenceFlowEdge };
 const FIT_VIEW_OPTIONS = { padding: 0.18, maxZoom: 1.25 };
 const READABLE_ZOOM = 0.6;
@@ -207,18 +212,21 @@ export function ProcessCanvas() {
     }
   }, [getNodes, getEdges]);
 
-  const onNodeDragStop = useCallback(
-    (_event: unknown, _node: ProcessFlowNode, dragged: ProcessFlowNode[]) => {
-      const state = useWorkspaceStore.getState();
-      state.commitModel(
-        moveNodes(
-          state.processModel,
-          Object.fromEntries(dragged.map((node) => [node.id, node.position])),
-        ),
+  const onNodeDragStop = useCallback(() => {
+    const state = useWorkspaceStore.getState();
+    const positions = absoluteCanvasPositions(getNodes());
+    const next = applyCollaborationPositions(state.processModel, positions);
+    if (next) state.commitModel(next);
+    else {
+      setNodes(
+        toFlowNodes(state.processModel, critical.nodes, new Set(state.selectedNodeIds)),
       );
-    },
-    [],
-  );
+      showNotice(
+        getCollaborationCopy(usePreferencesStore.getState().locale).invalid,
+        'error',
+      );
+    }
+  }, [getNodes, critical.nodes]);
 
   const onEdgeDoubleClick = useCallback(
     (event: MouseEvent, flowEdge: ProcessFlowEdge) => {

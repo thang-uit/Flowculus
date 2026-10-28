@@ -49,3 +49,4 @@ export {
   type AnalysisReport,
   type AnalysisStatus,
 } from './report';
+export { compareProcessScenarios } from './scenario-comparison';

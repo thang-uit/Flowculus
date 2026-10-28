@@ -147,6 +147,7 @@ export const DEFAULT_DISCOVERY_FILTER: DiscoveryFilter = {
 };
 
 export interface ProcessDiscovery {
+  timePolicy: import('./business-calendar').TimePolicy;
   stats: EventLogStats;
   dfg: DirectlyFollowsGraph;
   variants: TraceVariant[];

@@ -168,7 +168,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".flowculus.json,.drawio,.xml,.json,.csv,.tsv,.xes,.xlsx,.png,.jpg,.jpeg,.webp"
+          accept=".flowculus.json,.bpmn,.drawio,.xml,.json,.csv,.tsv,.xes,.xlsx,.png,.jpg,.jpeg,.webp"
           multiple
           className="sr-only"
           aria-label={copy.openFile}

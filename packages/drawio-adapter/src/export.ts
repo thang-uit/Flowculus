@@ -1,3 +1,4 @@
+import { patchDrawioContainers } from './collaboration';
 import {
   DEFAULT_NODE_SIZE,
   SEMANTIC_METADATA_KEYS,
@@ -452,6 +453,7 @@ export const exportDrawioXml = async (
   const page = file.pages.find((candidate) => candidate.id === pageId) ?? file.pages[0];
   if (page.readError) throw new Error(`draw.io page "${page.name}" could not be read.`);
   patchPage(page, model);
+  patchDrawioContainers(page, model);
   setXmlAttribute(page.diagram, 'name', model.name);
   return serializeXml(file.document);
 };

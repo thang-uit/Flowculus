@@ -2,14 +2,16 @@
 
 import { ArrowRight, Hourglass, Timer } from '@phosphor-icons/react';
 
+import { useMiningDuration } from '@/lib/use-mining-duration';
 import type { Bottleneck } from '@flowculus/process-mining';
 
-import { formatDurationMs, formatPercent } from '@/lib/format';
+import { formatPercent } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 /** Slowest hand-overs and activities, by mean delay. */
 export function BottleneckList({ bottlenecks }: Readonly<{ bottlenecks: Bottleneck[] }>) {
+  const formatDurationMs = useMiningDuration();
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   if (bottlenecks.length === 0) {

@@ -1,4 +1,5 @@
 import { isAnalysisOptions, type AnalysisOptions } from '@flowculus/analysis-engine';
+import { importBpmnXml } from '@flowculus/bpmn-adapter';
 import { importDrawioXml } from '@flowculus/drawio-adapter';
 import {
   parseCsvTable,
@@ -28,7 +29,7 @@ export type ImportedWorkspaceFile =
 
 const stripKnownExtension = (filename: string, fallback: string): string => {
   const stem = filename
-    .replace(/\.(flowculus\.json|drawio|xml|json|csv|tsv|xes)$/i, '')
+    .replace(/\.(flowculus\.json|bpmn|drawio|xml|json|csv|tsv|xes)$/i, '')
     .replace(/\.(nodes|edges)$/i, '')
     .trim();
   return stem || fallback;
@@ -213,6 +214,22 @@ export const importWorkspaceFiles = async (
     };
   }
 
+  if (
+    filename.endsWith('.bpmn') ||
+    (filename.endsWith('.xml') && /<([\w.-]+:)?definitions[\s>]/.test(source))
+  ) {
+    const model = importBpmnXml(source, modelName);
+    const validated = validateModelStructure(model);
+    if (!validated.model || validated.diagnostics.length)
+      throw new Error('invalid-model');
+    return {
+      kind: 'model',
+      model: withAutoLayout(validated.model),
+      drawioSource: null,
+      analysisOptions: {},
+      modelName: model.name,
+    };
+  }
   if (filename.endsWith('.drawio') || filename.endsWith('.xml')) {
     if (looksLikeXes(source)) return { kind: 'event-log', fileName: file.name, source };
     const imported = await importDrawioXml(source, { fallbackName: modelName });

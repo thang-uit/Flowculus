@@ -1,3 +1,4 @@
+import { readDrawioContainers } from './collaboration';
 import { SEMANTIC_METADATA_KEYS, type ProcessModel } from '@flowculus/process-model';
 
 import {
@@ -153,7 +154,10 @@ export const importDrawioXml = async (
   if (page.readError)
     throw new Error(`draw.io page "${page.name}" could not be read: ${page.readError}`);
   return {
-    model: drawioPageToProcessModel(page, options.fallbackName ?? 'Imported diagram'),
+    model: readDrawioContainers(
+      page,
+      drawioPageToProcessModel(page, options.fallbackName ?? 'Imported diagram'),
+    ),
     pages: summarizeDrawioPages(file),
     pageIndex,
   };

@@ -8,6 +8,8 @@ import {
   ShareNetwork,
   Table,
 } from '@phosphor-icons/react';
+import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { AppMenu } from '@/components/ui/AppMenu';
 import type { WorkspaceCopy } from '@/lib/i18n';
 import type { WorkspaceExportFormat } from '@/lib/workspace-exports';
@@ -26,6 +28,7 @@ export function WorkspaceExportMenu({
   className?: string;
   compact?: boolean;
 }>) {
+  const words = getCollaborationCopy(usePreferencesStore((state) => state.locale));
   return (
     <span className={className}>
       <AppMenu
@@ -59,6 +62,12 @@ export function WorkspaceExportMenu({
             id: 'diagram',
             label: copy.exportSectionDiagram,
             actions: [
+              {
+                id: 'bpmn',
+                label: words.bpmn,
+                icon: FileCode,
+                onSelect: () => onExport('bpmn'),
+              },
               {
                 id: 'drawio',
                 label: copy.exportDrawio,

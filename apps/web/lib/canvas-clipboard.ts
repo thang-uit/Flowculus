@@ -4,6 +4,7 @@ import {
   type ProcessEdge,
   type ProcessModel,
   type ProcessNode,
+  type ProcessContainer,
 } from '@flowculus/process-model';
 import { processModelSchema } from '@flowculus/validation';
 
@@ -20,6 +21,7 @@ export interface CanvasClipboardPayload {
   schemaVersion: typeof CLIPBOARD_VERSION;
   nodes: ProcessNode[];
   edges: ProcessEdge[];
+  containers?: ProcessContainer[];
 }
 
 /** Internal flows are copied only when both endpoint shapes are selected. */
@@ -27,9 +29,31 @@ export function makeCanvasClipboard(
   model: ProcessModel,
   nodeIds: readonly string[],
 ): CanvasClipboardPayload | null {
-  const selected = new Set(nodeIds.filter((id) => model.nodes[id]));
-  if (selected.size === 0 || selected.size > MAX_CLIPBOARD_NODES) return null;
+  const frameIds = new Set(nodeIds.filter((id) => model.containers?.[id]));
+  for (const container of Object.values(model.containers ?? {}))
+    if (container.parentId && frameIds.has(container.parentId))
+      frameIds.add(container.id);
+  const selected = new Set([
+    ...nodeIds.filter((id) => model.nodes[id]),
+    ...Object.values(model.nodes)
+      .filter(
+        (node) => frameIds.has(node.poolId ?? '') || frameIds.has(node.laneId ?? ''),
+      )
+      .map((node) => node.id),
+  ]);
+  if ((selected.size === 0 && frameIds.size === 0) || selected.size > MAX_CLIPBOARD_NODES)
+    return null;
+  // Include an owning pool for a copied lane so the clipboard remains portable.
+  // This does not select the other lanes or their steps.
+  const exportedFrames = new Set(frameIds);
+  for (const id of frameIds) {
+    const parentId = model.containers?.[id]?.parentId;
+    if (parentId) exportedFrames.add(parentId);
+  }
   return {
+    containers: Object.values(model.containers ?? {}).filter((container) =>
+      exportedFrames.has(container.id),
+    ),
     source: CLIPBOARD_SOURCE,
     schemaVersion: CLIPBOARD_VERSION,
     nodes: [...selected].map((id) => model.nodes[id]!),
@@ -54,7 +78,18 @@ export function parseCanvasClipboard(text: string): CanvasClipboardPayload | nul
     value.schemaVersion !== CLIPBOARD_VERSION ||
     !Array.isArray(value.nodes) ||
     !Array.isArray(value.edges) ||
-    value.nodes.length === 0 ||
+    (value.containers != null &&
+      (!Array.isArray(value.containers) ||
+        value.containers.length > 100 ||
+        value.containers.some(
+          (container) =>
+            !container ||
+            typeof container.id !== 'string' ||
+            UNSAFE_KEYS.has(container.id),
+        ) ||
+        new Set(value.containers.map((container) => container.id)).size !==
+          value.containers.length)) ||
+    (value.nodes.length === 0 && !value.containers?.length) ||
     value.nodes.length > MAX_CLIPBOARD_NODES ||
     value.edges.length > MAX_CLIPBOARD_NODES * 8
   )
@@ -76,7 +111,10 @@ export function parseCanvasClipboard(text: string): CanvasClipboardPayload | nul
   )
     return null;
   const parsed = processModelSchema.safeParse({
-    schemaVersion: 1,
+    schemaVersion: value.containers?.length ? 2 : 1,
+    containers: Object.fromEntries(
+      (value.containers ?? []).map((container) => [container.id, container]),
+    ),
     id: 'clipboard',
     name: 'Clipboard',
     nodes,
@@ -96,7 +134,42 @@ export function pasteCanvasClipboard(
   if (!Number.isFinite(offset) || offset < 0 || offset > 100_000) return null;
   const nodes = { ...model.nodes };
   const edges = { ...model.edges };
+  const containers = { ...model.containers };
   const idMap = new Map<string, string>();
+  const frameMap = new Map<string, string>();
+  for (const original of (payload.containers ?? []).filter(
+    (item) =>
+      item.kind === 'pool' ||
+      payload.containers?.some((pool) => pool.id === item.parentId),
+  ))
+    frameMap.set(
+      original.id,
+      createElementId(original.kind, {
+        ...nodes,
+        ...containers,
+        ...Object.fromEntries([...frameMap.values()].map((id) => [id, true])),
+      }),
+    );
+  for (const original of payload.containers ?? []) {
+    const id = frameMap.get(original.id);
+    if (!id) continue;
+    containers[id] = {
+      ...original,
+      id,
+      processId: original.kind === 'pool' ? `process_${id}` : undefined,
+      parentId: original.parentId
+        ? (frameMap.get(original.parentId) ??
+          (model.containers?.[original.parentId]?.kind === 'pool'
+            ? original.parentId
+            : undefined))
+        : undefined,
+      bounds: {
+        ...original.bounds,
+        x: original.bounds.x + offset,
+        y: original.bounds.y + offset,
+      },
+    };
+  }
   for (const original of payload.nodes) {
     const id = createElementId(original.kind, nodes);
     idMap.set(original.id, id);
@@ -105,6 +178,14 @@ export function pasteCanvasClipboard(
       ...original,
       id,
       drawioCellId: undefined,
+      poolId: original.poolId
+        ? (frameMap.get(original.poolId) ??
+          (containers[original.poolId]?.kind === 'pool' ? original.poolId : undefined))
+        : undefined,
+      laneId: original.laneId
+        ? (frameMap.get(original.laneId) ??
+          (containers[original.laneId]?.kind === 'lane' ? original.laneId : undefined))
+        : undefined,
       bounds: { ...bounds, x: bounds.x + offset, y: bounds.y + offset },
       cost: original.cost ? { ...original.cost } : undefined,
     };
@@ -146,5 +227,14 @@ export function pasteCanvasClipboard(
       metadata: original.metadata ? { ...original.metadata } : undefined,
     };
   }
-  return { model: { ...model, nodes, edges }, nodeIds: [...idMap.values()] };
+  return {
+    model: {
+      ...model,
+      schemaVersion: Object.keys(containers).length ? 2 : model.schemaVersion,
+      nodes,
+      edges,
+      ...(Object.keys(containers).length ? { containers } : {}),
+    },
+    nodeIds: [...frameMap.values(), ...idMap.values()],
+  };
 }

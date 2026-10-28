@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 
 import { AnalysisDock } from '@/components/AnalysisDock';
 import { AnalysisStatusBar } from '@/components/AnalysisStatusBar';
+import { ScenarioComparison } from '@/components/canvas/ScenarioComparison';
+import { CollaborationControls } from '@/components/canvas/CollaborationControls';
 import { CanvasFloatingControls } from '@/components/canvas/CanvasFloatingControls';
 import { MinedModelNotice } from '@/components/canvas/MinedModelNotice';
 import { ProcessCanvas } from '@/components/canvas/ProcessCanvas';
@@ -107,6 +109,10 @@ export function FlowculusWorkspace({
                   <SectionErrorBoundary section="canvas">
                     <ProcessCanvas key={activeDocumentId} />
                     <MinedModelNotice />
+                    <div className="absolute right-3 top-3 z-[5] flex gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1">
+                      <CollaborationControls />
+                      <ScenarioComparison />
+                    </div>
                     <CanvasFloatingControls />
                   </SectionErrorBoundary>
                 </section>

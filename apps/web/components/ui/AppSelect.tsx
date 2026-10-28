@@ -20,6 +20,9 @@ export function AppSelect({
   className,
   required,
   disabled,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
+  'aria-describedby': ariaDescribedBy,
 }: Readonly<{
   id: string;
   value: string;
@@ -28,6 +31,9 @@ export function AppSelect({
   className?: string;
   required?: boolean;
   disabled?: boolean;
+  'aria-label'?: string;
+  'aria-labelledby'?: string;
+  'aria-describedby'?: string;
 }>) {
   // Use internal index tokens: imported node IDs may contain any string,
   // including empty or names that resemble a reserved sentinel.
@@ -63,6 +69,9 @@ export function AppSelect({
       <Select.Trigger
         ref={setTrigger}
         id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         title={options[selectedIndex]?.label}
         className={cn(
           'focus-ring flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-2.5 text-left text-sm text-[var(--text)] shadow-none hover:border-[var(--border-strong)] data-[state=open]:border-[var(--accent-strong)] disabled:opacity-50',

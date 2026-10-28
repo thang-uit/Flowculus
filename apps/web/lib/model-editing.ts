@@ -5,6 +5,7 @@ import {
   getNodeBounds,
   isSequenceFlowEdge,
   isEdgeAttachmentSide,
+  nodePoolId,
   type ProcessEdge,
   type ProcessModel,
   type ProcessNode,
@@ -87,7 +88,28 @@ export const addNodeAt = (
   label: string,
   centre: Point,
 ): { model: ProcessModel; nodeId: string } => {
-  const node = createNodeFromTool(tool, label, centre, model.nodes);
+  let node = createNodeFromTool(tool, label, centre, model.nodes);
+  const containers = Object.values(model.containers ?? {});
+  const lane = containers.find(
+    (item) =>
+      item.kind === 'lane' &&
+      centre.x >= item.bounds.x &&
+      centre.x <= item.bounds.x + item.bounds.width &&
+      centre.y >= item.bounds.y &&
+      centre.y <= item.bounds.y + item.bounds.height,
+  );
+  const pool = lane
+    ? model.containers?.[lane.parentId ?? '']
+    : containers.find(
+        (item) =>
+          item.kind === 'pool' &&
+          !item.blackBox &&
+          centre.x >= item.bounds.x &&
+          centre.x <= item.bounds.x + item.bounds.width &&
+          centre.y >= item.bounds.y &&
+          centre.y <= item.bounds.y + item.bounds.height,
+      );
+  if (pool) node = { ...node, poolId: pool.id, laneId: lane?.id };
   return {
     model: { ...model, nodes: { ...model.nodes, [node.id]: node } },
     nodeId: node.id,
@@ -188,6 +210,25 @@ export const isValidNodeConnection = (
   const source = model.nodes[sourceId];
   const target = model.nodes[targetId];
   const edge = edgeId ? model.edges[edgeId] : undefined;
+  if (source && target) {
+    const different = nodePoolId(model, source) !== nodePoolId(model, target);
+    if (edge?.kind === 'sequence' && different) return false;
+    if (
+      edge?.kind === 'message' &&
+      !different &&
+      Object.keys(model.containers ?? {}).length
+    )
+      return false;
+    if (
+      !edge &&
+      different &&
+      (isArtifact(source) ||
+        isArtifact(target) ||
+        source.kind === 'gateway' ||
+        target.kind === 'gateway')
+    )
+      return false;
+  }
   if (!source || !target || sourceId === targetId || (edgeId && !edge)) return false;
   if (target.kind === 'start' || (source.kind === 'end' && !isArtifact(target)))
     return false;
@@ -223,7 +264,12 @@ export const connectNodes = (
     id: createElementId('flow', model.edges),
     source: sourceId,
     target: targetId,
-    kind: isArtifact(source) || isArtifact(target) ? 'association' : 'sequence',
+    kind:
+      isArtifact(source) || isArtifact(target)
+        ? 'association'
+        : nodePoolId(model, source) !== nodePoolId(model, target)
+          ? 'message'
+          : 'sequence',
     routing:
       attachments?.sourceSide || attachments?.targetSide
         ? { style: 'orthogonal', waypoints: [], ...attachments }
@@ -239,6 +285,13 @@ export const removeElements = (
   edgeIds: Iterable<string>,
 ): ProcessModel => {
   const removedNodes = new Set(nodeIds);
+  const removedFrames = new Set([...removedNodes].filter((id) => model.containers?.[id]));
+  for (const container of Object.values(model.containers ?? {}))
+    if (container.parentId && removedFrames.has(container.parentId))
+      removedFrames.add(container.id);
+  for (const node of Object.values(model.nodes))
+    if (removedFrames.has(node.poolId ?? '') || removedFrames.has(node.laneId ?? ''))
+      removedNodes.add(node.id);
   const removedEdges = new Set(edgeIds);
   const affectedSources = new Set<string>();
   const edges: Record<string, ProcessEdge> = {};
@@ -261,7 +314,20 @@ export const removeElements = (
   const nodes = Object.fromEntries(
     Object.entries(model.nodes).filter(([id]) => !removedNodes.has(id)),
   );
-  let next: ProcessModel = { ...model, nodes, edges };
+  let next: ProcessModel = {
+    ...model,
+    nodes,
+    edges,
+    ...(removedFrames.size
+      ? {
+          containers: Object.fromEntries(
+            Object.entries(model.containers ?? {}).filter(
+              ([id]) => !removedFrames.has(id),
+            ),
+          ),
+        }
+      : {}),
+  };
   affectedSources.forEach((sourceId) => {
     if (nodes[sourceId]) next = rebalanceBranchProbabilities(next, sourceId);
   });

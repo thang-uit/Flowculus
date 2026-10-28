@@ -133,7 +133,7 @@ const EN: ReadingCopy = {
   aboutIntro:
     'Flowculus brings process modelling, quantitative analysis and event-log exploration into one browser workspace.',
   aboutBody:
-    'Built for learning, checking assumptions and understanding why a result changes. A diagram becomes an explainable model; every supported calculation keeps its formula and quality in view.',
+    'Built for learning, checking assumptions and understanding why a result changes. Organise responsibility with Pool/Lane, exchange BPMN XML and compare an uploaded log against an approved model. Supported calculations and Mining methods expose their assumptions and limits.',
   developers: 'The developers',
   developerRole: 'Project developer',
   profile: 'GitHub profile',
@@ -156,9 +156,9 @@ const EN: ReadingCopy = {
     },
   ],
   screenshotCaption:
-    'The Flowculus model workspace, using the bundled request-handling example.',
+    'The Flowculus model workspace after importing an illustrative process file.',
   figureAlt:
-    'A process with a decision gateway, two alternative tasks and an explanation of cycle time.',
+    'An imported process in the Flowculus editor with explainable cycle-time results.',
 };
 
 const VI: ReadingCopy = {
@@ -227,7 +227,7 @@ const VI: ReadingCopy = {
   aboutIntro:
     'Flowculus kết nối mô hình hóa quy trình, phân tích định lượng và khám phá nhật ký sự kiện trong cùng một không gian trên trình duyệt.',
   aboutBody:
-    'Dành cho việc học, kiểm tra giả định và hiểu vì sao kết quả thay đổi. Từ bản vẽ đến mô hình có thể giải thích, mỗi phép tính được hỗ trợ đều đi cùng công thức và mức chất lượng.',
+    'Dành cho việc học, kiểm tra giả định và hiểu vì sao kết quả thay đổi. Tổ chức trách nhiệm bằng Pool/Lane, trao đổi BPMN XML và đối chiếu log tải lên với mô hình chuẩn. Các phép tính và phương pháp Mining nêu rõ giả định cùng giới hạn.',
   developers: 'Hai nhà phát triển',
   developerRole: 'Nhà phát triển dự án',
   profile: 'Hồ sơ GitHub',
@@ -249,7 +249,7 @@ const VI: ReadingCopy = {
       text: 'Mô hình và nhật ký được xử lý cục bộ. Worker đảm nhận phần phân tích nặng để bạn tiếp tục thao tác.',
     },
   ],
-  screenshotCaption: 'Không gian vẽ Flowculus với ví dụ xử lý yêu cầu có sẵn.',
+  screenshotCaption: 'Không gian vẽ Flowculus sau khi nhập một file quy trình minh họa.',
   figureAlt:
     'Quy trình có gateway quyết định, hai tác vụ thay thế và phần diễn giải thời gian chu trình.',
 };

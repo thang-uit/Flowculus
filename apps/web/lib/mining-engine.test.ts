@@ -44,6 +44,23 @@ describe('mining session', () => {
       eventCount: 4,
       variantCount: 2,
     });
+    const filtered = handle({
+      type: 'discover',
+      filter: { ...DEFAULT_DISCOVERY_FILTER, minActivityShare: 1 },
+    });
+    if (filtered.type !== 'discovery') throw new Error('expected a discovery');
+    expect(filtered.activityNames).toEqual(['Approve', 'Create', 'Reject']);
+    expect(filtered.discovery.hiddenActivityCount).toBeGreaterThan(0);
+    const standards = handle({
+      type: 'compare-standards',
+      standards: [{ activity: 'Approve', maxServiceMinutes: 10 }],
+    });
+    expect(standards).toMatchObject({
+      type: 'standards',
+      totalEvents: 4,
+      measuredEvents: 4,
+      comparedEvents: 1,
+    });
     const model = handle({
       type: 'to-model',
       filter: DEFAULT_DISCOVERY_FILTER,
@@ -64,10 +81,12 @@ describe('mining session', () => {
     );
     const preset = handle({
       type: 'load-preset',
-      presetId: 'is6003-delivery',
+      presetId: 'it-service-desk',
       filter: DEFAULT_DISCOVERY_FILTER,
     });
-    expect(preset.type === 'discovery' && preset.discovery.stats.caseCount).toBe(2);
+    expect(
+      preset.type === 'discovery' && preset.discovery.stats.caseCount,
+    ).toBeGreaterThan(100);
   });
 });
 
@@ -117,6 +136,7 @@ describe('mining session lifecycle', () => {
     expect(custom.discovery.dfg.activities.map((activity) => activity.id)).toEqual([
       'Custom',
     ]);
+    expect(custom.activityNames).toEqual(['Custom']);
     const filtered = session({ type: 'discover', filter: DEFAULT_DISCOVERY_FILTER });
     expect(filtered).toEqual(custom);
     expect(() =>
@@ -139,4 +159,87 @@ describe('mining session lifecycle', () => {
       'Custom',
     );
   });
+});
+
+it('switches every duration to the work calendar without changing activity identity or order', () => {
+  const handle = createMiningSession();
+  handle({
+    type: 'inspect-file',
+    fileName: 'weekend.csv',
+    source: [
+      'caseId,activity,start,timestamp,resource',
+      '1,A,2026-10-09T16:00:00+07:00,2026-10-12T09:00:00+07:00,ann',
+      '1,B,2026-10-12T11:00:00+07:00,2026-10-12T14:00:00+07:00,bob',
+    ].join('\n'),
+  });
+  const initial = handle({
+    type: 'apply-mapping',
+    name: 'weekend',
+    filter: DEFAULT_DISCOVERY_FILTER,
+    mapping: {
+      caseId: 'caseId',
+      activity: 'activity',
+      startTimestamp: 'start',
+      timestamp: 'timestamp',
+      resource: 'resource',
+    },
+  });
+  const calendar = {
+    utcOffsetMinutes: 420,
+    weekdays: [1, 2, 3, 4, 5],
+    shifts: [
+      { startMinute: 480, endMinute: 720 },
+      { startMinute: 780, endMinute: 1020 },
+    ],
+    holidays: [],
+  };
+  const working = handle({
+    type: 'discover',
+    filter: DEFAULT_DISCOVERY_FILTER,
+    timePolicy: { basis: 'working', calendar },
+  });
+  if (initial.type !== 'discovery' || working.type !== 'discovery')
+    throw Error('expected discovery');
+  expect(initial.discovery.stats.meanLeadTimeMs / 3600000).toBe(70);
+  expect(working.discovery.stats.meanLeadTimeMs / 3600000).toBe(6);
+  expect(working.activityNames).toEqual(initial.activityNames);
+  expect(working.discovery.variants.map((v) => v.activities)).toEqual(
+    initial.discovery.variants.map((v) => v.activities),
+  );
+  const standards = handle({
+    type: 'compare-standards',
+    standards: [{ activity: 'A', maxServiceMinutes: 180 }],
+  });
+  expect(standards.type === 'standards' && standards.rows[0]).toMatchObject({
+    meanMinutes: 120,
+    exceeded: 0,
+  });
+  const explicitElapsed = handle({
+    type: 'compare-standards',
+    standards: [{ activity: 'A', maxServiceMinutes: 180 }],
+    timePolicy: { basis: 'elapsed' },
+  });
+  expect(explicitElapsed.type === 'standards' && explicitElapsed.rows[0]).toMatchObject({
+    meanMinutes: 65 * 60,
+    exceeded: 1,
+  });
+  expect(
+    handle({
+      type: 'compare-standards',
+      standards: [{ activity: 'A', maxServiceMinutes: 180 }],
+    }),
+  ).toEqual(standards);
+  const elapsed = handle({
+    type: 'discover',
+    filter: DEFAULT_DISCOVERY_FILTER,
+    timePolicy: { basis: 'elapsed' },
+  });
+  expect(elapsed).toEqual(initial);
+  expect(() =>
+    handle({
+      type: 'discover',
+      filter: DEFAULT_DISCOVERY_FILTER,
+      timePolicy: { basis: 'working', calendar: { ...calendar, weekdays: [] } },
+    }),
+  ).toThrow('invalid-work-calendar');
 });

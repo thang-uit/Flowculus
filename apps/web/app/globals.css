@@ -8,6 +8,7 @@
 @import './styles/ui-primitives.css';
 @import './styles/project-navigation.css';
 @import './styles/document-workspace.css';
+@import './styles/collaboration.css';
 
 @theme inline {
   --font-sans: var(--app-font);

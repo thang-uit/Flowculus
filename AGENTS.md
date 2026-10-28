@@ -24,6 +24,7 @@ apps/web            composition, presentation, browser adapters, workers
   -> analysis-engine   -> validation, process-model, formula-renderer
   -> file-formats      -> analysis-engine, graph-layout, process-model
   -> process-mining    -> file-formats, process-model, xml-tree
+  -> bpmn-adapter      -> validation, process-model, xml-tree
   -> drawio-adapter    -> process-model, xml-tree
   -> validation        -> process-model
   -> graph-layout, formula-renderer, process-model, xml-tree (no internal deps)
@@ -42,6 +43,7 @@ apps/web            composition, presentation, browser adapters, workers
     critical chain, capacity, M/M/c, Little's Law), block-structure proofs
     (dominators/post-dominators) and quality.
   - `formula-renderer`: formula AST and text/LaTeX-like formatting.
+  - `bpmn-adapter`: bounded BPMN 2.0 XML subset import/export and DI. Reject unsupported execution semantics rather than flattening them.
   - `drawio-adapter`: the draw.io protocol (decode, classify, patch export).
   - `file-formats`: `.flowculus.json`, CSV, SVG rendering, auto layout.
   - `process-mining`: event-log parsing, DFG, variants, bottlenecks,
@@ -240,3 +242,12 @@ check passed unless you ran it.
   File extraction must terminate on cancellation and ignore superseded results.
   Header and dropped-file imports share one latest-request lifecycle; cancelled
   reads must not apply a model or display a success message.
+
+## 14. Collaboration and mining evidence
+
+- Models without containers remain version 1 compatible. Container-bearing files use version 2. Pools/lanes are not executable nodes; preserve membership in JSON, clipboard, CSV and draw.io.
+- Analyse one explicit process scope. Never sum participant cycle times or treat message flows as sequence flows. A BPMN pool is not a capacity resource pool.
+- Petri firing, BPMN conversion, reachability, alignment and quality variants live in pure process-mining modules. Reachability cut-offs return inconclusive, never sound/safe proofs. Final markings are valid completion.
+- Alignment and replay have separate budgets and method names. Disclose compatible-case-only coverage for prefix precision and transition-frequency generalization. Do not claim alternative alignments are impossible.
+- Project demo data belongs in exported files outside the web bundle. Keep retired regression fixtures test-only. `pnpm demo:export` writes deterministic synthetic inputs, expected evidence and checksums to a chosen directory.
+- No new production dependency was added for BPMN/Petri; the internal BPMN package reuses xml-tree and validation. Comparison runs in a separate bundled worker.

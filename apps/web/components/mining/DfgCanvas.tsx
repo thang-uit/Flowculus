@@ -24,6 +24,7 @@ import {
   routeOrthogonalEdge,
   type Rect,
 } from '@flowculus/graph-layout';
+import { useMiningDuration } from '@/lib/use-mining-duration';
 import type { DirectlyFollowsGraph, TraceVariant } from '@flowculus/process-mining';
 
 import {
@@ -33,7 +34,7 @@ import {
   type DfgFlowNode,
   type DfgTerminalNodeData,
 } from '@/lib/dfg-flow';
-import { formatDurationMs, formatInteger } from '@/lib/format';
+import { formatInteger } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import type { DfgEdgeMetric } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
@@ -58,6 +59,7 @@ const hiddenHandles = (
 const ActivityNode = memo(function ActivityNode({
   data,
 }: NodeProps<Node<DfgActivityNodeData, 'activity'>>) {
+  const formatDurationMs = useMiningDuration();
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const { activity } = data;
@@ -118,6 +120,7 @@ const DfgEdgeView = memo(function DfgEdgeView({
   target,
   data,
 }: EdgeProps<DfgFlowEdge>) {
+  const formatDurationMs = useMiningDuration();
   const sourceNode = useInternalNode(source);
   const targetNode = useInternalNode(target);
   if (!sourceNode || !targetNode || !data) return null;

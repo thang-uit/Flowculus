@@ -1,5 +1,5 @@
 import { formulaToText } from '@flowculus/formula-renderer';
-import type { ProcessModel } from '@flowculus/process-model';
+import { scopeProcessModel, type ProcessModel } from '@flowculus/process-model';
 import {
   dedupeDiagnostics,
   validateModelStructure,
@@ -45,6 +45,16 @@ export const analyzeProcess = (
   if (!structureCheck.model || structureCheck.diagnostics.length > 0) {
     return invalidReport(structureCheck.diagnostics);
   }
+  const scoped = scopeProcessModel(model, options.processPoolId);
+  if (!scoped)
+    return invalidReport([
+      {
+        code: 'process-scope-required',
+        severity: 'warning',
+        impact: 'simulation-required',
+      },
+    ]);
+  model = scoped;
   if (Object.keys(model.nodes).length === 0) return createEmptyAnalysisReport();
 
   const { diagnostics: graphDiagnostics, graph, entry } = validateProcessGraph(model);

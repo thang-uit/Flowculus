@@ -71,3 +71,37 @@ export {
   type Trace,
   type TraceVariant,
 } from './types';
+export { bpmnToPetri } from './petri/from-bpmn';
+export { alphaToPetri } from './petri/from-alpha';
+export { petriRuntime } from './petri/runtime';
+export { verifyPetri } from './petri/reachability';
+export { petriToPnml } from './petri/pnml';
+export { buildFootprint, type Footprint } from './petri/footprint';
+export type {
+  PetriNet,
+  PetriConversion,
+  PetriVerification,
+  Marking,
+} from './petri/types';
+export { alignTrace, type TraceAlignment, type AlignmentMove } from './petri/alignment';
+export {
+  alignmentConformance,
+  type ConformanceOptions,
+  type AlignmentConformance,
+} from './alignment-conformance';
+export {
+  parseTaskStandards,
+  compareTaskStandards,
+  type TaskStandard,
+  type StandardPerformance,
+} from './performance-standards';
+
+export {
+  createDurationClock,
+  addWorkingMinutes,
+  isTimePolicy,
+  DEFAULT_WORK_CALENDAR,
+  ELAPSED_TIME_POLICY,
+  type WorkCalendar,
+  type TimePolicy,
+} from './business-calendar';
