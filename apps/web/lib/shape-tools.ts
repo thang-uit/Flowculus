@@ -17,6 +17,8 @@ export const SEMANTIC_SHAPE_TOOLS = [
 ] as const;
 
 export type SemanticShapeTool = (typeof SEMANTIC_SHAPE_TOOLS)[number];
+export type ContainerTool = 'pool' | 'lane';
+export type PaletteTool = SemanticShapeTool | ContainerTool;
 
 export interface ShapeToolDefinition {
   kind: ProcessNodeKind;
@@ -46,3 +48,6 @@ export const SHAPE_DRAG_MIME = 'application/x-flowculus-shape';
 
 export const isSemanticShapeTool = (value: string): value is SemanticShapeTool =>
   (SEMANTIC_SHAPE_TOOLS as readonly string[]).includes(value);
+
+export const isPaletteTool = (value: string): value is PaletteTool =>
+  value === 'pool' || value === 'lane' || isSemanticShapeTool(value);

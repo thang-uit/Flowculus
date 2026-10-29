@@ -7,6 +7,8 @@ import { createAnalysisSnapshot, serializeFlowculusFile } from '@flowculus/file-
 import { checkSemanticGate } from '@flowculus/validation';
 
 import { downloadTextFile } from '@/lib/browser-file-actions';
+import { commitPendingInput } from '@/lib/documents/pending-input';
+import { ReportImageTooLargeError } from '@/lib/report-image-layout';
 import { requiresAnalysisReport } from '@/lib/export-readiness';
 import { exportFileName } from '@/lib/file-name';
 import { getWorkspaceCopy } from '@/lib/i18n';
@@ -77,14 +79,21 @@ export function useWorkspaceActions() {
         .then(() => showStatus(copy.localCopyExported, 'success'))
         .catch((error: unknown) => {
           reportWindow?.close();
-          console.error('Flowculus export failed', error);
-          showStatus(copy.exportError, 'error');
+          if (!(error instanceof ReportImageTooLargeError))
+            console.error('Flowculus export failed', error);
+          showStatus(
+            error instanceof ReportImageTooLargeError
+              ? copy.reportImageTooLarge
+              : copy.exportError,
+            'error',
+          );
         });
     },
     [copy, locale, passGate, showStatus],
   );
 
   const share = useCallback(async () => {
+    if (!commitPendingInput()) return;
     const model = passGate('share');
     if (!model) return;
     try {
@@ -119,6 +128,7 @@ export function useWorkspaceActions() {
   }, [copy, passGate, showStatus]);
 
   const runExport = (format: WorkspaceExportFormat) => {
+    if (!commitPendingInput()) return;
     const state = useWorkspaceStore.getState();
     setPendingExport({
       format,

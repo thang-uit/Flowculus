@@ -4,15 +4,16 @@ import { PaletteToggle, PALETTE_IDS } from '@/components/palette/PaletteToggle';
 
 import { ShapePaletteGlyph } from '@/components/palette/ShapePaletteGlyph';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { SHAPE_DRAG_MIME, type SemanticShapeTool } from '@/lib/shape-tools';
+import { SHAPE_DRAG_MIME, type PaletteTool } from '@/lib/shape-tools';
 import { useCanvasCommands } from '@/lib/use-canvas-commands';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
 interface PaletteItem {
-  id: SemanticShapeTool;
+  id: PaletteTool;
   label: string;
   hint: string;
 }
@@ -86,9 +87,12 @@ function ShapePaletteButton({
 export function WorkspaceRail() {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
+  const collaboration = getCollaborationCopy(locale);
   const paletteOpen = useWorkspaceStore((state) => state.paletteOpen);
   const { insertShapeAtCentre } = useCanvasCommands();
   const items: PaletteItem[] = [
+    { id: 'pool', label: collaboration.pool, hint: collaboration.poolHint },
+    { id: 'lane', label: collaboration.lane, hint: collaboration.laneHint },
     { id: 'start', label: copy.entryPoint, hint: copy.startEventHint },
     { id: 'task', label: copy.workActivity, hint: copy.taskActivityHint },
     { id: 'xor', label: copy.xorGateway, hint: copy.onePath },
@@ -121,7 +125,12 @@ export function WorkspaceRail() {
   ];
 
   const handleSelect = (item: PaletteItem) =>
-    insertShapeAtCentre(item.id, copy.defaultNodeLabels[item.id]);
+    insertShapeAtCentre(
+      item.id,
+      item.id === 'pool' || item.id === 'lane'
+        ? collaboration[item.id]
+        : copy.defaultNodeLabels[item.id],
+    );
 
   return (
     <>

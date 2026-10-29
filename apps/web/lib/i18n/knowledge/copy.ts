@@ -16,10 +16,8 @@ interface ReadingCopy {
   clear: string;
   empty: string;
   results: (count: number) => string;
-  topics: (count: number) => string;
   title: string;
   introduction: string;
-  read: string;
   backTop: string;
   sourceTitle: string;
   sourceText: string;
@@ -81,12 +79,10 @@ const EN: ReadingCopy = {
   searchHint: 'Try: rework, cycle time, Alpha Miner…',
   clear: 'Clear search',
   empty: 'No matching topics. Try a shorter phrase or a formula symbol such as CT or Wq.',
-  results: (count) => `${count} matching topics`,
-  topics: (count) => `${count} topics`,
+  results: (count) => `${count} matching ${count === 1 ? 'topic' : 'topics'}`,
   title: 'Understand the flow.\nKnow the formula.',
   introduction:
     'A working handbook for BPMN, cycle-time analysis and process mining. Find the rule, see its assumptions, then try it on the canvas.',
-  read: 'Read topic',
   backTop: 'Back to top',
   sourceTitle: 'Read with the assumptions in view',
   sourceText:
@@ -176,11 +172,9 @@ const VI: ReadingCopy = {
   clear: 'Xóa tìm kiếm',
   empty: 'Chưa tìm thấy chủ đề phù hợp. Thử cụm ngắn hơn hoặc ký hiệu như CT, Wq.',
   results: (count) => `${count} chủ đề phù hợp`,
-  topics: (count) => `${count} chủ đề`,
   title: 'Hiểu từng luồng.\nNắm rõ từng công thức.',
   introduction:
     'Sổ tay BPMN, phân tích thời gian chu trình và khai phá quy trình. Tìm công thức, hiểu điều kiện áp dụng, rồi thử ngay trên canvas.',
-  read: 'Đọc chủ đề',
   backTop: 'Về đầu trang',
   sourceTitle: 'Đọc công thức cùng điều kiện áp dụng',
   sourceText:

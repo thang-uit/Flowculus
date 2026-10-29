@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
+import { StandardsResults } from './StandardsResults';
 import { parseTaskStandards, type StandardPerformance } from '@flowculus/process-mining';
 import { AppButton } from '@/components/ui/AppButton';
 import { getCalendarCopy } from '@/lib/i18n/calendar-copy';
@@ -21,6 +22,7 @@ export function StandardsPanel({
   const [result, setResult] = useState<{
     log: typeof log;
     policyKey: string;
+    revision: number;
     rows: StandardPerformance[];
     measured: number;
     compared: number;
@@ -76,6 +78,7 @@ export function StandardsPanel({
               setResult({
                 log: sourceLog,
                 policyKey: sourcePolicyKey,
+                revision: token,
                 rows: response.rows,
                 measured: response.measuredEvents,
                 compared: response.comparedEvents,
@@ -101,40 +104,7 @@ export function StandardsPanel({
           <p className="text-xs">
             {copy.comparedEvents}: {result.compared}/{result.total}
           </p>
-          <div className="max-h-72 overflow-auto">
-            <table className="text-xs">
-              <thead>
-                <tr>
-                  {[
-                    copy.activity,
-                    copy.resource,
-                    copy.samples,
-                    copy.mean,
-                    copy.limitMinutes,
-                    copy.exceeded,
-                  ].map((label, index) => (
-                    <th scope="col" className="p-2 text-left" key={index}>
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {result.rows.map((row) => (
-                  <tr key={`${row.activity}-${row.resource}`}>
-                    <th scope="row" className="p-2 text-left">
-                      {row.activity}
-                    </th>
-                    <td className="p-2">{row.resource}</td>
-                    <td className="p-2">{row.count}</td>
-                    <td className="p-2">{row.meanMinutes.toFixed(1)}</td>
-                    <td className="p-2">{row.limitMinutes}</td>
-                    <td className="p-2">{row.exceeded}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <StandardsResults key={result.revision} rows={result.rows} />
         </>
       ) : null}
     </section>

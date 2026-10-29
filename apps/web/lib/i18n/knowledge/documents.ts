@@ -67,10 +67,20 @@ export const DOCUMENTS: KnowledgeEntry[] = [
           {
             kind: 'list',
             items: [
-              'Lần đầu chọn Lưu vào thiết bị hoặc Ctrl/Cmd+S, hãy đặt tên quy trình và file .flowculus.json. Nếu đã kết nối file trong phiên hiện tại, lệnh này ghi tiếp vào file đó. File giữ mô hình cùng cấu hình tính toán; mở lại sẽ tính kết quả mới.',
-              'Lưu thành… hoặc Ctrl/Cmd+Shift+S: chọn một file khác. Mở / nhập tệp hoặc Ctrl/Cmd+O: mở một bản đã lưu trong tab mới.',
-              'Nếu trình duyệt hỗ trợ ghi file, có thể bật Tự lưu vào tệp này sau lần chọn file đầu tiên. Sau khi tải lại trang, cần lưu lại để kết nối tệp; trình duyệt khác tải một bản mới mỗi lần bấm lưu.',
+              'Mở file .flowculus.json bằng Mở / nhập tệp hoặc Ctrl/Cmd+O trên trình duyệt hỗ trợ sẽ kết nối với file gốc. Sau khi sửa, Ctrl/Cmd+S ghi vào đúng file đó. Trình duyệt có thể hỏi quyền ghi lần đầu. Quy trình mới cần chọn nơi lưu lần đầu. File giữ mô hình cùng cấu hình tính toán, khi mở lại sẽ tính kết quả mới.',
+              'Lưu thành… hoặc Ctrl/Cmd+Shift+S cho chọn tên hoặc vị trí khác và chuyển liên kết lưu sang file mới. Nhập BPMN, draw.io hay CSV là chuyển đổi định dạng, nên Lưu tạo file .flowculus.json riêng và giữ nguyên file nguồn.',
+              'Liên kết file được giữ riêng trong IndexedDB khi trình duyệt cho phép. Sau reload, bấm Lưu để cấp lại quyền nếu được hỏi. Tự lưu vào tệp chỉ bật theo lựa chọn của bạn và dừng sau reload. Bật hoặc tắt trong menu chuột phải của tab. Trình duyệt không hỗ trợ sẽ tải bản mới mỗi lần lưu.',
             ],
+          },
+          { kind: 'heading', text: 'Nếu file bị sửa bên ngoài Flowculus' },
+          {
+            kind: 'paragraph',
+            text: 'Flowculus kiểm tra nội dung file đang kết nối trước mỗi lần ghi. Nếu ứng dụng khác hoặc tab khác đã sửa file, thao tác ghi bị dừng và tự lưu tắt. Bản đang vẽ vẫn được giữ. Dùng Lưu thành để giữ một bản riêng, hoặc mở lại file trên thiết bị trong tab khác để so sánh. Từ chối quyền ghi hay hủy hộp chọn file không làm mất thay đổi.',
+          },
+          { kind: 'heading', text: 'Khi ô nhập đang báo lỗi' },
+          {
+            kind: 'paragraph',
+            text: 'Nếu ô thời gian, xác suất hoặc kích thước đang báo lỗi, hãy sửa giá trị rồi lưu lại. Lưu thủ công chốt ô đang nhập và đưa focus về ô cần sửa, thay vì âm thầm lưu giá trị cũ. Bản nháp vẫn giữ phần mô hình đã chốt. Chỉ mở rồi rời ô số không làm tròn lại dữ liệu gốc.',
           },
           { kind: 'heading', text: 'Đóng tab an toàn' },
           {
@@ -154,10 +164,20 @@ export const DOCUMENTS: KnowledgeEntry[] = [
           {
             kind: 'list',
             items: [
-              'On the first Save to device or Ctrl/Cmd+S, set the process name and .flowculus.json file name. If a file is already connected in this session, this command updates it directly. The file retains the model and analysis settings; reopening recomputes results.',
-              'Save as… or Ctrl/Cmd+Shift+S: choose another file. Open / import or Ctrl/Cmd+O: open a saved copy in a new process tab.',
-              'Browsers with writable file access can enable Auto-save to this file after the first file selection. Save again after reloading to reconnect the file. Other browsers download a new copy on each explicit save.',
+              'Open a .flowculus.json file through Open / import or Ctrl/Cmd+O in a supported browser to connect the original file. After editing, Ctrl/Cmd+S updates that file. The browser may request write permission on the first save. New processes need a save location once. Files retain the model and analysis settings, and reopening recomputes results.',
+              'Save as… or Ctrl/Cmd+Shift+S chooses a new name or location and moves the save connection to that file. Importing BPMN, draw.io or CSV converts a format, so Save creates a separate .flowculus.json file and preserves the source.',
+              'File connections are stored separately in IndexedDB when the browser permits it. After reload, press Save and grant permission if requested. File auto-save is opt-in and stops on reload. Toggle it in the process tab context menu. Browsers without writable access download a new copy on each save.',
             ],
+          },
+          { kind: 'heading', text: 'When the file changes outside Flowculus' },
+          {
+            kind: 'paragraph',
+            text: 'Flowculus checks the connected file contents before each write. If another application or process tab changed the file, saving stops and file auto-save turns off. Your drawing stays intact. Use Save as to keep a separate copy, or open the device file in another tab to compare. Denied write permission and cancelled pickers never discard your edits.',
+          },
+          { kind: 'heading', text: 'When an input reports an error' },
+          {
+            kind: 'paragraph',
+            text: 'Correct invalid time, probability or dimension values before saving. Manual Save commits the active input and focuses a field that needs correction, instead of silently saving its previous value. Browser drafts still retain committed model data. Focusing and leaving a numeric field does not round its original value.',
           },
           { kind: 'heading', text: 'Close a tab safely' },
           {

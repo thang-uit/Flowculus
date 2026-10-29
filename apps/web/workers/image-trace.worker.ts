@@ -2,6 +2,7 @@ import { detectTraceShapes } from '../lib/image-trace/detect-shapes';
 import { detectTraceConnectors } from '../lib/image-trace/detect-connectors';
 import type { TraceResult } from '../lib/image-trace/trace-types';
 import { inferTraceEventKinds } from '../lib/image-trace/trace-model';
+import { detectTraceDurations } from '../lib/image-trace/detect-duration';
 
 type Request = {
   id: number;
@@ -72,7 +73,7 @@ workerScope.onmessage = async (event: MessageEvent<Request>) => {
       8,
     );
     emit(id, 'detect-shapes');
-    const detected = detectTraceShapes(cv, binary);
+    const detected = detectTraceDurations(binary, detectTraceShapes(cv, binary));
     emit(id, 'detect-connectors');
     const paths = detectTraceConnectors(cv, binary, detected);
     const candidates = detected.map((candidate) => ({

@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import type { ProcessNode } from '@flowculus/process-model';
 import { AppSelect } from '@/components/ui/AppSelect';
+import { AppField } from '@/components/ui/AppField';
 import { getMiningEvidenceCopy } from '@/lib/i18n/mining-evidence-copy';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
@@ -52,8 +53,7 @@ export function ActivityMappingEditor({
         {matches.slice(0, MAX_VISIBLE_MAPPING_ROWS).map((name) => {
           const exact = tasks.filter((task) => task.label === name);
           return (
-            <label key={name} className="block space-y-1">
-              <span className="block break-words">{name}</span>
+            <AppField key={name} id={`mapping-${name}`} label={name}>
               <AppSelect
                 id={`mapping-${name}`}
                 value={
@@ -72,7 +72,7 @@ export function ActivityMappingEditor({
                 ]}
                 onValueChange={(value) => onChange(name, value)}
               />
-            </label>
+            </AppField>
           );
         })}
       </div>

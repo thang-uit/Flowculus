@@ -36,6 +36,7 @@ import {
 } from '@/lib/dfg-flow';
 import { formatInteger } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
 import type { DfgEdgeMetric } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
@@ -62,6 +63,7 @@ const ActivityNode = memo(function ActivityNode({
   const formatDurationMs = useMiningDuration();
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
+  const dataCopy = getMiningDataCopy(locale);
   const { activity } = data;
   const share = activity.frequency / Math.max(1, data.maxFrequency);
   return (
@@ -77,8 +79,11 @@ const ActivityNode = memo(function ActivityNode({
       </span>
       <span className="flex items-center justify-between gap-2 font-mono text-[10px] text-[var(--muted)]">
         <span>
-          {formatInteger(activity.frequency, locale)}× · {activity.caseFrequency}{' '}
-          {copy.miningCasesShort}
+          {formatInteger(activity.frequency, locale)}× ·{' '}
+          {dataCopy.caseCount(
+            activity.caseFrequency,
+            formatInteger(activity.caseFrequency, locale),
+          )}
         </span>
         {activity.meanServiceMs != null ? (
           <span>T {formatDurationMs(activity.meanServiceMs)}</span>

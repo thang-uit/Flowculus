@@ -38,16 +38,17 @@ the visual authority; this surface introduces no new identity or design tokens.
   `lib/i18n/calendar-copy.ts`; work-calendar semantics belong in the pure
   `process-mining` package.
 
-Documentation evidence checked on 2026-10-27: the finished desktop English/light
-capture (`.impeccable/review/calendar-desktop.png`), mobile Vietnamese/dark capture
-(`calendar-mobile.png`) and mobile invalid-field dialog capture
-(`calendar-mobile-dialog.png`), compared with the incumbent Mining desktop
-capture (`mining-desktop.png`), shared UI primitives and global theme/font sources.
-The extension retains the existing pane structure, yellow action/focus states,
-neutral surfaces, typography and compact information hierarchy. The finish
-reviewer's final `ship` verdict scored its three requested fixes resolved:
-calendar retention, the visible KPI basis and field-specific errors/focus.
+Verification should cover calendar retention, the visible KPI basis, field-specific errors and focus, both locales/themes and a mobile layout. Use the production build and the repository test commands.
 
-This surface note preserves the incumbent system files. Root `DESIGN.md` and
-`.impeccable/design.json` were already absent; documenting or reconciling the
-project-wide design system is outside this extension's scope.
+- Standards comparisons mount at most 50 result rows, with Previous/Next controls,
+  a labelled keyboard-scrollable table and localized numeric formatting. New
+  comparisons reset pagination, and result snapshots retain their log/calendar.
+- Reference comparison shows a localized busy state and cannot run while a log
+  is being replaced. Worker loss clears dependent evidence and offers source
+  reload. A separate request token prevents obsolete alignments replacing a newer
+  comparison. Exported Mining evidence names display filters and hidden counts.
+
+- Filter and calendar edits wait for a ready source. Source inspection/mapping and
+  an active discovery cannot be superseded by a rediscovery timer. Once the source
+  completes, compare the displayed result with the latest controls and apply any
+  pending changes. Clearing or failing a session must never trigger a reload.

@@ -36,10 +36,11 @@ import { FlowMarkers } from '@/components/canvas/FlowMarkers';
 import { ImageReferenceLayer } from '@/components/canvas/ImageReferenceLayer';
 import { ImageReferenceToolbar } from '@/components/canvas/ImageReferenceToolbar';
 import { ProcessContainerView } from './ProcessContainerView';
-import { applyCollaborationPositions } from '@/lib/collaboration-editing';
+import { useCanvasNodeDrag } from '@/lib/use-canvas-node-drag';
+import { inspectCanvasElement } from '@/lib/canvas-inspector';
+import { insertContainerAt } from '@/lib/container-placement';
 import { showNotice } from '@/lib/ui/notice-store';
 import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
-import { absoluteCanvasPositions } from '@/lib/canvas-flow';
 import { ProcessNodeView } from '@/components/canvas/ProcessNodeView';
 import { SequenceFlowEdge } from '@/components/canvas/SequenceFlowEdge';
 import {
@@ -51,7 +52,7 @@ import {
 } from '@/lib/canvas-flow';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { addNodeAt, removeElements, replaceEdge } from '@/lib/model-editing';
-import { SHAPE_DRAG_MIME, isSemanticShapeTool } from '@/lib/shape-tools';
+import { SHAPE_DRAG_MIME, isPaletteTool } from '@/lib/shape-tools';
 import { useFocusRequest, useHistoryShortcuts } from '@/lib/use-canvas-shortcuts';
 import { useCanvasClipboard } from '@/lib/use-canvas-clipboard';
 import { useCanvasConnections } from '@/lib/use-canvas-connections';
@@ -155,9 +156,11 @@ export function ProcessCanvas() {
         width: 0,
         height: 0,
       };
-      const bounds = unionRects(
-        Object.values(useWorkspaceStore.getState().processModel.nodes).map(getNodeBounds),
-      );
+      const current = useWorkspaceStore.getState().processModel;
+      const bounds = unionRects([
+        ...Object.values(current.nodes).map(getNodeBounds),
+        ...Object.values(current.containers ?? {}).map((item) => item.bounds),
+      ]);
       const fitZoom = bounds
         ? Math.min(width / (bounds.width + 160), height / (bounds.height + 160))
         : 1;
@@ -212,21 +215,7 @@ export function ProcessCanvas() {
     }
   }, [getNodes, getEdges]);
 
-  const onNodeDragStop = useCallback(() => {
-    const state = useWorkspaceStore.getState();
-    const positions = absoluteCanvasPositions(getNodes());
-    const next = applyCollaborationPositions(state.processModel, positions);
-    if (next) state.commitModel(next);
-    else {
-      setNodes(
-        toFlowNodes(state.processModel, critical.nodes, new Set(state.selectedNodeIds)),
-      );
-      showNotice(
-        getCollaborationCopy(usePreferencesStore.getState().locale).invalid,
-        'error',
-      );
-    }
-  }, [getNodes, critical.nodes]);
+  const nodeDrag = useCanvasNodeDrag(getNodes, setNodes, critical.nodes);
 
   const onEdgeDoubleClick = useCallback(
     (event: MouseEvent, flowEdge: ProcessFlowEdge) => {
@@ -292,21 +281,31 @@ export function ProcessCanvas() {
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     const tool = event.dataTransfer.getData(SHAPE_DRAG_MIME);
-    if (!isSemanticShapeTool(tool)) return;
+    if (!isPaletteTool(tool)) return;
     event.preventDefault();
     // Adding a shape returns to Select so the new element is immediately editable.
     useWorkspaceStore.getState().setActiveTool('select');
     // The node centre lands exactly under the pointer at any zoom or pan.
     const centre = screenToFlowPosition({ x: event.clientX, y: event.clientY });
     const state = useWorkspaceStore.getState();
-    const result = addNodeAt(
-      state.processModel,
-      tool,
-      copy.defaultNodeLabels[tool],
-      centre,
-    );
+    const collaboration = getCollaborationCopy(locale);
+    const result =
+      tool === 'pool' || tool === 'lane'
+        ? insertContainerAt(
+            state.processModel,
+            tool,
+            collaboration[tool],
+            centre,
+            collaboration.pool,
+          )
+        : addNodeAt(state.processModel, tool, copy.defaultNodeLabels[tool], centre);
+    if (!result) {
+      showNotice(collaboration.placementInvalid, 'error');
+      return;
+    }
     state.commitModel(result.model);
     state.setSelection({ nodeIds: [result.nodeId], edgeId: null });
+    wrapperRef.current?.focus();
   };
 
   const isHand = activeTool === 'hand';
@@ -331,7 +330,9 @@ export function ProcessCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onSelectionChange={onSelectionChange}
-        onNodeDragStop={onNodeDragStop}
+        onNodeClick={(event, node) => inspectCanvasElement(event, 'node', node.id)}
+        onEdgeClick={(event, edge) => inspectCanvasElement(event, 'edge', edge.id)}
+        {...nodeDrag}
         {...connections}
         onNodeContextMenu={(event, node) => {
           const selected = useWorkspaceStore.getState().selectedNodeIds;
@@ -363,7 +364,7 @@ export function ProcessCanvas() {
         panOnDrag={touchPan ? true : [1, 2]}
         panOnScroll={!coarsePointer}
         zoomOnDoubleClick={false}
-        deleteKeyCode={['Backspace', 'Delete']}
+        deleteKeyCode={null}
         multiSelectionKeyCode={['Meta', 'Control', 'Shift']}
         aria-label={copy.canvasLabel}
         proOptions={{ hideAttribution: true }}

@@ -9,6 +9,7 @@ import { SocialNetworkCanvas } from '@/components/mining/SocialNetworkCanvas';
 import { cn } from '@/lib/cn';
 import { formatInteger } from '@/lib/format';
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
 import { useMiningStore } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
@@ -16,6 +17,7 @@ import { usePreferencesStore } from '@/lib/use-preferences-store';
 export function MiningMapView() {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
+  const dataCopy = getMiningDataCopy(locale);
   const status = useMiningStore((state) => state.status);
   const result = useMiningStore((state) => state.result);
   const selectedVariantId = useMiningStore((state) => state.selectedVariantId);
@@ -95,8 +97,11 @@ export function MiningMapView() {
                 className="mr-1 inline align-[-1px]"
                 aria-hidden="true"
               />
-              {result.logName} · {formatInteger(discovery?.stats.caseCount ?? 0, locale)}{' '}
-              {copy.miningCasesShort}
+              {result.logName} ·{' '}
+              {dataCopy.caseCount(
+                discovery?.stats.caseCount ?? 0,
+                formatInteger(discovery?.stats.caseCount ?? 0, locale),
+              )}
               {status === 'loading' ? ` · ${copy.miningLoading}` : ''}
             </span>
           ) : null}

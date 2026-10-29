@@ -181,6 +181,8 @@ export const VI: WorkspaceCopy = {
   fileReady: 'Đã tải tệp',
   fileError: 'Không thể đọc tệp này',
   exportError: 'Không thể xuất tệp này. Hãy thử JSON Flowculus hoặc SVG.',
+  reportImageTooLarge:
+    'Báo cáo quá dài để xuất thành ảnh dễ đọc. Hãy xuất báo cáo PDF, hoặc lưu JSON Flowculus để giữ mô hình.',
   fileTooLarge: 'Tệp lớn hơn 50 MB.',
   missingNodeTable: 'Hãy chọn CSV nút cùng với CSV cạnh.',
   invalidModelCsv: 'CSV quy trình có nút, cạnh hoặc thời gian không hợp lệ.',
@@ -253,7 +255,7 @@ export const VI: WorkspaceCopy = {
   },
   imageTraceEmpty: 'Không nhận ra hình quy trình. Hãy dùng ảnh làm nền rồi tự vẽ.',
   imageTraceHint:
-    'Hãy rà từng hình và đường nối. Chiều được đề xuất từ trái sang phải hoặc trên xuống dưới; chưa xác minh đầu mũi tên. Bạn tự nhập tên, thời gian và xác suất.',
+    'Rà từng hình, đường nối và số giờ điền sẵn. Chiều được đề xuất từ trái sang phải hoặc trên xuống dưới nên cần kiểm tra đầu mũi tên. Bổ sung thời gian còn thiếu, tên và xác suất.',
   imageTraceCandidates: 'Các hình',
   imageTraceConnectors: 'Đường nối đề xuất',
   imageTraceAddConnector: 'Thêm đường nối',
@@ -277,6 +279,9 @@ export const VI: WorkspaceCopy = {
   imageTraceRemoveCandidate: 'Xóa hình',
   imageTraceKind: 'Loại hình',
   imageTraceLabel: 'Tên hình',
+  imageTraceDuration: 'Thời gian xử lý (giờ)',
+  imageTraceDurationHint:
+    'Nhãn in rõ như “8h” có thể được điền sẵn. Nếu chữ viết tay hoặc số thập phân chưa được nhận dạng, nhập tại đây. Đổi đơn vị khác sang giờ và kiểm tra mọi giá trị.',
   imageTraceRetry: 'Thử lại',
   imageTraceCancel: 'Hủy nhận dạng',
   imageTraceLoaded: 'Đã đặt ảnh lên canvas.',
@@ -383,7 +388,6 @@ export const VI: WorkspaceCopy = {
   miningBottlenecksHint:
     'Xếp theo thời gian trung bình: chặng bàn giao từ lúc bước trước hoàn tất đến khi bước sau bắt đầu; hoạt động theo thời gian xử lý. Tỷ trọng tính riêng cho từng loại; số đo chưa chứng minh nguyên nhân gây nghẽn.',
   miningCases: 'Số ca',
-  miningCasesShort: 'ca',
   miningDownloadCsv: 'Tải nhật ký CSV',
   miningDuration: 'Thời gian TB',
   miningDurationThreshold: 'Thời gian chuyển bước',

@@ -1,9 +1,5 @@
-import {
-  getNodeBounds,
-  nodePoolId,
-  type ProcessModel,
-  type ProcessContainer,
-} from '@flowculus/process-model';
+import { getNodeBounds, nodePoolId, type ProcessModel } from '@flowculus/process-model';
+import { containingFrame } from './container-membership';
 import { createElementId } from './model-editing';
 
 export function addPool(model: ProcessModel, label: string): ProcessModel {
@@ -87,7 +83,11 @@ export function addLane(
   const nodes = Object.fromEntries(
     Object.entries(model.nodes).map(([key, node]) => [
       key,
-      nodePoolId(model, node) === poolId && !node.laneId ? { ...node, laneId: id } : node,
+      nodePoolId(model, node) === poolId &&
+      !node.laneId &&
+      containingFrame({ ...model, containers }, getNodeBounds(node)).laneId === id
+        ? { ...node, laneId: id }
+        : node,
     ]),
   );
   return { ...model, schemaVersion: 2, containers, nodes };
@@ -117,64 +117,7 @@ export function removeContainer(model: ProcessModel, id: string): ProcessModel {
     ),
   };
 }
-export function resizeContainer(
-  model: ProcessModel,
-  id: string,
-  bounds: ProcessContainer['bounds'],
-): ProcessModel {
-  const container = model.containers?.[id];
-  if (
-    !container ||
-    !Object.values(bounds).every(Number.isFinite) ||
-    bounds.width < 180 ||
-    bounds.height < 100
-  )
-    return model;
-  const children = [
-    ...Object.values(model.nodes)
-      .filter((node) => node.poolId === id || node.laneId === id)
-      .map(getNodeBounds),
-    ...Object.values(model.containers ?? {})
-      .filter((item) => item.parentId === id)
-      .map((item) => item.bounds),
-  ];
-  const parent = container.parentId ? model.containers?.[container.parentId] : undefined;
-  if (
-    parent &&
-    (bounds.x < parent.bounds.x ||
-      bounds.y < parent.bounds.y ||
-      bounds.x + bounds.width > parent.bounds.x + parent.bounds.width ||
-      bounds.y + bounds.height > parent.bounds.y + parent.bounds.height)
-  )
-    return model;
-  if (
-    container.kind === 'lane' &&
-    Object.values(model.containers ?? {}).some(
-      (sibling) =>
-        sibling.id !== id &&
-        sibling.parentId === container.parentId &&
-        bounds.x < sibling.bounds.x + sibling.bounds.width &&
-        bounds.x + bounds.width > sibling.bounds.x &&
-        bounds.y < sibling.bounds.y + sibling.bounds.height &&
-        bounds.y + bounds.height > sibling.bounds.y,
-    )
-  )
-    return model;
-  if (
-    children.some(
-      (rect) =>
-        rect.x < bounds.x ||
-        rect.y < bounds.y ||
-        rect.x + rect.width > bounds.x + bounds.width ||
-        rect.y + rect.height > bounds.y + bounds.height,
-    )
-  )
-    return model;
-  return {
-    ...model,
-    containers: { ...model.containers, [id]: { ...container, bounds } },
-  };
-}
+export { resizeContainer } from './container-resizing';
 
 /** Commit absolute drag positions once; reject cross-pool sequence changes atomically. */
 export function applyCollaborationPositions(
@@ -187,12 +130,42 @@ export function applyCollaborationPositions(
     )
   )
     return null;
+  if (
+    !Object.entries(positions).some(([id, point]) => {
+      const bounds =
+        model.containers?.[id]?.bounds ??
+        (model.nodes[id] ? getNodeBounds(model.nodes[id]) : undefined);
+      return bounds && (bounds.x !== point.x || bounds.y !== point.y);
+    })
+  )
+    return model;
   const containers = Object.fromEntries(
     Object.entries(model.containers ?? {}).map(([id, item]) => [
       id,
       { ...item, bounds: { ...item.bounds, ...positions[id] } },
     ]),
   );
+  const pools = Object.values(containers).filter((item) => item.kind === 'pool');
+  if (
+    pools.some((a, index) =>
+      pools
+        .slice(index + 1)
+        .some(
+          (b) =>
+            ((positions[a.id] &&
+              (a.bounds.x !== model.containers![a.id].bounds.x ||
+                a.bounds.y !== model.containers![a.id].bounds.y)) ||
+              (positions[b.id] &&
+                (b.bounds.x !== model.containers![b.id].bounds.x ||
+                  b.bounds.y !== model.containers![b.id].bounds.y))) &&
+            a.bounds.x < b.bounds.x + b.bounds.width &&
+            a.bounds.x + a.bounds.width > b.bounds.x &&
+            a.bounds.y < b.bounds.y + b.bounds.height &&
+            a.bounds.y + a.bounds.height > b.bounds.y,
+        ),
+    )
+  )
+    return null;
   const nodes = Object.fromEntries(
     Object.entries(model.nodes).map(([id, node]) => {
       const point = positions[id];
@@ -201,43 +174,28 @@ export function applyCollaborationPositions(
       const moved =
         !node.bounds || node.bounds.x !== point.x || node.bounds.y !== point.y;
       if (!moved) return [id, node];
-      const centre = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-      const contains = (item: ProcessContainer) =>
-        centre.x >= item.bounds.x &&
-        centre.x <= item.bounds.x + item.bounds.width &&
-        centre.y >= item.bounds.y &&
-        centre.y <= item.bounds.y + item.bounds.height;
-      const lane = Object.values(containers).find(
-        (item) => item.kind === 'lane' && contains(item),
-      );
-      const pool = lane
-        ? containers[lane.parentId ?? '']
-        : Object.values(containers).find(
-            (item) => item.kind === 'pool' && !item.blackBox && contains(item),
-          );
-      return [id, { ...node, bounds, poolId: pool?.id, laneId: lane?.id }];
+      return [
+        id,
+        { ...node, bounds, ...containingFrame({ ...model, containers }, bounds, node) },
+      ];
     }),
   );
-  if (
-    Object.keys(containers).length &&
-    Object.values(nodes).some(
-      (node) => !node.poolId && node.kind !== 'data' && node.kind !== 'annotation',
-    )
-  )
-    return null;
+  const scoped = { ...model, containers };
   for (const edge of Object.values(model.edges)) {
     const source = nodes[edge.source];
     const target = nodes[edge.target];
     if (!source || !target) continue;
     if (
       (edge.kind == null || edge.kind === 'sequence') &&
-      source.poolId !== target.poolId
+      nodePoolId(scoped, source) !== nodePoolId(scoped, target)
     )
       return null;
     if (
       Object.keys(containers).length &&
       edge.kind === 'message' &&
-      source.poolId === target.poolId
+      (!nodePoolId(scoped, source) ||
+        !nodePoolId(scoped, target) ||
+        nodePoolId(scoped, source) === nodePoolId(scoped, target))
     )
       return null;
   }

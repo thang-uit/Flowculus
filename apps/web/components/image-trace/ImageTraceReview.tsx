@@ -108,6 +108,9 @@ export function ImageTraceReview({
               <div className="flex items-center justify-between gap-2">
                 <span className="font-mono text-[10px] text-[var(--muted)]">
                   {candidate.id} · {Math.round(candidate.confidence * 100)}%
+                  {candidate.durationConfidence != null
+                    ? ` · ${candidate.processingMinutes! / 60}h ${Math.round(candidate.durationConfidence * 100)}%`
+                    : ''}
                 </span>
                 <button
                   type="button"
@@ -129,7 +132,7 @@ export function ImageTraceReview({
                   <Trash size={15} />
                 </button>
               </div>
-              <label className="block text-[11px] text-[var(--muted)]">
+              <label className="flex min-w-0 flex-col gap-1.5 text-[11px] text-[var(--muted)]">
                 {copy.imageTraceKind}
                 <AppSelect
                   id={`trace-kind-${candidate.id}`}
@@ -168,6 +171,52 @@ export function ImageTraceReview({
                   }
                 />
               </label>
+              {candidate.kind === 'task' || candidate.kind === 'subprocess' ? (
+                <label className="block text-[11px] text-[var(--muted)]">
+                  {copy.imageTraceDuration}
+                  <input
+                    type="number"
+                    min={0}
+                    max={1000000}
+                    step={0.25}
+                    value={
+                      candidate.processingMinutes == null
+                        ? ''
+                        : candidate.processingMinutes / 60
+                    }
+                    placeholder="—"
+                    aria-describedby={`trace-duration-hint-${candidate.id}`}
+                    className="focus-ring mt-1 h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-2.5 text-sm text-[var(--text)]"
+                    onChange={(event) => {
+                      const value =
+                        event.target.value === ''
+                          ? undefined
+                          : Number(event.target.value);
+                      setDraft((current) => ({
+                        ...current,
+                        candidates: current.candidates.map((item) =>
+                          item.id === candidate.id
+                            ? {
+                                ...item,
+                                durationConfidence: undefined,
+                                processingMinutes:
+                                  value == null || !Number.isFinite(value)
+                                    ? undefined
+                                    : value * 60,
+                              }
+                            : item,
+                        ),
+                      }));
+                    }}
+                  />
+                  <span
+                    id={`trace-duration-hint-${candidate.id}`}
+                    className="mt-1 block text-[10px] leading-4 text-[var(--muted)]"
+                  >
+                    {copy.imageTraceDurationHint}
+                  </span>
+                </label>
+              ) : null}
             </div>
           ))}
           <h4 className="text-xs font-semibold text-[var(--text)]">
@@ -175,7 +224,7 @@ export function ImageTraceReview({
           </h4>
           {draft.candidates.length >= 2 ? (
             <div className="grid grid-cols-2 gap-2 rounded-lg border border-[var(--border)] p-2">
-              <label className="text-[11px] text-[var(--muted)]">
+              <label className="flex min-w-0 flex-col gap-1.5 text-[11px] text-[var(--muted)]">
                 {copy.imageTraceSource}
                 <AppSelect
                   id="trace-source"
@@ -190,7 +239,7 @@ export function ImageTraceReview({
                   onValueChange={setSourceId}
                 />
               </label>
-              <label className="text-[11px] text-[var(--muted)]">
+              <label className="flex min-w-0 flex-col gap-1.5 text-[11px] text-[var(--muted)]">
                 {copy.imageTraceTarget}
                 <AppSelect
                   id="trace-target"

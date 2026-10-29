@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { restoreDeviceBindings } from '@/lib/documents/device-file-bindings';
 import { acquireWorkspaceStorage } from '@/lib/documents/workspace-storage-owner';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { getWorkspaceDocuments } from '@/lib/documents/document-types';
@@ -89,7 +90,7 @@ export function useLocalDraft() {
         releaseStorage = ownership.release;
         return loadWorkspaceSession();
       })
-      .then((session) => {
+      .then(async (session) => {
         if (disposed) return;
         const current = useWorkspaceStore.getState();
         const unchanged =
@@ -100,6 +101,13 @@ export function useLocalDraft() {
           current.modelRevision === initial.modelRevision;
         if (session && unchanged)
           current.restoreDocuments(session.documents, session.activeDocumentId);
+        const documents = useWorkspaceStore.getState().documents;
+        await restoreDeviceBindings(
+          documents.map((item) => item.id),
+          new Map(documents.map((item) => [item.id, item.savedContent])),
+        );
+
+        if (disposed) return;
         hydrated = true;
         if (writable) schedule();
         else useWorkspaceStore.getState().setDraftStatus('conflict');
@@ -119,7 +127,7 @@ export function useLocalDraft() {
       disposed = true;
       clearTimeout(timer);
       unsubscribe();
-      void saveQueue.finally(releaseStorage);
+      void saveQueue.then(releaseStorage, releaseStorage);
       window.removeEventListener('pagehide', checkpoint);
       document.removeEventListener('visibilitychange', onVisibility);
     };

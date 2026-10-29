@@ -51,7 +51,7 @@ identity or decorative raster artwork is needed.
   it is never labelled an approved reference process.
 
 - The document workflow lesson explains independent process tabs, process/file naming,
-  browser recovery versus device saves, session-only writable file access, fallback
+  browser recovery versus device saves, connected-file permission and conflict handling, fallback
   downloads, semantic review, guarded closing and concurrent-window storage ownership.
   Demo screenshots track the document bar and save dialog in all documented locales
   and themes. The incumbent yellow toolbar/token system remains the visual authority.
@@ -67,8 +67,32 @@ identity or decorative raster artwork is needed.
 - Menus, selects, modal dialogs, buttons and transient workspace notices share their primitives and tokens. Navigation/export/context menus support the same keyboard model and yellow interaction state; form selects retain listbox semantics.
 - Process tabs reorder by pointer, touch hold, Alt+Shift+Left/Right or the tab context menu. Order is browser-persisted while per-document content/history/file/photo ownership is preserved.
 
+- Pool/Lane editing is taught through direct palette insertion, title dragging, inline renaming, trailing divider resizing, keyboard deletion and Undo. The manager’s frame-only removal is described separately.
 - Pool/Lane is a participant/responsibility layer, not work duration. Knowledge distinguishes process scope and message communication from sequence flow. The About page describes BPMN XML and file-driven Mining without claiming full BPMN support.
 - New Mining views reuse AppButton/AppSelect/AppDialog, the yellow/neutral theme tokens and Plus Jakarta Sans. Petri diagrams use the existing layered geometry; token controls and verification share one net model. Reference mapping searches the full activity vocabulary with at most 100 mounted rows; evidence names algorithms, budgets and compatible-case coverage.
 - The catalog contains 27 bilingual topics, including Pool/Lane, bounded Petri verification, alignment evidence, resource direction and working calendars. Lessons distinguish theory from the implemented subset and do not imply general liveness/invariants, full BPMN execution or PNML import. Reference mapping requires exact unique labels or an explicit task selection. Fitness and completely matching-case counts are explained separately.
 - The project demo uses an external model/log pair with optional standards and expected evidence. Fresh workspaces never auto-load it, and generated results are not embedded as static product claims. The expected evidence uses the same engine and scenario assertions, not independent PM4Py validation.
-- Production captures refreshed on 2026-10-27 document the existing UI: the four locale/theme workspace images, empty workspace, Knowledge, Pool/Lane dialog and Mining reference evidence. Sources and older capture dates are recorded in `docs/images/README.md` and the adjacent image sidecars.
+- Screenshot provenance is maintained in `docs/images/README.md` and adjacent image sidecars. Refresh the affected capture when its visible interface or content changes.
+- Pool/Lane, Petri and alignment lessons use parallel English/Vietnamese structures: concepts first, a generic synthetic example, supported workflow, then limits. Define token/place/transition/marking and alignment move types before interpreting results. Resource examples distinguish unique senders from transfer frequency.
+- Failed formula copies show a visible inline message as well as an accessible status announcement. A screen-reader-only failure is insufficient for other readers.
+
+- The documents lesson distinguishes invalid input text from committed model data.
+  Manual Save/Export/Share focus visible invalid fields. Outside clicks keep invalid
+  Inspector text visible instead of hiding it before validation. Untouched numeric inputs retain
+  their full stored precision. Import feedback follows the current locale even
+  when the language changes during a file read.
+
+- The file lesson explains selected draw.io pages, preservation of current edits
+  and cancellation of stale page transitions. Separate report guidance distinguishes
+  bounded diagram bitmaps from 1600 × 5000 report images. Every diagnostic remains
+  included, and an oversized report directs the reader to PDF or editable JSON.
+
+- Selecting a canvas shape or connector opens the Inspector automatically so
+  timing, probability and cost fields are discoverable. Empty-canvas clicks close
+  it, while selecting another element keeps the panel open and switches context.
+- Active contents use the largest visible article overlap in the reading region.
+  A fractional tail of the previous article must not override an anchor selection.
+- Image Trace teaching describes conservative whole integer-hour recognition,
+  manual entry for decimals/other units and review before model creation. Mining
+  teaching explains the Conclusions tab with generic examples and separates
+  measured delays, resource centrality and reference-based deviation evidence.

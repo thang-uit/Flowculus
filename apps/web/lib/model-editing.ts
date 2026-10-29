@@ -11,6 +11,7 @@ import {
   type ProcessNode,
 } from '@flowculus/process-model';
 
+import { containingFrame } from '@/lib/container-membership';
 import { SHAPE_TOOL_DEFINITIONS, type SemanticShapeTool } from '@/lib/shape-tools';
 
 /**
@@ -88,28 +89,12 @@ export const addNodeAt = (
   label: string,
   centre: Point,
 ): { model: ProcessModel; nodeId: string } => {
-  let node = createNodeFromTool(tool, label, centre, model.nodes);
-  const containers = Object.values(model.containers ?? {});
-  const lane = containers.find(
-    (item) =>
-      item.kind === 'lane' &&
-      centre.x >= item.bounds.x &&
-      centre.x <= item.bounds.x + item.bounds.width &&
-      centre.y >= item.bounds.y &&
-      centre.y <= item.bounds.y + item.bounds.height,
-  );
-  const pool = lane
-    ? model.containers?.[lane.parentId ?? '']
-    : containers.find(
-        (item) =>
-          item.kind === 'pool' &&
-          !item.blackBox &&
-          centre.x >= item.bounds.x &&
-          centre.x <= item.bounds.x + item.bounds.width &&
-          centre.y >= item.bounds.y &&
-          centre.y <= item.bounds.y + item.bounds.height,
-      );
-  if (pool) node = { ...node, poolId: pool.id, laneId: lane?.id };
+  let node = createNodeFromTool(tool, label, centre, {
+    ...model.nodes,
+    ...model.edges,
+    ...model.containers,
+  });
+  node = { ...node, ...containingFrame(model, getNodeBounds(node)) };
   return {
     model: { ...model, nodes: { ...model.nodes, [node.id]: node } },
     nodeId: node.id,

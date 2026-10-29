@@ -3,6 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type * as OpenCV from '@techstark/opencv-js';
 import { detectTraceShapes } from './detect-shapes';
 import { detectTraceConnectors } from './detect-connectors';
+import { detectTraceDurations } from './detect-duration';
 import type { TraceCandidate } from './trace-types';
 
 let cv: typeof OpenCV;
@@ -38,6 +39,159 @@ const shape = (id: string, x: number, y: number): TraceCandidate => ({
 });
 
 describe('OpenCV geometric tracing', () => {
+  it('prefills a reviewed processing time only from an explicit integer-hour suffix', () => {
+    const image = cv.Mat.zeros(100, 240, cv.CV_8UC1);
+    const patterns = {
+      2: ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+      4: ['10010', '10010', '10010', '11111', '00010', '00010', '00010'],
+      h: ['10000', '10000', '10110', '11001', '10001', '10001', '10001'],
+    };
+    try {
+      let left = 70;
+      for (const glyph of ['2', '4', 'h'] as const) {
+        patterns[glyph].forEach((row, y) =>
+          [...row].forEach((value, x) => {
+            if (value === '1')
+              cv.rectangle(
+                image,
+                new cv.Point(left + x * 4, 30 + y * 4),
+                new cv.Point(left + x * 4 + 3, 30 + y * 4 + 3),
+                new cv.Scalar(255),
+                -1,
+              );
+          }),
+        );
+        left += 24;
+      }
+      expect(
+        detectTraceDurations(image, [
+          {
+            ...shape('duration', 30, 10),
+            bounds: { x: 30, y: 10, width: 180, height: 75 },
+          },
+        ])[0],
+      ).toMatchObject({ processingMinutes: 24 * 60 });
+      expect(detectTraceDurations(image, [shape('outside', 0, 0)])[0]).not.toHaveProperty(
+        'processingMinutes',
+      );
+    } finally {
+      image.delete();
+    }
+  });
+  it('recognises a thick rounded-font 8h label after adaptive thresholding', () => {
+    const image = cv.Mat.zeros(160, 260, cv.CV_8UC1);
+    const patterns = {
+      8: ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+      h: ['10000', '10000', '10110', '11001', '10001', '10001', '10001'],
+    };
+    try {
+      cv.putText(
+        image,
+        'Task label',
+        new cv.Point(65, 45),
+        cv.FONT_HERSHEY_SIMPLEX,
+        0.55,
+        new cv.Scalar(255),
+        2,
+      );
+      let left = 80;
+      for (const glyph of ['8', 'h'] as const) {
+        patterns[glyph].forEach((row, y) =>
+          [...row].forEach((value, x) => {
+            if (value === '1')
+              cv.rectangle(
+                image,
+                new cv.Point(left + x * 5, 60 + y * 5),
+                new cv.Point(left + x * 5 + 4, 60 + y * 5 + 4),
+                new cv.Scalar(255),
+                -1,
+              );
+          }),
+        );
+        left += 30;
+      }
+      expect(
+        detectTraceDurations(image, [
+          {
+            ...shape('rounded-font', 30, 20),
+            bounds: { x: 30, y: 20, width: 200, height: 120 },
+          },
+        ])[0],
+      ).toMatchObject({ processingMinutes: 8 * 60 });
+    } finally {
+      image.delete();
+    }
+  });
+  it('preserves the blank side bearings of a narrow 1 in 16h', () => {
+    const image = cv.Mat.zeros(150, 260, cv.CV_8UC1);
+    const patterns = {
+      1: ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+      6: ['01111', '10000', '10000', '11110', '10001', '10001', '01110'],
+      h: ['10000', '10000', '10110', '11001', '10001', '10001', '10001'],
+    };
+    try {
+      let left = 80;
+      for (const glyph of ['1', '6', 'h'] as const) {
+        patterns[glyph].forEach((row, y) =>
+          [...row].forEach((value, x) => {
+            if (value === '1')
+              cv.rectangle(
+                image,
+                new cv.Point(left + x * 5, 55 + y * 5),
+                new cv.Point(left + x * 5 + 4, 55 + y * 5 + 4),
+                new cv.Scalar(255),
+                -1,
+              );
+          }),
+        );
+        left += 30;
+      }
+      expect(
+        detectTraceDurations(image, [
+          {
+            ...shape('sixteen-hours', 30, 15),
+            bounds: { x: 30, y: 15, width: 200, height: 110 },
+          },
+        ])[0],
+      ).toMatchObject({ processingMinutes: 16 * 60 });
+    } finally {
+      image.delete();
+    }
+  });
+  it('keeps rounded task boxes distinct when a connector touches their border', () => {
+    const image = cv.Mat.zeros(180, 500, cv.CV_8UC1);
+    const roundedBox = (x: number) => {
+      cv.rectangle(
+        image,
+        new cv.Point(x + 10, 40),
+        new cv.Point(x + 130, 140),
+        new cv.Scalar(255),
+        3,
+      );
+      cv.circle(image, new cv.Point(x + 10, 50), 10, new cv.Scalar(255), 3);
+      cv.circle(image, new cv.Point(x + 130, 50), 10, new cv.Scalar(255), 3);
+      cv.circle(image, new cv.Point(x + 10, 130), 10, new cv.Scalar(255), 3);
+      cv.circle(image, new cv.Point(x + 130, 130), 10, new cv.Scalar(255), 3);
+    };
+    try {
+      roundedBox(20);
+      roundedBox(300);
+      line(image, [
+        [150, 90],
+        [300, 90],
+      ]);
+      const candidates = detectTraceShapes(cv, image).filter(
+        (candidate) => candidate.shape === 'rectangle',
+      );
+      expect(candidates).toHaveLength(2);
+      expect(candidates.map((candidate) => candidate.bounds.x)).toEqual([
+        expect.any(Number),
+        expect.any(Number),
+      ]);
+    } finally {
+      image.delete();
+    }
+  });
   it('recovers open boxes and bent split/join paths with attached labels', () => {
     const image = cv.Mat.zeros(360, 1040, cv.CV_8UC1);
     try {

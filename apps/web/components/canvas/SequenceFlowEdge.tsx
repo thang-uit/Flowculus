@@ -19,6 +19,7 @@ import { EdgeRouteControls } from './EdgeRouteControls';
 import { EdgeEndpointControls } from './EdgeEndpointControls';
 import { useEdgeRouteEditing } from '@/lib/use-edge-route-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { inspectCanvasElement } from '@/lib/canvas-inspector';
 
 const internalRect = (node: InternalNode<ProcessFlowNode>): Rect => ({
   x: node.internals.positionAbsolute.x,
@@ -114,9 +115,7 @@ function SequenceFlowEdgeComponent({
             data-critical={critical || undefined}
             data-selected={selected || undefined}
             style={{ left: route.labelPoint.x, top: route.labelPoint.y }}
-            onClick={() =>
-              useWorkspaceStore.getState().setSelection({ nodeIds: [], edgeId: id })
-            }
+            onClick={(event) => inspectCanvasElement(event, 'edge', id)}
             aria-label={label}
             title={label}
           >

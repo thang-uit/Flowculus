@@ -1,10 +1,20 @@
 import { GatewayMarker } from '@/components/bpmn/GatewayMarker';
-import type { SemanticShapeTool } from '@/lib/shape-tools';
+import type { PaletteTool } from '@/lib/shape-tools';
 
 /** Miniatures use the same BPMN geometry as the canvas, not generic app icons. */
-export function ShapePaletteGlyph({ tool }: Readonly<{ tool: SemanticShapeTool }>) {
+export function ShapePaletteGlyph({ tool }: Readonly<{ tool: PaletteTool }>) {
   let shape;
   switch (tool) {
+    case 'pool':
+    case 'lane':
+      shape = (
+        <>
+          <rect x="5" y="15" width="90" height="70" strokeWidth="4" />
+          <path d="M 23 15 V 85" strokeWidth="3" />
+          {tool === 'lane' ? <path d="M 23 50 H 95" strokeWidth="3" /> : null}
+        </>
+      );
+      break;
     case 'start':
       shape = <circle cx="50" cy="50" r="37" strokeWidth="5" />;
       break;

@@ -1,4 +1,5 @@
 import { type TimePolicy, ELAPSED_TIME_POLICY } from './business-calendar';
+import { summarizeObservations } from './observations';
 import {
   buildDirectlyFollowsGraph,
   buildTraces,
@@ -24,10 +25,12 @@ export const createProcessDiscovery = (
   const fullDfg = buildDirectlyFollowsGraph(traces, timePolicy);
   const stats = computeLogStats(log, traces, variants);
   const bottlenecks = findBottlenecks(fullDfg);
+  const observations = summarizeObservations(fullDfg, variants);
 
   return (filter: DiscoveryFilter = DEFAULT_DISCOVERY_FILTER): ProcessDiscovery => {
     const filtered = filterDirectlyFollowsGraph(traces, fullDfg, filter, timePolicy);
     return {
+      observations,
       timePolicy,
       stats,
       dfg: filtered.dfg,

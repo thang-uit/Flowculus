@@ -181,6 +181,8 @@ export const EN: WorkspaceCopy = {
   fileReady: 'File loaded',
   fileError: 'Could not read this file',
   exportError: 'Could not export this file. Try Flowculus JSON or SVG.',
+  reportImageTooLarge:
+    'This report is too long for a readable image. Export the PDF report instead, or save Flowculus JSON to keep the model.',
   fileTooLarge: 'This file is larger than 50 MB.',
   missingNodeTable: 'Select a nodes CSV together with the edges CSV.',
   invalidModelCsv: 'The process CSV contains invalid nodes, edges or time values.',
@@ -255,7 +257,7 @@ export const EN: WorkspaceCopy = {
   imageTraceEmpty:
     'No process shapes were detected. Use the image as a reference and draw manually.',
   imageTraceHint:
-    'Review every shape and connector. Direction is proposed left-to-right or top-to-bottom; arrowheads are not verified. Enter labels, times and probabilities yourself.',
+    'Review every shape, connector and pre-filled hour value. Direction is proposed left-to-right or top-to-bottom, so check arrowheads. Enter missing times, labels and probabilities.',
   imageTraceCandidates: 'Shapes',
   imageTraceConnectors: 'Proposed connectors',
   imageTraceAddConnector: 'Add connector',
@@ -279,6 +281,9 @@ export const EN: WorkspaceCopy = {
   imageTraceRemoveCandidate: 'Remove shape',
   imageTraceKind: 'Shape type',
   imageTraceLabel: 'Shape label',
+  imageTraceDuration: 'Processing time (hours)',
+  imageTraceDurationHint:
+    'A clear printed label such as “8h” may be pre-filled. Enter handwritten or decimal values here if they are not recognised. Convert other units to hours and verify every value.',
   imageTraceRetry: 'Try again',
   imageTraceCancel: 'Cancel detection',
   imageTraceLoaded: 'Reference image added to canvas.',
@@ -385,7 +390,6 @@ export const EN: WorkspaceCopy = {
   miningBottlenecksHint:
     'Ranked by mean time: hand-overs from the previous completion to the next start, and activities by service time. Shares are calculated separately for each kind; these measurements do not establish the cause.',
   miningCases: 'Cases',
-  miningCasesShort: 'cases',
   miningDownloadCsv: 'Log as CSV',
   miningDuration: 'Mean time',
   miningDurationThreshold: 'Transition time',
@@ -441,7 +445,7 @@ export const EN: WorkspaceCopy = {
   miningAlphaReplayHint:
     'Internal replay against the model discovered from this same log; this is not compliance against an approved process.',
   miningAlphaExamples: 'Cases with replay mismatch',
-  miningConformance: 'Check vs BPMN',
+  miningConformance: 'BPMN comparison',
   miningConformanceCheck: 'Check current BPMN',
   miningConformanceHint:
     'Token replay against the current BPMN requires a confirmed reference and matching activity names. Unexpected order may mean a skipped step, repetition or wrong branch; suggested next steps are clues, not proof of exactly which step was missed. Only supported XOR/AND structures receive a score.',

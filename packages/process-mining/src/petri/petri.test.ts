@@ -5,11 +5,7 @@ import { checkSemanticGate, validateModelStructure } from '@flowculus/validation
 import { bpmnToPetri } from './from-bpmn';
 import { verifyPetri } from './reachability';
 import { alignmentConformance } from '../alignment-conformance';
-import {
-  deliveryLog,
-  deliveryModel,
-  DELIVERY_EXPECTATIONS,
-} from '../__fixtures__/software-delivery';
+import { deliveryLog, deliveryModel } from '../__fixtures__/software-delivery';
 import { buildSocialNetwork } from '../social-network';
 import { buildFootprint } from './footprint';
 import { mineAlpha } from '../alpha-miner';

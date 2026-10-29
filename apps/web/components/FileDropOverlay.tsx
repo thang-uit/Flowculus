@@ -4,11 +4,16 @@ import { UploadSimple } from '@phosphor-icons/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { WorkspaceCopy } from '@/lib/i18n';
+import { droppedDeviceFiles } from '@/lib/documents/dropped-device-files';
 import { describeImportError } from '@/lib/import-error';
+import { getWorkspaceCopy } from '@/lib/i18n';
+import { usePreferencesStore } from '@/lib/use-preferences-store';
+
+import type { WorkspaceImportSelection } from '@/lib/use-workspace-import';
 
 interface FileDropOverlayProps {
   copy: WorkspaceCopy;
-  onImportFiles: (files: File[]) => Promise<boolean>;
+  onImportFiles: (files: WorkspaceImportSelection) => Promise<boolean>;
 }
 
 const carriesFiles = (event: DragEvent): boolean =>
@@ -18,13 +23,13 @@ const carriesFiles = (event: DragEvent): boolean =>
 /** A document-level drop target that never intercepts draw.io shape drags. */
 export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
   const [active, setActive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ reason: unknown } | null>(null);
   const errorTimerRef = useRef<number | null>(null);
 
   const importDroppedFiles = useCallback(
-    (files: File[]) => {
-      void onImportFiles(files).catch((reason: unknown) => {
-        setError(describeImportError(reason, copy));
+    (files: Promise<File[]>) => {
+      void onImportFiles(() => files).catch((reason: unknown) => {
+        setError({ reason });
         if (errorTimerRef.current != null) window.clearTimeout(errorTimerRef.current);
         errorTimerRef.current = window.setTimeout(() => {
           errorTimerRef.current = null;
@@ -32,7 +37,7 @@ export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
         }, 3200);
       });
     },
-    [copy, onImportFiles],
+    [onImportFiles],
   );
 
   useEffect(() => {
@@ -55,7 +60,7 @@ export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
       if (!carriesFiles(event)) return;
       event.preventDefault();
       setActive(false);
-      importDroppedFiles(Array.from(event.dataTransfer?.files ?? []));
+      importDroppedFiles(droppedDeviceFiles(event.dataTransfer));
     };
 
     window.addEventListener('dragenter', handleDragEnter);
@@ -79,13 +84,16 @@ export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
 
   if (!active && !error) return null;
 
-  if (!active) {
+  if (!active && error) {
     return (
       <div
         className="pointer-events-none fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-xl border border-[var(--danger)]/45 bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--danger)] shadow-[var(--shadow-panel)]"
         role="alert"
       >
-        {error}
+        {describeImportError(
+          error.reason,
+          getWorkspaceCopy(usePreferencesStore.getState().locale),
+        )}
       </div>
     );
   }
@@ -101,7 +109,7 @@ export function FileDropOverlay({ copy, onImportFiles }: FileDropOverlayProps) {
         event.preventDefault();
         event.stopPropagation();
         setActive(false);
-        importDroppedFiles(Array.from(event.dataTransfer.files));
+        importDroppedFiles(droppedDeviceFiles(event.dataTransfer));
       }}
       role="status"
       aria-live="polite"

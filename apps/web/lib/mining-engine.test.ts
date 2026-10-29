@@ -44,6 +44,15 @@ describe('mining session', () => {
       eventCount: 4,
       variantCount: 2,
     });
+    const eventPage = handle({ type: 'read-log-page', offset: 0 });
+    expect(eventPage).toMatchObject({
+      type: 'log-page',
+      total: 4,
+      matched: 4,
+      offset: 0,
+    });
+    if (eventPage.type !== 'log-page') throw new Error('expected a log page');
+    expect(eventPage.rows[0]?.event.activity).toBe('Create');
     const filtered = handle({
       type: 'discover',
       filter: { ...DEFAULT_DISCOVERY_FILTER, minActivityShare: 1 },
@@ -91,6 +100,44 @@ describe('mining session', () => {
 });
 
 describe('mining session lifecycle', () => {
+  it('uses the selected task mapping for reference evidence without the retired replay payload', () => {
+    const session = createMiningSession();
+    session({
+      type: 'inspect-file',
+      fileName: 'alias.csv',
+      source: 'caseId,activity,timestamp\n1,Observed name,2026-10-05T08:00:00Z',
+    });
+    session({
+      type: 'apply-mapping',
+      name: 'alias',
+      filter: DEFAULT_DISCOVERY_FILTER,
+      mapping: { caseId: 'caseId', activity: 'activity', timestamp: 'timestamp' },
+    });
+    const response = session({
+      type: 'check-conformance',
+      model: {
+        schemaVersion: 1,
+        id: 'reference',
+        name: 'Reference',
+        nodes: {
+          start: { id: 'start', label: 'Start', kind: 'start' },
+          task: { id: 'task', label: 'Reference name', kind: 'task' },
+          end: { id: 'end', label: 'End', kind: 'end' },
+        },
+        edges: {
+          first: { id: 'first', source: 'start', target: 'task' },
+          last: { id: 'last', source: 'task', target: 'end' },
+        },
+      },
+      options: { activityMapping: { 'Observed name': 'task' } },
+    });
+    expect(response).toMatchObject({
+      type: 'conformance',
+      alignment: { status: 'ready', compatibleCases: 1, fitness: 1 },
+      verification: { status: 'complete', sound: true },
+    });
+    expect(response).not.toHaveProperty('result');
+  });
   it('validates the explicit process title without replacing the source log name', () => {
     const session = createMiningSession();
     session({
@@ -203,6 +250,15 @@ it('switches every duration to the work calendar without changing activity ident
   expect(initial.discovery.stats.meanLeadTimeMs / 3600000).toBe(70);
   expect(working.discovery.stats.meanLeadTimeMs / 3600000).toBe(6);
   expect(working.activityNames).toEqual(initial.activityNames);
+  const sameClock = handle({
+    type: 'discover',
+    filter: { ...DEFAULT_DISCOVERY_FILTER, minActivityShare: 0.5 },
+    timePolicy: { basis: 'working', calendar: structuredClone(calendar) },
+  });
+  if (sameClock.type !== 'discovery') throw Error('expected discovery');
+  expect(sameClock.discovery.stats).toBe(working.discovery.stats);
+  expect(sameClock.discovery.variants).toBe(working.discovery.variants);
+  expect(sameClock.discovery.bottlenecks).toBe(working.discovery.bottlenecks);
   expect(working.discovery.variants.map((v) => v.activities)).toEqual(
     initial.discovery.variants.map((v) => v.activities),
   );
@@ -235,6 +291,8 @@ it('switches every duration to the work calendar without changing activity ident
     timePolicy: { basis: 'elapsed' },
   });
   expect(elapsed).toEqual(initial);
+  if (elapsed.type !== 'discovery') throw Error('expected discovery');
+  expect(elapsed.discovery.stats).not.toBe(working.discovery.stats);
   expect(() =>
     handle({
       type: 'discover',
@@ -242,4 +300,40 @@ it('switches every duration to the work calendar without changing activity ident
       timePolicy: { basis: 'working', calendar: { ...calendar, weekdays: [] } },
     }),
   ).toThrow('invalid-work-calendar');
+});
+
+it('counts partial missing starts once per log and resets the count for a replacement', () => {
+  const session = createMiningSession();
+  session({
+    type: 'inspect-file',
+    fileName: 'partial.csv',
+    source:
+      'case_id,activity,start_timestamp,timestamp\n1,A,2026-10-01T08:00:00Z,2026-10-01T09:00:00Z\n1,B,,2026-10-01T10:00:00Z',
+  });
+  const result = session({
+    type: 'apply-mapping',
+    name: 'Partial',
+    mapping: {
+      caseId: 'case_id',
+      activity: 'activity',
+      startTimestamp: 'start_timestamp',
+      timestamp: 'timestamp',
+    },
+    filter: DEFAULT_DISCOVERY_FILTER,
+  });
+  expect(result).toMatchObject({
+    hasStartTimes: true,
+    missingStartTimes: 1,
+    invalidStartTimes: 0,
+  });
+  expect(session({ type: 'discover', filter: DEFAULT_DISCOVERY_FILTER })).toMatchObject({
+    missingStartTimes: 1,
+  });
+  expect(
+    session({
+      type: 'load-preset',
+      presetId: 'it-service-desk',
+      filter: DEFAULT_DISCOVERY_FILTER,
+    }),
+  ).toMatchObject({ missingStartTimes: 0 });
 });

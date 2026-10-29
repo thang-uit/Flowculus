@@ -3,6 +3,8 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 
 import { StandardsPanel } from './StandardsPanel';
+import { MiningConclusions } from './MiningConclusions';
+import { getMiningConclusionsCopy } from '@/lib/i18n/mining-conclusions-copy';
 import type { MiningRequest, MiningResponse } from '@/lib/mining-engine';
 import { BottleneckList } from '@/components/mining/BottleneckList';
 import { PetriNetView } from './PetriNetView';
@@ -19,7 +21,14 @@ import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-const TABS = ['variants', 'bottlenecks', 'resources', 'alpha', 'conformance'] as const;
+const TABS = [
+  'conclusions',
+  'variants',
+  'bottlenecks',
+  'resources',
+  'alpha',
+  'conformance',
+] as const;
 type SideTab = (typeof TABS)[number];
 
 /** Variants and bottlenecks of the current discovery, as tabs. */
@@ -32,11 +41,13 @@ export function MiningInsightsPanel({
 }>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
+  const conclusionsCopy = getMiningConclusionsCopy(locale);
+  const status = useMiningStore((state) => state.status);
   const discovery = useMiningStore((state) => state.result?.discovery);
   const socialNetwork = useMiningStore((state) => state.result?.socialNetwork);
   const evidence = useMiningStore((state) => state.result);
   const alpha = useMiningStore((state) => state.result?.alpha);
-  const [tab, setTab] = useState<SideTab>('variants');
+  const [tab, setTab] = useState<SideTab>('conclusions');
   const tabListRef = useRef<HTMLDivElement>(null);
 
   const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -66,7 +77,7 @@ export function MiningInsightsPanel({
         role="tablist"
         aria-label={copy.miningInsights}
         onKeyDown={onTabKeyDown}
-        className="flex overflow-x-auto border-b border-[var(--border)] scrollbar-thin"
+        className="sticky top-0 z-10 flex overflow-x-auto border-b border-[var(--border)] bg-[var(--surface)] scrollbar-thin"
       >
         {TABS.map((item) => (
           <button
@@ -85,15 +96,17 @@ export function MiningInsightsPanel({
                 : 'text-[var(--muted)] hover:text-[var(--text)]',
             )}
           >
-            {item === 'variants'
-              ? copy.miningVariants
-              : item === 'bottlenecks'
-                ? copy.miningBottlenecks
-                : item === 'resources'
-                  ? copy.miningResource
-                  : item === 'alpha'
-                    ? copy.miningAlpha
-                    : copy.miningConformance}
+            {item === 'conclusions'
+              ? conclusionsCopy.title
+              : item === 'variants'
+                ? copy.miningVariants
+                : item === 'bottlenecks'
+                  ? copy.miningBottlenecks
+                  : item === 'resources'
+                    ? copy.miningResource
+                    : item === 'alpha'
+                      ? copy.miningAlpha
+                      : copy.miningConformance}
             {tab === item ? (
               <span
                 className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-[var(--accent)]"
@@ -109,8 +122,10 @@ export function MiningInsightsPanel({
         aria-labelledby={`mining-tab-button-${tab}`}
         className="p-3"
       >
-        {discovery ? (
-          tab === 'variants' ? (
+        {discovery && evidence ? (
+          tab === 'conclusions' ? (
+            <MiningConclusions result={evidence} />
+          ) : tab === 'variants' ? (
             <>
               <p className="mb-2 text-[11px] leading-4 text-[var(--muted)]">
                 {copy.miningVariantsHint}
@@ -121,7 +136,9 @@ export function MiningInsightsPanel({
             <>
               <p className="mb-2 text-[11px] leading-4 text-[var(--muted)]">
                 {copy.miningBottlenecksHint}
-                {` ${copy.miningNoStartTimes}`}
+                {(evidence?.missingStartTimes ?? 0) > 0
+                  ? ` ${copy.miningNoStartTimes}`
+                  : ''}
               </p>
               <BottleneckList bottlenecks={discovery.bottlenecks} />
               <StandardsPanel request={request} />
@@ -142,7 +159,15 @@ export function MiningInsightsPanel({
           ) : tab === 'conformance' ? (
             <ReferenceConformancePanel onCheck={onCheckConformance} />
           ) : null
-        ) : null}
+        ) : (
+          <p role="status" className="py-5 text-xs leading-5 text-[var(--muted-strong)]">
+            {status === 'loading'
+              ? conclusionsCopy.loading
+              : status === 'error'
+                ? conclusionsCopy.failed
+                : conclusionsCopy.empty}
+          </p>
+        )}
         {discovery ? (
           <p className="mt-3 text-[10.5px] text-[var(--muted)]">
             {copy.miningPeriod}:{' '}

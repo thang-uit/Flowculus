@@ -7,6 +7,8 @@ import { copySelectedNodes, readCanvasClipboard } from '@/lib/canvas-clipboard-r
 import { showNotice } from '@/lib/ui/notice-store';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { removeElements } from '@/lib/model-editing';
+import { reorderLane } from '@/lib/container-gestures';
+import { orderedLanes } from '@/lib/lane-arrangement';
 import { nudgeCollaboration } from '@/lib/collaboration-editing';
 import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
 import { useWorkspaceStore } from '@/lib/workspace-store';
@@ -72,7 +74,19 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
         return;
       const mod = event.metaKey || event.ctrlKey;
       const key = event.key.toLowerCase();
-      if (mod && key === 'c') {
+      if (!mod && (key === 'delete' || key === 'backspace')) {
+        if (document.querySelector('[role="dialog"], [role="menu"]')) return;
+        if (!state.selectedNodeIds.length && !state.selectedEdgeId) return;
+        event.preventDefault();
+        state.commitModel(
+          removeElements(
+            state.processModel,
+            state.selectedNodeIds,
+            state.selectedEdgeId ? [state.selectedEdgeId] : [],
+          ),
+        );
+        state.setSelection({ nodeIds: [], edgeId: null });
+      } else if (mod && key === 'c') {
         const payload = getPayload();
         if (!payload) return;
         event.preventDefault();
@@ -101,7 +115,10 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
       } else if (mod && key === 'a' && withinCanvas) {
         event.preventDefault();
         state.setSelection({
-          nodeIds: Object.keys(state.processModel.nodes),
+          nodeIds: [
+            ...Object.keys(state.processModel.containers ?? {}),
+            ...Object.keys(state.processModel.nodes),
+          ],
           edgeId: null,
         });
       } else if (
@@ -115,6 +132,23 @@ export function useCanvasClipboard(wrapperRef: RefObject<HTMLDivElement | null>)
         if (!dx && !dy) return;
         event.preventDefault();
         const step = event.shiftKey ? 10 : 1;
+        const lane =
+          state.selectedNodeIds.length === 1
+            ? state.processModel.containers?.[state.selectedNodeIds[0]]
+            : undefined;
+        if (lane?.kind === 'lane') {
+          const pool = state.processModel.containers?.[lane.parentId ?? ''];
+          const direction = pool?.orientation === 'horizontal' ? dy : dx;
+          if (direction && pool) {
+            const index = orderedLanes(state.processModel, pool.id).findIndex(
+              (item) => item.id === lane.id,
+            );
+            state.commitModel(
+              reorderLane(state.processModel, lane.id, index + direction),
+            );
+          }
+          return;
+        }
         const next = nudgeCollaboration(
           state.processModel,
           state.selectedNodeIds,

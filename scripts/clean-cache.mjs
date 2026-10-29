@@ -6,6 +6,9 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const targets = [
   '.turbo',
   '.playwright-cli',
+  '.tmp',
+  '.impeccable/review',
+  'output/playwright',
   'apps/web/.next/cache',
   'apps/web/.next/dev',
   'node_modules/.vite',

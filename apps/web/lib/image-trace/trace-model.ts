@@ -19,6 +19,10 @@ export function traceToProcessModel(result: TraceResult, name: string): ProcessM
       label: candidate.label.trim() || candidate.id,
       kind: candidate.kind,
       gatewayKind: candidate.kind === 'gateway' ? 'xor' : undefined,
+      processingMinutes:
+        candidate.kind === 'task' || candidate.kind === 'subprocess'
+          ? candidate.processingMinutes
+          : undefined,
       bounds: candidate.bounds,
       metadata: {
         [SEMANTIC_METADATA_KEYS.inferredKind]: true,
@@ -162,30 +166,28 @@ export function classifyContour(
   circularity: number,
   tipTolerance = 0.2,
 ): TraceShape | null {
+  if (vertices.length < 4) return null;
+  const xs = vertices.map((point) => point.x);
+  const ys = vertices.map((point) => point.y);
+  const minX = Math.min(...xs),
+    maxX = Math.max(...xs),
+    minY = Math.min(...ys),
+    maxY = Math.max(...ys);
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (
+    width <= 0 ||
+    height <= 0 ||
+    vertices.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))
+  )
+    return null;
+  const aspect = width / height;
+  if (aspect < 0.25 || aspect > 5) return null;
   if (vertices.length === 4) {
-    const xs = vertices.map((point) => point.x);
-    const ys = vertices.map((point) => point.y);
-    const width = Math.max(...xs) - Math.min(...xs);
-    const height = Math.max(...ys) - Math.min(...ys);
-    if (width <= 0 || height <= 0) return null;
-    if (vertices.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y)))
-      return null;
-    const minX = Math.min(...xs),
-      minY = Math.min(...ys);
-    const aspect = width / height;
-    if (aspect < 0.25 || aspect > 5) return null;
     const corners = vertices.every(
       (point) =>
-        Math.min(
-          Math.abs(point.x - Math.min(...xs)),
-          Math.abs(point.x - Math.max(...xs)),
-        ) <
-          width * 0.2 &&
-        Math.min(
-          Math.abs(point.y - Math.min(...ys)),
-          Math.abs(point.y - Math.max(...ys)),
-        ) <
-          height * 0.2,
+        Math.min(Math.abs(point.x - minX), Math.abs(point.x - maxX)) < width * 0.2 &&
+        Math.min(Math.abs(point.y - minY), Math.abs(point.y - maxY)) < height * 0.2,
     );
     if (corners) return 'rectangle';
     const tips = [
@@ -204,7 +206,18 @@ export function classifyContour(
       ? 'diamond'
       : null;
   }
-  return vertices.length >= 6 && circularity >= 0.7 ? 'ellipse' : null;
+  if (vertices.length >= 6 && circularity >= 0.7) return 'ellipse';
+  // Rounded task boxes typically approximate to 6–12 supported hull points.
+  // Require an elongated box and evidence on every side so circles and text
+  // hulls are not promoted to tasks.
+  if (vertices.length <= 12 && (aspect >= 1.35 || aspect <= 0.74)) {
+    const nearLeft = vertices.some((point) => point.x <= minX + width * 0.12);
+    const nearRight = vertices.some((point) => point.x >= maxX - width * 0.12);
+    const nearTop = vertices.some((point) => point.y <= minY + height * 0.2);
+    const nearBottom = vertices.some((point) => point.y >= maxY - height * 0.2);
+    if (nearLeft && nearRight && nearTop && nearBottom) return 'rectangle';
+  }
+  return null;
 }
 
 export { snapConnector } from './connector-snap';

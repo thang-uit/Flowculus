@@ -11,6 +11,7 @@ export {
   findBottlenecks,
 } from './discover';
 export { createProcessDiscovery, discoverProcess } from './discovery-session';
+export { summarizeObservations } from './observations';
 export { eventLogToCsv } from './export';
 export {
   checkModelConformance,
@@ -67,6 +68,7 @@ export {
   type EventLogStats,
   type EventTable,
   type MiningEvent,
+  type MiningObservations,
   type ProcessDiscovery,
   type Trace,
   type TraceVariant,

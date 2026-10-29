@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { findActiveTopic } from './active-topic';
 
 /** Keep all intersecting articles, since observer callbacks contain only changed entries. */
 export function useActiveTopic(firstId: string) {
@@ -12,10 +13,16 @@ export function useActiveTopic(firstId: string) {
         for (const entry of entries)
           if (entry.isIntersecting) visible.add(entry.target);
           else visible.delete(entry.target);
-        const first = [...visible].sort(
-          (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
-        )[0];
-        if (first) setActive(first.id);
+        const viewport = entries[0]?.rootBounds;
+        if (!viewport) return;
+        const next = findActiveTopic(
+          [...visible].map((article) => {
+            const { top, bottom } = article.getBoundingClientRect();
+            return { id: article.id, top, bottom };
+          }),
+          viewport,
+        );
+        if (next) setActive(next);
       },
       { rootMargin: '-100px 0px -60% 0px' },
     );

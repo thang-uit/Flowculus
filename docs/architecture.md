@@ -33,6 +33,10 @@ The canvas is native React Flow (`@xyflow/react`); see
   `use-canvas-commands.ts` / `use-canvas-shortcuts.ts`.
 - Pointer movement stays inside React Flow. The store is written once per
   gesture through `commitModel`, which records undo history (100 steps).
+- `canvas-inspector.ts` opens the Inspector on explicit node/edge clicks,
+  including a second click after dismissing the same selection. Transient drag
+  and marquee selection, modifier clicks and Pan remain passive. Quick actions,
+  inline fields and routing handles retain their own interaction handlers.
 - `ProcessNodeView` renders `CT`/`T`/`Wq` chips from `activityTimeTerms`
   (with the time source in the tooltip) and a "needs confirmation" badge from
   `unconfirmedNodeCodes`. Critical-chain highlighting preserves BPMN line styles:
@@ -141,7 +145,10 @@ between the worker, the store, the UI and every export unchanged
   then a main-thread fallback.
 - `workers/mining.worker.ts` hosts the stateful mining session.
   `useMiningClient` adds a 90 s timeout, `cancel()` and bounded restarts;
-  `useMiningSession` maps aborts to a cleared session and a localized message.
+  `useMiningSession` and `mining-conformance.ts` clear the session after worker
+  loss and localize the failure. Conformance has a separate latest-request ticket,
+  binds its result to the original discovery and an unchanged open reference, and clears previous evidence while
+  a new comparison runs. Replacement uploads disable reference comparisons.
 - `workers/xlsx-log.worker.ts` extracts only the first worksheet, with a 10 MB
   file limit; cancelled extraction terminates its worker.
 - `workers/comparison.worker.ts` runs `compareProcessScenarios` for two confirmed
@@ -153,8 +160,13 @@ between the worker, the store, the UI and every export unchanged
   and rejects raw worker source assets.
 - `workers/image-trace.worker.ts` loads OpenCV on demand for approximate geometric
   tracing, with bounded 1600 px processing and a 45 s timeout. Arrowhead direction,
-  gateway markers and text are not read. Crossings and broken strokes can require
-  manual repair; every inferred element must be reviewed before export.
+  gateway markers and general text are not read. The duration detector accepts
+  one complete printed integer-hour label (`0h` through `10000h`) per task, retains
+  punctuation to reject decimal/negative labels, and never uses a numeric suffix
+  from a longer label. Its visited buffer covers only the task region, without a
+  second copy of each connected component's pixels. Manual duration edits discard
+  the original recognition-confidence marker. Crossings and broken strokes can
+  require manual repair. Every inferred element must be reviewed before export.
 
 ## draw.io interoperability
 
@@ -172,7 +184,10 @@ between the worker, the store, the UI and every export unchanged
   semantic preservation (`semantic-preserving.test.ts`), not byte equality.
 - `.flowculus.json` optionally stores `drawioPageIndex` alongside the source XML;
   legacy files default to page zero. Edited source pages use the user-chosen model
-  name. Page switching discards stale async results after tab switches or edits.
+  name. Missing native bounds are restored from the selected source page without
+  changing explicit coordinates. `documents/drawio-page-transition.ts` patches the
+  current page before decoding another and checks the originating revision and
+  document identity. Leaving and returning to the same tab also cancels stale work.
 
 ## Process mining
 
@@ -182,6 +197,12 @@ filtered DFG to BPMN (`dfgToProcessModel`) with inferred gateway and
 probability flags and structured `MiningConversionWarning`s. The mining view is
 split into `MiningSourcePanel`, `MiningFilterPanel`, `MiningMapView` and
 `MiningInsightsPanel`, with the actions in `lib/use-mining-session.ts`.
+
+Standards comparisons render 50 activity/resource rows per page in
+`StandardsResults`, with access to every group and localized numeric formatting.
+Missing start timestamps are counted once per log, including blank starts in
+partially timed logs. Mining JSON includes graph filters, hidden element counts
+and missing-start counts so filtered graph evidence is distinguishable from full-log statistics.
 
 ## Exports and reports
 
@@ -193,7 +214,15 @@ report (`report-image.ts`). Both reports read `buildReportContent`
 (`report-content.ts`), so they show the same metric qualities, findings and
 per-activity time sources as the UI. Data exports can run without analysis;
 generated analysis reports require a current result. Device saves omit derived
-analysis and recalculate it when opened.
+analysis and recalculate it when opened. Manual export/share commit pending fields.
+Inspector outside dismissal commits before hiding the panel and keeps invalid
+fields visible so Save/Export cannot bypass them as inert content.
+
+`report-image-layout.ts` bounds report images to 1600 × 5000 pixels (8 MP) and
+200,000 text characters. It reserves space for wrapped titles, every diagnostic
+and the footer before allocating the report canvas. Unbroken labels wrap at
+Unicode code-point boundaries. Oversized reports produce a localized PDF/native
+JSON suggestion instead of clipping diagnostics or allocating an unbounded bitmap.
 
 ## Resilience
 
@@ -210,7 +239,15 @@ timeout, main-thread fallback) and an offline badge (`use-online-status`).
 
 ## Collaboration and portable BPMN
 
-Version-2 ProcessModel adds serialisable container records independently of executable nodes. Pool/Lane membership survives native JSON, clipboard, CSV metadata and draw.io container metadata; v1 documents remain readable. React Flow uses relative parent coordinates, while the domain retains absolute bounds. A drag commits once; invalid cross-pool sequence changes are rejected atomically. Pool/lane resize, lane ordering, keyboard nudge and clipboard edits preserve membership. Removing a frame keeps work; cutting a selected frame copies/removes its explicit contents.
+Container drag completion distinguishes parent-pool translation from a lane reorder,
+including a lane used as the drag anchor in a parent selection. Mixed lane/task
+reorders are rejected atomically rather than discarding part of a selection.
+Resizing validates affected frames and contents, so a small imported frame in an
+unrelated pool cannot block the selected edit. Inspector number fields can reject
+a domain commit and keep an inline invalid state instead of displaying an unapplied
+dimension as though it had succeeded.
+
+Version-2 ProcessModel adds serialisable container records independently of executable nodes. Pool/Lane membership survives native JSON, clipboard, CSV metadata and draw.io container metadata; v1 documents remain readable. React Flow uses relative parent coordinates, while the domain retains absolute bounds. A drag commits once; invalid cross-pool sequence changes are rejected atomically. Pool/lane resize, lane ordering, keyboard nudge and clipboard edits preserve membership. The shape palette shares Pool/Lane tools for click and HTML5 drop. Lane title drags snap to sibling order without changing task inputs. Inline naming and ContainerInspector reuse the same pure edits. Delete/Backspace and cut cascade through selected frame contents, while the separate manager action removes only the frame. Pool resize and trailing lane dividers update adjacent boundaries atomically and refuse clipping. Interrupted or stale drag/resize gestures restore the model without history. Free tasks can enter/leave frames, but cross-pool sequence flow is rejected and incomplete memberships block scoped analysis.
 
 Analysis selects a single process through `scopeProcessModel` and `processPoolId`; it never sums participant durations. BPMN message flows are excluded from control flow. `bpmn-adapter` reads bounded namespace-aware BPMN XML and DI, rejects declarations/unsupported execution semantics and writes standard BPMN with namespaced time/probability extensions. Its exporter asserts semantic confirmation. This is a BPMN subset, not a full workflow execution engine.
 
@@ -218,6 +255,45 @@ Analysis selects a single process through `scopeProcessModel` and `processPoolId
 
 `process-mining/src/petri` owns net types, firing, Alpha/BPMN-to-Petri conversion, footprint, reachability, PNML export, trace alignment and quality variants. `alignment-conformance.ts` aggregates log/reference results; `performance-standards.ts` owns service-standard parsing and comparison. The UI draws from the same net used by the runtime. Verification distinguishes successful final markings from erroneous deadlocks; a truncated search returns inconclusive rather than a proof. Reachability explores at most 2,000 markings by default and cuts off token growth above 32 per place. These workflow completion checks do not provide general liveness/invariants or business-correctness proofs.
 
-The mining worker caches Alpha evidence per log, exposes bounded optimal unit-cost alignment and service-standard comparison. Reference identity, process scope and activity mapping are explicit. `ActivityMappingEditor` searches the full log vocabulary while mounting at most 100 matching rows. BPMN-to-Petri supports a narrower XOR/AND subset than analytical CT; unsupported message/OR/parameter-rework semantics withhold conformance. Fitness uses the stated alignment normalisation; prefix precision and transition-frequency generalization use only exactly compatible cases with disclosed coverage. Simplicity uses mean arc degree. Partial analysis withholds conclusions. JSON evidence exports derived results; event logs remain a separate explicit download. PNML import, arbitrary Petri-to-BPMN conversion, business calendars, log-vs-log comparison and BPR tagging are not implemented.
+The mining worker caches Alpha evidence per log and reuses prepared traces/statistics while filters change under the same time policy. Reference checks return bounded optimal unit-cost alignment and Petri verification. Service-standard comparison uses a separate request. The older token-replay API remains available in the domain package for compatibility, but the UI does not run or store its unused payload. Reference identity, process scope and activity mapping are explicit. `ActivityMappingEditor` searches the full log vocabulary while mounting at most 100 matching rows. BPMN-to-Petri supports a narrower XOR/AND subset than analytical CT; unsupported message/OR/parameter-rework semantics withhold conformance. Fitness uses the stated alignment normalisation; prefix precision and transition-frequency generalization use only exactly compatible cases with disclosed coverage. Simplicity uses mean arc degree. Partial analysis withholds conclusions. JSON evidence exports derived results; event logs remain a separate explicit download. PNML import, arbitrary Petri-to-BPMN conversion, log-vs-log comparison and BPR tagging are not implemented. Mining supports fixed-offset working calendars with weekday, shift and holiday configuration. Daylight-saving rules and per-resource calendars are not implemented.
 
 `comparison.worker.ts` runs two analytical model scenarios off the main thread. All five workers are verified by the build script. Model comparison is distinct from measured pre/post intervention effects. Data for the project demonstration is generated outside the app by `pnpm demo:export`; fixtures used to verify generation are test-only, with no project-specific runtime preset. Expected metrics come from the same engine plus explicit scenario assertions, not independent PM4Py validation. Validating the generated BPMN against the OMG XML schema checks its structure, not full execution conformance.
+
+## Source and cache hygiene
+
+Every declared runtime dependency has a source import or framework configuration use. TypeScript checks unused imports, locals and parameters across the workspace. Public package exports and draft migrations are preserved even when they have no direct UI caller.
+
+`pnpm clean:cache` removes a fixed list of generated paths: Turbo/Next/Vitest caches, TypeScript incremental files, `.tmp`, local Playwright captures and `.impeccable/review`. It does not traverse arbitrary user-supplied paths. Installed dependencies, production output, exported demo kits, the GitNexus index and browser drafts remain available. Stop local servers first. The next build or development run regenerates its caches.
+
+Current instructions belong in README, this architecture guide, accepted ADRs and the relevant surface description. Completed one-off audit notes are not kept as competing instructions. Demo generation remains documented separately in `report-study-guide.md`.
+
+### Connected device files
+
+Native file opening uses the File System Access picker when available. Parsed
+`.flowculus.json` inputs retain their source handle, including supported drops.
+Converted BPMN/draw.io/CSV inputs never bind for native JSON writes. All import
+entry points share cancellation from selection through parsing and application.
+
+Device capabilities are separate from models: browser access, connection registry,
+optional IndexedDB structured-clone storage and save orchestration have focused
+modules under `lib/documents/`. Handles are absent from JSON exports and
+localStorage. Reload restores connections with session-only auto-save disabled.
+Explicit saves may request write permission. Automatic saves only query it.
+SHA-256 fingerprints detect changed file contents before writes. Web Locks
+serialize same-named Flowculus file writes across windows when available. These
+checks cannot lock external applications between verification and disk commit.
+Failures/cancellation retain the dirty baseline. Closing removes the connection,
+and pending hydration cannot resurrect it. Save As intentionally chooses a new
+target, while Save and close updates an existing connection.
+
+### Manual input and automatic-save boundaries
+
+Manual saves flush the active inspector field before capturing the document and
+stop at a visible invalid field. Numeric controls preserve the full stored value
+when focus/blur happens without typing, even if the displayed value is rounded.
+Device auto-save owns a separate subscription from locale-sensitive keyboard and
+open handlers. Disabling it cancels a scheduled write at execution time as well.
+Failures disable it before publishing the error state, so state subscribers cannot
+accidentally schedule another write. Import completion feedback uses the current
+locale. Failed draft queues release ownership on both outcomes without creating
+an unhandled promise rejection.

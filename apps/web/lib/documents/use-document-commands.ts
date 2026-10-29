@@ -3,21 +3,23 @@
 import { useEffect } from 'react';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
-import { checkSemanticGate } from '@flowculus/validation';
+import { subscribeDeviceAutoSave } from './device-auto-save';
+import { commitPendingInput } from './pending-input';
+import { getDocumentCopy } from '@/lib/i18n/document-copy';
+import { showNotice } from '@/lib/ui/notice-store';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { getWorkspaceDocuments, isDocumentDirty } from './document-types';
-import {
-  forgetDeviceFile,
-  hasDeviceFile,
-  isDeviceAutoSave,
-  saveDocumentToDevice,
-} from './device-file';
+import { hasDeviceFile, saveDocumentToDevice } from './device-file';
 
 export function requestDocumentSave(saveAs = false) {
   const state = useWorkspaceStore.getState();
-  if (state.draftStatus === 'loading') return;
+  if (state.draftStatus === 'loading' || !commitPendingInput()) return;
   if (!saveAs && hasDeviceFile(state.activeDocumentId)) {
-    void saveDocumentToDevice(state.activeDocumentId);
+    void saveDocumentToDevice(state.activeDocumentId).then((result) => {
+      const copy = getDocumentCopy(usePreferencesStore.getState().locale);
+      if (result === 'permission' || result === 'conflict' || result === 'error')
+        showNotice(copy[result], 'error');
+    });
   } else state.setDocumentDialog({ kind: 'save', id: state.activeDocumentId });
 }
 
@@ -46,43 +48,9 @@ export function requestDocumentClose(id: string) {
 
 /** Global save shortcuts and a bounded, ordered auto-save for explicitly chosen files. */
 export function useDocumentCommands(onOpen: () => void) {
+  // Preference changes replace the open callback, but must not cancel pending writes.
+  useEffect(() => subscribeDeviceAutoSave(), []);
   useEffect(() => {
-    const timers = new Map<string, ReturnType<typeof setTimeout>>();
-    const stop = useWorkspaceStore.subscribe((state, previous) => {
-      const open = new Set(state.documents.map((document) => document.id));
-      for (const document of previous.documents)
-        if (!open.has(document.id)) {
-          forgetDeviceFile(document.id);
-          clearTimeout(timers.get(document.id));
-          timers.delete(document.id);
-        }
-      if (
-        state.processModel === previous.processModel &&
-        state.analysisOptions === previous.analysisOptions &&
-        state.drawioSource === previous.drawioSource &&
-        state.documents === previous.documents
-      )
-        return;
-      for (const document of getWorkspaceDocuments(state)) {
-        clearTimeout(timers.get(document.id));
-        timers.delete(document.id);
-        if (
-          !isDeviceAutoSave(document.id) ||
-          !isDocumentDirty(document) ||
-          document.deviceStatus === 'saving' ||
-          (document.deviceStatus === 'review' &&
-            !checkSemanticGate(document.processModel).ok)
-        )
-          continue;
-        timers.set(
-          document.id,
-          setTimeout(() => {
-            timers.delete(document.id);
-            void saveDocumentToDevice(document.id, { automatic: true });
-          }, 900),
-        );
-      }
-    });
     const keydown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.altKey || event.defaultPrevented)
         return;
@@ -105,8 +73,6 @@ export function useDocumentCommands(onOpen: () => void) {
     window.addEventListener('keydown', keydown);
     window.addEventListener('beforeunload', beforeUnload);
     return () => {
-      stop();
-      for (const timer of timers.values()) clearTimeout(timer);
       window.removeEventListener('keydown', keydown);
       window.removeEventListener('beforeunload', beforeUnload);
     };

@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  hasDeviceFile,
+  isDeviceAutoSave,
+  setDeviceAutoSave,
+} from '@/lib/documents/device-file';
+import { useWorkspaceStore } from '@/lib/workspace-store';
 import { AppContextMenu } from '@/components/ui/AppContextMenu';
 import type { WorkspaceDocument } from '@/lib/documents/document-types';
 import type { DocumentCopy } from '@/lib/i18n/document-copy';
@@ -35,6 +41,26 @@ export function DocumentTabMenu({
           id: 'name',
           actions: [{ id: 'rename', label: copy.rename, onSelect: onRename }],
         },
+        ...(hasDeviceFile(document.id)
+          ? [
+              {
+                id: 'file',
+                actions: [
+                  {
+                    id: 'auto-save',
+                    label: isDeviceAutoSave(document.id)
+                      ? copy.stopAutoSave
+                      : copy.autoSave,
+                    disabled: document.deviceStatus === 'saving',
+                    onSelect: () => {
+                      setDeviceAutoSave(document.id, !isDeviceAutoSave(document.id));
+                      useWorkspaceStore.getState().updateDocumentFile(document.id, {});
+                    },
+                  },
+                ],
+              },
+            ]
+          : []),
         {
           id: 'position',
           actions: [

@@ -1,36 +1,10 @@
-import { registerHooks, stripTypeScriptTypes } from 'node:module';
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import './export-demo-runtime.mjs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 
-// Node 22's built-in TypeScript transform keeps demo tooling dependency-free.
-registerHooks({
-  resolve(specifier, context, next) {
-    try {
-      return next(specifier, context);
-    } catch (error) {
-      if (specifier.startsWith('.') && context.parentURL?.startsWith('file:')) {
-        const candidate = new URL(`${specifier}.ts`, context.parentURL);
-        if (existsSync(candidate)) return { url: candidate.href, shortCircuit: true };
-      }
-      throw error;
-    }
-  },
-  load(url, context, next) {
-    if (url.startsWith('file:') && url.endsWith('.ts'))
-      return {
-        format: 'module',
-        source: stripTypeScriptTypes(readFileSync(new URL(url), 'utf8'), {
-          mode: 'transform',
-          sourceUrl: url,
-        }),
-        shortCircuit: true,
-      };
-    return next(url, context);
-  },
-});
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const target = resolve(process.argv[2] ?? resolve(root, 'output/demo/small-fixture'));
 if (existsSync(target) && !existsSync(resolve(target, 'manifest.json')))

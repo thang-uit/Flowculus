@@ -1,5 +1,21 @@
 import type { Locale } from './types';
 const EN = {
+  sizeInvalid:
+    'Use at least 180 px width and 100 px height. The frame must contain its steps and cannot overlap another pool.',
+  width: 'Width (px)',
+  height: 'Height (px)',
+  poolHint: 'Participant · drag onto canvas',
+  laneHint: 'Responsibility · drop inside a pool',
+  directHint:
+    'Drag the header to move a pool or reorder a lane. Double-click its name to edit. Delete / Backspace removes the frame and its contents. Undo restores them.',
+  rename: 'Rename frame',
+  deleteContents: 'Delete frame and contents',
+  placementInvalid:
+    'Place the pool in an empty area or around the entire connected process. Pools cannot overlap or split a sequence flow.',
+  resizeInvalid:
+    'The frame cannot be resized there because it would overlap another pool or clip its contents.',
+  resize:
+    'Drag a handle to resize. A lane divider moves only when the steps on both sides still fit.',
   orientation: 'Orientation',
   up: 'Move lane earlier',
   down: 'Move lane later',
@@ -18,7 +34,7 @@ const EN = {
   unassigned: 'No lane',
   membership: 'Responsibility',
   invalid:
-    'This assignment would break process membership or a sequence flow. Move the connected process together.',
+    'This move would break membership, overlap pools or split a sequence flow. Reorder one lane at a time, or move the entire pool with its contents.',
   horizontal: 'Horizontal',
   vertical: 'Vertical',
   removeQuestion:
@@ -34,6 +50,22 @@ const EN = {
   bpmnLimit: 'The BPMN file exceeds the safe parsing limits.',
 };
 const VI: typeof EN = {
+  sizeInvalid:
+    'Chiều rộng tối thiểu 180 px, chiều cao tối thiểu 100 px. Khung phải chứa đủ công việc và không chồng lên pool khác.',
+  width: 'Chiều rộng (px)',
+  height: 'Chiều cao (px)',
+  poolHint: 'Bên tham gia · kéo vào canvas',
+  laneHint: 'Trách nhiệm · thả vào pool',
+  directHint:
+    'Kéo tiêu đề để di chuyển pool hoặc đổi thứ tự lane. Nhấp đúp tên để sửa. Delete / Backspace xóa khung cùng nội dung. Undo khôi phục lại.',
+  rename: 'Đổi tên khung',
+  deleteContents: 'Xóa khung cùng nội dung',
+  placementInvalid:
+    'Hãy đặt pool ở vùng trống hoặc bao trọn phần quy trình được kết nối. Các pool không được chồng lên nhau hoặc chia cắt sequence flow.',
+  resizeInvalid:
+    'Không thể đổi kích thước tại đây vì khung sẽ chồng lên pool khác hoặc cắt mất nội dung.',
+  resize:
+    'Kéo điểm điều khiển để đổi kích thước. Vạch phân cách lane chỉ di chuyển khi các bước ở hai bên vẫn nằm gọn trong lane.',
   orientation: 'Hướng bố trí',
   up: 'Chuyển lane lên trước',
   down: 'Chuyển lane ra sau',
@@ -52,7 +84,7 @@ const VI: typeof EN = {
   unassigned: 'Không phân lane',
   membership: 'Trách nhiệm',
   invalid:
-    'Cách gán này làm sai quan hệ chứa hoặc sequence flow. Hãy chuyển cả phần quy trình được kết nối.',
+    'Thao tác này làm sai quan hệ chứa, chồng pool hoặc chia cắt sequence flow. Hãy đổi thứ tự từng lane hoặc di chuyển cả pool cùng nội dung.',
   horizontal: 'Ngang',
   vertical: 'Dọc',
   removeQuestion:

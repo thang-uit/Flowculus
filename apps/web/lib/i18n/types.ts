@@ -169,6 +169,7 @@ export interface WorkspaceCopy {
   fileReady: string;
   fileError: string;
   exportError: string;
+  reportImageTooLarge: string;
   fileTooLarge: string;
   missingNodeTable: string;
   invalidModelCsv: string;
@@ -252,6 +253,8 @@ export interface WorkspaceCopy {
   imageTraceRemoveCandidate: string;
   imageTraceKind: string;
   imageTraceLabel: string;
+  imageTraceDuration: string;
+  imageTraceDurationHint: string;
   imageTraceRetry: string;
   imageTraceCancel: string;
   imageTraceLoaded: string;
@@ -337,7 +340,6 @@ export interface WorkspaceCopy {
   miningBottlenecks: string;
   miningBottlenecksHint: string;
   miningCases: string;
-  miningCasesShort: string;
   miningDownloadCsv: string;
   miningDuration: string;
   miningDurationThreshold: string;

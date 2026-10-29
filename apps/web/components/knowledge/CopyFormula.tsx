@@ -47,7 +47,14 @@ export function CopyFormula({
       {note.split('\n\n').map((paragraph) => (
         <p key={paragraph}>{paragraph}</p>
       ))}
-      <span role="status" className="sr-only">
+      <span
+        role="status"
+        className={
+          status === 'failed'
+            ? 'mt-3 block text-sm leading-6 text-[var(--danger)]'
+            : 'sr-only'
+        }
+      >
         {status === 'failed' ? copy.copyFailed : status === 'copied' ? copy.copied : ''}
       </span>
     </div>

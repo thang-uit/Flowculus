@@ -23,6 +23,19 @@ describe('knowledge catalog', () => {
           }
       }
   });
+  it('keeps table columns and localized teaching structure consistent', () => {
+    for (const entry of KNOWLEDGE_ENTRIES) {
+      expect(entry.content.vi.blocks.map((block) => block.kind)).toEqual(
+        entry.content.en.blocks.map((block) => block.kind),
+      );
+      for (const content of Object.values(entry.content))
+        for (const block of content.blocks)
+          if (block.kind === 'table') {
+            expect(block.headers.length).toBeGreaterThan(1);
+            for (const row of block.rows) expect(row).toHaveLength(block.headers.length);
+          }
+    }
+  });
   it('searches accents, Vietnamese đ and English synonyms across both locales', () => {
     expect(
       searchKnowledge('thoi gian chu trinh', 'vi').map((article) => article.id),

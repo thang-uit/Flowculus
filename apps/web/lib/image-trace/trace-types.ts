@@ -8,6 +8,9 @@ export interface TraceCandidate {
   label: string;
   bounds: { x: number; y: number; width: number; height: number };
   confidence: number;
+  /** Clear printed `<integer>h` recognised inside the shape; reviewed before commit. */
+  processingMinutes?: number;
+  durationConfidence?: number;
 }
 export interface TraceConnector {
   source: string;

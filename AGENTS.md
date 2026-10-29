@@ -90,7 +90,7 @@ apps/web            composition, presentation, browser adapters, workers
   `structure.test.ts` or `cycle-time.test.ts`, and the pinned numbers in
   `report-example.test.ts`, `initial-process-model.test.ts` and
   `process-mining/src/regression.test.ts` must stay identical unless the change
-  is an intended correction that is documented in the README changelog.
+  is an intended correction documented in the change description and relevant domain documentation.
 
 ## 5. Validation, quality and semantic confirmation
 
@@ -172,8 +172,11 @@ path, params }`. Packages never return user-facing sentences; the web app
   Each tab owns its model, options, draw.io source, viewport, bounded in-memory undo
   history and separately keyed reference photo. Imports and Mining conversions open
   new tabs; never overwrite existing work. Device saves use the semantic gate and
-  `.flowculus.json`; native writable handles and optional file auto-save are
-  session-only. Downloads must not be described as automatic device writes.
+  `.flowculus.json`; native writable handles may be structured-cloned into a separate IndexedDB store
+  to reconnect on reload. Never persist handles in models, exports or localStorage.
+  Permission requests need an explicit save gesture and file auto-save stays session-only.
+  Fingerprint connected files before writes, reject external changes, and remove
+  their saved connection when the document closes. Downloads must not be described as automatic device writes.
   Preserve legacy drafts during migration and use Web Locks when available to
   prevent concurrent editor windows overwriting the shared browser session.
   Store schema-valid work-in-progress even when graph/time diagnostics prevent
@@ -246,6 +249,7 @@ check passed unless you ran it.
 ## 14. Collaboration and mining evidence
 
 - Models without containers remain version 1 compatible. Container-bearing files use version 2. Pools/lanes are not executable nodes; preserve membership in JSON, clipboard, CSV and draw.io.
+- Pool/Lane are direct palette tools, never semantic node kinds. Header dragging moves a pool with descendants or reorders lanes. Delete/Backspace and cut remove a frame with its contents. The separate manager action removes only the frame and preserves work. Pointer and resize cancellation or stale document changes must restore geometry without history. Resize shared lane dividers atomically without clipping work.
 - Analyse one explicit process scope. Never sum participant cycle times or treat message flows as sequence flows. A BPMN pool is not a capacity resource pool.
 - Petri firing, BPMN conversion, reachability, alignment and quality variants live in pure process-mining modules. Reachability cut-offs return inconclusive, never sound/safe proofs. Final markings are valid completion.
 - Alignment and replay have separate budgets and method names. Disclose compatible-case-only coverage for prefix precision and transition-frequency generalization. Do not claim alternative alignments are impossible.
@@ -260,3 +264,4 @@ check passed unless you ran it.
 - The stable hosted check is Quality gates. Update branch protection deliberately if that name changes. Server-side settings are separate from version-controlled files and must not be described as active before verification.
 - Run Next.js route type generation before typecheck on a fresh checkout. Do not run typecheck concurrently with a Next.js build that rewrites generated types.
 - Changes to formulas, file compatibility, semantic gates or persistence still need the existing regression and UI verification. No CI success is a claim of complete browser testing.
+- README is developer-facing, with Vietnamese first and English second, separate contents and stable anchors. Keep runtime/version, CI, architecture, contribution and licence facts accurate. User workflows belong in Knowledge rather than a duplicated README manual. Badges must reflect actual package versions or live repository metadata, never invented coverage or release claims.

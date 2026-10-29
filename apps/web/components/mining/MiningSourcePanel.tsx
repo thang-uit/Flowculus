@@ -17,6 +17,8 @@ import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
+import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
+import { MiningCurrentSource } from './MiningCurrentSource';
 
 const PRESET_ICONS: Record<MiningPresetId, typeof ShoppingCart> = {
   'order-to-cash': ShoppingCart,
@@ -30,20 +32,27 @@ export function MiningSourcePanel({
   onFile,
   onDownloadLog,
   onCancel,
+  onViewLog,
+  onClearLog,
 }: Readonly<{
   onLoadPreset: (presetId: MiningPresetId) => void;
   onFile: (event: ChangeEvent<HTMLInputElement>) => void;
   onDownloadLog: () => void;
   onCancel: () => void;
+  onViewLog: () => void;
+  onClearLog: () => void;
 }>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
+  const sourceCopy = getMiningDataCopy(locale);
   const status = useMiningStore((state) => state.status);
+  const mappingTable = useMiningStore((state) => state.mappingTable);
   const error = useMiningStore((state) => state.error);
   const result = useMiningStore((state) => state.result);
   const replay = useMiningStore((state) => state.replay);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activePreset = replay?.kind === 'preset' ? replay.presetId : null;
+  const busy = status === 'loading' || !!mappingTable;
 
   return (
     <section
@@ -61,56 +70,64 @@ export function MiningSourcePanel({
           {copy.miningSourceHint}
         </p>
       </div>
-      <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-1">
-        {MINING_PRESETS.map((preset) => {
-          const Icon = PRESET_ICONS[preset.id];
-          const active = activePreset === preset.id;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onLoadPreset(preset.id)}
-              className={cn(
-                'focus-ring flex min-w-0 cursor-pointer items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors',
-                active
-                  ? 'border-[var(--accent)] bg-[var(--accent-soft)]'
-                  : 'border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]',
-              )}
-            >
-              <Icon
-                size={16}
+      <MiningCurrentSource onView={onViewLog} onClear={onClearLog} />
+      <details open={!result || activePreset != null}>
+        <summary className="focus-ring mb-2 cursor-pointer rounded text-xs font-medium text-[var(--muted-strong)]">
+          {sourceCopy.samples}
+        </summary>
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-1">
+          {MINING_PRESETS.map((preset) => {
+            const Icon = PRESET_ICONS[preset.id];
+            const active = activePreset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                aria-pressed={active}
+                disabled={busy}
+                onClick={() => onLoadPreset(preset.id)}
                 className={cn(
-                  'mt-0.5 shrink-0',
-                  active ? 'text-[var(--accent-strong)]' : 'text-[var(--muted-strong)]',
+                  'focus-ring flex min-w-0 cursor-pointer items-start gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                  active
+                    ? 'border-[var(--accent)] bg-[var(--accent-soft)]'
+                    : 'border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-raised)]',
                 )}
-                aria-hidden="true"
-              />
-              <span className="min-w-0">
-                <span className="block truncate text-xs font-semibold text-[var(--text)]">
-                  {copy.miningPresets[preset.id].name}
+              >
+                <Icon
+                  size={16}
+                  className={cn(
+                    'mt-0.5 shrink-0',
+                    active ? 'text-[var(--accent-strong)]' : 'text-[var(--muted-strong)]',
+                  )}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0">
+                  <span className="block truncate text-xs font-semibold text-[var(--text)]">
+                    {copy.miningPresets[preset.id].name}
+                  </span>
+                  <span className="mt-0.5 hidden text-[10.5px] leading-4 text-[var(--muted)] sm:block">
+                    {copy.miningPresets[preset.id].description}
+                  </span>
                 </span>
-                <span className="mt-0.5 hidden text-[10.5px] leading-4 text-[var(--muted)] sm:block">
-                  {copy.miningPresets[preset.id].description}
-                </span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      </details>
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
+          disabled={busy}
           onClick={() => fileInputRef.current?.click()}
-          className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-[var(--text)] hover:bg-[var(--surface-soft)]"
+          className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-[var(--text)] hover:bg-[var(--surface-soft)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           <UploadSimple size={14} aria-hidden="true" />
-          {copy.miningUpload}
+          {result ? sourceCopy.replace : copy.miningUpload}
         </button>
         <button
           type="button"
           onClick={onDownloadLog}
-          disabled={!result}
+          disabled={!result || status !== 'ready'}
           className="focus-ring inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--border)] px-2.5 py-1.5 text-xs font-medium text-[var(--muted-strong)] hover:bg-[var(--surface-soft)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <DownloadSimple size={14} aria-hidden="true" />

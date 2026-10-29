@@ -338,3 +338,17 @@ export function studyViolationLog() {
       ),
   );
 }
+
+/** One focused case per demo file makes the alignment explanation easy to follow. */
+export function studyDeviationLog(kind: 'skip-qa' | 'bypass-handover') {
+  const caseId = kind === 'skip-qa' ? 'FEAT_301' : 'FEAT_302';
+  const rows = studyLog('to-be')
+    .events.filter((event) => event.caseId === caseId)
+    .filter((event) => !(kind === 'skip-qa' && event.activity === STUDY_LABELS.qa))
+    .map((event) =>
+      kind === 'bypass-handover' && event.activity === STUDY_LABELS.handover
+        ? { ...event, activity: STUDY_LABELS.bypass }
+        : { ...event },
+    );
+  return createEventLog(`IS6003 ${kind}`, rows);
+}

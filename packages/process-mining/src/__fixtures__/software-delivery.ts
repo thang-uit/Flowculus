@@ -60,7 +60,7 @@ export function deliveryModel(): ProcessModel {
     },
   };
   const rows = { ba: 0, be: 1, mb: 2, qa: 3 };
-  tasks.forEach(([id, label, lane, duration], index) => {
+  tasks.forEach(([id, label, lane, duration]) => {
     nodes[id] = {
       id,
       label,

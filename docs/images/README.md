@@ -8,23 +8,27 @@ Capture dates below use Asia/Ho_Chi_Minh; adjacent `.webp.json` sidecars retain
 source details and timestamps. Full source viewports are 1440 px wide, with crops
 noted separately.
 
+## Refreshed on 2026-10-29
+
+- `image-reference.webp`: Vietnamese dark Image Trace review, 1440 × 1000, after
+  explicitly uploading the external synthetic `05_hand_drawn_photo.png` sample.
+  Three task frames and two connectors are detected. Handwritten hours remain
+  blank for manual review. Updated copy explains manual entry and unit conversion.
+  The original sample and the editable candidate review are both visible.
+
 ## Refreshed on 2026-10-27 and 2026-10-28
 
-- `empty-workspace.webp`: the actual empty first-visit canvas, Vietnamese light
-  theme, 1440 × 900; no model was imported.
+- `empty-workspace.webp`: an actual empty new process tab with Pool/Lane tools, Vietnamese light theme, 1440 × 900, recaptured on 2026-10-28. Earlier QA tabs remain visible. The new process has no starter diagram.
 - `knowledge.webp`: Vietnamese light Knowledge index with search, contents and
-  the 27-topic catalog, 1440 × 1000, recaptured on 2026-10-28 with the work-calendar topic. No canvas model is involved.
-- `pools-lanes.webp`: English light Pool/Lane dialog over an imported synthetic
-  model, showing process scope, orientation, spatial lane order and membership
-  controls, 1440 × 1000.
+  the 27-topic catalog, 1440 × 1000, recaptured on 2026-10-28 after reviewing Pool/Lane, Petri verification, alignment, handoff, parallel-time, manual-save, multi-page recovery and bounded-report explanations. No canvas model is involved.
+- `pools-lanes.webp`: Vietnamese light direct Pool/Lane palette and lane Inspector over an explicitly imported synthetic three-lane model, with inline naming, ordering, numeric divider resizing and deletion, 1440 × 1000. Recaptured on 2026-10-28.
 - `mining-reference.webp`: Vietnamese dark Mining after explicitly uploading the
   external synthetic demonstration model/log, 1440 × 1000. The 8-case/48-event
   input yields alignment fitness 93.75% with 4/8 exactly compatible cases. Recaptured on 2026-10-28 with the explicit matching-case explanation;
   declared quality variants and coverage are visible. These are illustrative
   results, not measured production outcomes or independent PM4Py validation.
 - `../../apps/web/public/demo/workspace.webp` and `workspace-dark.webp`: the
-  explicitly imported generic request-handling model with analysis dock,
-  Pool/Lane and scenario controls, English light/dark, 1440 × 900.
+  explicitly imported generic request-handling model with direct Pool/Lane palette tools and scenario controls, English light/dark, 1440 × 900. Recaptured on 2026-10-28 using three lanes, CT 60 minutes, TCT 45 minutes and CTE 75%. Refreshed after the connected-file workflow update.
 - `../../apps/web/public/demo/workspace-vi.webp` and `workspace-vi-dark.webp`:
   equivalent Vietnamese light/dark views with labels translated in the synthetic
   input. The About page selects the locale/theme image; user labels are never
@@ -34,10 +38,10 @@ noted separately.
 
 - `document-workspace.webp` (2026-10-26): independent sortable process tabs, the
   open-process picker, user-defined names and browser/device save indicators.
-- `document-save.webp` (2026-10-26): process/file naming through AppDialog,
-  AppButton and the shared rounded yellow checkbox; direct file writing depends
-  on browser support.
-- `image-reference.webp` (2026-10-26): image settings/removal with a synthetic diagram.
+- `document-save.webp` (recaptured 2026-10-28): Vietnamese light Save As dialog
+  with the shared checkbox and current auto-save wording. Native file opening,
+  connected writes and reload recovery were exercised separately with synthetic
+  browser file handles. Operating-system permission dialogs remain browser-owned.
 - `inspector-select.webp` (2026-10-26): Vietnamese light inspector cropped from
   1440 × 1000, showing long synthetic labels/IDs as single-line selected values.
 - `project-navigation.webp` (2026-10-26): 760 × 350 crop of the Vietnamese header
@@ -52,7 +56,7 @@ noted separately.
 
 Gateway markers in lessons and editor share one geometry definition. The older
 captures document their named flows; only the refreshed set depicts the latest
-Pool/Lane/scenario toolbar additions.
+direct Pool/Lane palette and scenario controls.
 
 Use `pnpm build` then `pnpm start` to reproduce the running surface. Explicitly
 import the example files to reproduce populated views; the README embeds static

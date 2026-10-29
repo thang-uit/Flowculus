@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
 import { AppSelect } from '@/components/ui/AppSelect';
@@ -26,7 +26,8 @@ export function FieldLabel({
 interface NumberFieldProps {
   label: string;
   value: number | undefined;
-  onCommit: (value: number | undefined) => void;
+  onCommit: (value: number | undefined) => void | boolean;
+  min?: number;
   /** Display multiplier, e.g. 100 to edit a probability as a percentage. */
   scale?: number;
   integer?: boolean;
@@ -51,6 +52,7 @@ export function NumberField({
   label,
   value,
   onCommit,
+  min = 0,
   scale = 1,
   integer = false,
   max,
@@ -62,25 +64,30 @@ export function NumberField({
   const id = useId();
   const [text, setText] = useState(() => formatDisplay(value, scale));
   const [invalid, setInvalid] = useState(false);
+  const edited = useRef(false);
 
   const commit = () => {
+    if (!edited.current) return;
     const raw = text.trim();
     if (raw === '') {
       setInvalid(false);
-      if (value != null) onCommit(undefined);
+      if (value != null && onCommit(undefined) === false) setInvalid(true);
+      else edited.current = false;
       return;
     }
     const parsed = Number(raw.replace(',', '.'));
     const bad =
       !Number.isFinite(parsed) ||
-      parsed < 0 ||
+      parsed < min ||
       (integer && !Number.isInteger(parsed)) ||
       (max != null && parsed > max) ||
       (maxExclusive != null && parsed >= maxExclusive);
     setInvalid(bad);
     if (bad) return;
     const next = parsed / scale;
-    if (value == null || Math.abs(next - value) > 1e-12) onCommit(next);
+    if ((value == null || Math.abs(next - value) > 1e-12) && onCommit(next) === false)
+      setInvalid(true);
+    else edited.current = false;
   };
 
   return (
@@ -91,7 +98,10 @@ export function NumberField({
           id={id}
           inputMode={integer ? 'numeric' : 'decimal'}
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={(event) => {
+            edited.current = true;
+            setText(event.target.value);
+          }}
           onBlur={commit}
           onKeyDown={blurOnEnter}
           aria-invalid={invalid || undefined}
