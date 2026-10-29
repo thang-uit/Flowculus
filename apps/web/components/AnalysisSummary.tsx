@@ -70,7 +70,7 @@ export function AnalysisSummary() {
     {
       label: copy.cte,
       sublabel: copy.cteFormulaDesc,
-      value: formatPercent(report.cycleTimeEfficiency) ?? copy.emptyValue,
+      value: formatPercent(report.cycleTimeEfficiency, 1, locale) ?? copy.emptyValue,
       icon: ChartLineUp,
       accent: false,
       quality: report.metricQuality.cycleTimeEfficiency,

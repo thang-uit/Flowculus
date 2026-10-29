@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, type KeyboardEvent } from 'react';
 
 import { StandardsPanel } from './StandardsPanel';
 import { MiningConclusions } from './MiningConclusions';
@@ -29,7 +29,6 @@ const TABS = [
   'alpha',
   'conformance',
 ] as const;
-type SideTab = (typeof TABS)[number];
 
 /** Variants and bottlenecks of the current discovery, as tabs. */
 export function MiningInsightsPanel({
@@ -47,7 +46,8 @@ export function MiningInsightsPanel({
   const socialNetwork = useMiningStore((state) => state.result?.socialNetwork);
   const evidence = useMiningStore((state) => state.result);
   const alpha = useMiningStore((state) => state.result?.alpha);
-  const [tab, setTab] = useState<SideTab>('conclusions');
+  const tab = useMiningStore((state) => state.insight);
+  const setTab = useMiningStore((state) => state.setInsight);
   const tabListRef = useRef<HTMLDivElement>(null);
 
   const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -173,7 +173,7 @@ export function MiningInsightsPanel({
             {copy.miningPeriod}:{' '}
             {discovery.stats.firstEventTime != null &&
             discovery.stats.lastEventTime != null
-              ? `${new Date(discovery.stats.firstEventTime).toISOString().slice(0, 10)} → ${new Date(discovery.stats.lastEventTime).toISOString().slice(0, 10)} (${formatDurationMs(discovery.stats.lastEventTime - discovery.stats.firstEventTime)})`
+              ? `${new Date(discovery.stats.firstEventTime).toISOString().slice(0, 10)} → ${new Date(discovery.stats.lastEventTime).toISOString().slice(0, 10)} (${formatDurationMs(discovery.stats.lastEventTime - discovery.stats.firstEventTime, locale)})`
               : copy.emptyValue}
           </p>
         ) : null}

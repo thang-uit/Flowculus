@@ -75,7 +75,7 @@ export const buildReportContent = ({
     },
     {
       label: copy.cte,
-      value: formatPercent(report.cycleTimeEfficiency) ?? empty,
+      value: formatPercent(report.cycleTimeEfficiency, 1, locale) ?? empty,
       quality: noAnalysis
         ? copy.emptyAnalysis
         : qualityLabel(report.metricQuality.cycleTimeEfficiency, copy),
@@ -106,7 +106,7 @@ export const buildReportContent = ({
   if (report.queue) {
     formulaLines.push(
       `${copy.queueModel} ${report.queue.model}: ${report.queue.formula}`,
-      `${copy.queueUtilization}: ${formatPercent(report.queue.utilization) ?? empty}`,
+      `${copy.queueUtilization}: ${formatPercent(report.queue.utilization, 1, locale) ?? empty}`,
       `${copy.averageQueue}: ${number(report.queue.averageQueueLength, '', empty)}`,
       `${copy.averageWait}: ${number(report.queue.averageWaitingHours, ' h', empty)}`,
       `${copy.averageSystem}: ${number(report.queue.averageSystemHours, ' h', empty)}`,

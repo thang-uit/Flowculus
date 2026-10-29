@@ -29,7 +29,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'The same clock applies to lead time, measured service, handover, variants and standards. Activity spans do not prove hands-on effort. Use the same time basis in model inputs. The calendar uses a fixed UTC offset, has no per-resource or automatic DST schedule, and is session-only.',
+            text: 'The same clock applies to lead time, measured service, handover, variants and standards. Activity spans do not prove hands-on effort. Use the same time basis in model inputs. The calendar uses a fixed UTC offset, has no per-resource or automatic DST schedule, and is stored locally with the Mining draft.',
           },
         ],
       },
@@ -57,7 +57,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Lead time, thời lượng xử lý, bàn giao, biến thể và định mức dùng chung lịch đang chọn. Khoảng start/end chưa chứng minh toàn bộ là giờ công. Nhập thời gian mô hình theo cùng cơ sở đo. Lịch dùng UTC cố định, chưa có lịch riêng từng người hay tự đổi giờ mùa; cấu hình chỉ giữ trong phiên.',
+            text: 'Lead time, thời lượng xử lý, bàn giao, biến thể và định mức dùng chung lịch đang chọn. Khoảng start/end chưa chứng minh toàn bộ là giờ công. Nhập thời gian mô hình theo cùng cơ sở đo. Lịch dùng UTC cố định, chưa có lịch riêng từng người hay tự đổi giờ mùa; cấu hình được lưu cục bộ cùng bản nháp Mining.',
           },
         ],
       },
@@ -102,6 +102,11 @@ export const MINING: KnowledgeEntry[] = [
               ],
             ],
           },
+          { kind: 'heading', text: 'Keep models and event logs separate' },
+          {
+            kind: 'paragraph',
+            text: 'Model shows BPMN document tabs. Mining shows event-log tabs with their source filenames. Opening another log adds a tab after its columns are confirmed and its events are read successfully. Switching logs restores that log’s filters, calendar, diagram view and selected insight. For example, open current-process.csv and improved-process.csv, then select either tab to compare their observed results. Opening or closing a log does not change BPMN documents.',
+          },
           { kind: 'heading', text: 'Inspect the imported data' },
           {
             kind: 'list',
@@ -114,7 +119,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Clear log asks for confirmation and removes the live Mining session. Process tabs and device files remain available. Logs are not embedded in a saved process file. After refreshing the page, upload the source again.',
+            text: 'Closing or clearing a log asks for confirmation and removes only that Mining tab. The original file and BPMN documents remain available. Up to 10 logs can stay open within a combined budget of 30 million source-text characters. Source data, column mapping and per-log controls are saved locally. Reload restores the tabs and recomputes the active log in one worker. Alignment evidence must be run again after reload. Clearing browser site data removes these sessions, so retain the source files.',
           },
           { kind: 'heading', text: 'Read the Conclusions tab' },
           {
@@ -175,6 +180,11 @@ export const MINING: KnowledgeEntry[] = [
               ],
             ],
           },
+          { kind: 'heading', text: 'Phân biệt mô hình với nhật ký sự kiện' },
+          {
+            kind: 'paragraph',
+            text: 'Mô hình hiển thị tab tài liệu BPMN. Khai phá hiển thị tab nhật ký theo tên tệp nguồn. Mở thêm nhật ký sẽ tạo tab sau khi xác nhận cột và đọc được sự kiện hợp lệ. Chuyển tab khôi phục bộ lọc, lịch, dạng biểu đồ và mục kết quả đã chọn của nhật ký đó. Ví dụ, mở quy-trinh-hien-tai.csv và quy-trinh-cai-tien.csv, rồi bấm từng tab để xem kết quả quan sát tương ứng. Mở hoặc đóng nhật ký không thay đổi tài liệu BPMN.',
+          },
           { kind: 'heading', text: 'Kiểm tra dữ liệu đã nhập' },
           {
             kind: 'list',
@@ -187,7 +197,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Xóa nhật ký có xác nhận và chỉ xóa phiên Mining. Các tab quy trình và tệp trên thiết bị được giữ nguyên. Tệp lưu quy trình không chứa event log. Sau khi tải lại trang, hãy tải lại tệp nhật ký.',
+            text: 'Đóng hoặc xóa nhật ký đều có xác nhận và chỉ xóa tab Khai phá đó. Tệp gốc và tài liệu BPMN vẫn được giữ. Có thể mở tối đa 10 nhật ký trong tổng giới hạn 30 triệu ký tự nguồn. Dữ liệu nguồn, ánh xạ cột và cấu hình riêng được lưu cục bộ. Tải lại trang khôi phục các tab và tính lại nhật ký đang chọn bằng một worker. Bằng chứng đối chiếu cần chạy lại sau reload. Xóa dữ liệu website sẽ xóa các phiên này, vì vậy hãy giữ tệp nguồn.',
           },
           { kind: 'heading', text: 'Đọc tab Kết luận' },
           {
@@ -411,7 +421,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Open the intended BPMN reference in Model, confirm any inferred semantics, then select it in Mining. Choose the process pool and check the activity mapping. A unique, exactly matching task label maps automatically. Duplicate labels and different names need an explicit choice. Alignment compares the observed sequence with a valid model execution. While a replacement log is loading, comparison is unavailable. A timeout or worker restart clears results tied to the lost log. Reload the source and compare again. Editing or closing the reference while comparison is running invalidates that result.',
+            text: 'Open the intended BPMN reference in Model, confirm any inferred semantics, then select it in Mining. The comparison shows the active log and the chosen reference separately. Each event-log tab remembers its reference, process pool and activity mapping. A unique, exactly matching task label maps automatically. Duplicate labels and different names need an explicit choice. Alignment compares the observed sequence with a valid model execution. Comparison waits while a log loads or its worker is being restored. A timeout clears worker-dependent results, but retains the source for Restore this log. Editing or closing the reference invalidates its evidence. Re-run comparison against the current model before presenting a result.',
           },
           {
             kind: 'table',
@@ -451,7 +461,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Mở BPMN chuẩn trong Mô hình, xác nhận các ngữ nghĩa suy luận, rồi chọn tài liệu đó trong Khai phá. Chọn pool cần xét và kiểm tra ánh xạ hoạt động. Nhãn task giống hoàn toàn và duy nhất được gán tự động. Nhãn trùng hoặc khác tên cần chọn rõ. Alignment đối chiếu chuỗi sự kiện với một cách thực hiện hợp lệ trong mô hình. Khi đang tải nhật ký thay thế, chức năng đối chiếu tạm dừng. Nếu hết thời gian xử lý hoặc worker khởi động lại, kết quả phụ thuộc nhật ký cũ được xóa. Hãy tải lại nguồn rồi đối chiếu lại. Sửa hoặc đóng quy trình chuẩn trong lúc đối chiếu cũng làm kết quả đó hết hiệu lực.',
+            text: 'Mở BPMN chuẩn trong Mô hình, xác nhận các ngữ nghĩa suy luận, rồi chọn tài liệu đó trong Khai phá. Phần đối chiếu ghi rõ nhật ký đang phân tích và mô hình tham chiếu. Mỗi tab nhật ký nhớ riêng mô hình chuẩn, pool và ánh xạ hoạt động. Nhãn task giống hoàn toàn và duy nhất được gán tự động. Nhãn trùng hoặc khác tên cần chọn rõ. Alignment đối chiếu chuỗi sự kiện với một cách thực hiện hợp lệ trong mô hình. Chức năng chờ khi nhật ký đang tải hoặc worker đang khôi phục. Hết thời gian xử lý sẽ xóa kết quả phụ thuộc worker, nhưng giữ nguồn để dùng Khôi phục nhật ký này. Sửa hoặc đóng mô hình chuẩn làm bằng chứng cũ hết hiệu lực. Hãy chạy lại đối chiếu với mô hình hiện tại trước khi trình bày.',
           },
           {
             kind: 'table',

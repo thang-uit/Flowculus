@@ -45,7 +45,7 @@ export function TaskChips({
   if (node.reworkProbability != null && node.reworkProbability > 0) {
     chips.push({
       key: 'r',
-      text: `r ${formatPercent(node.reworkProbability, 0)}`,
+      text: `r ${formatPercent(node.reworkProbability, 0, locale)}`,
       title: copy.rework,
       accent: true,
     });

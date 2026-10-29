@@ -1,6 +1,6 @@
 'use client';
 import { AppSelect } from '@/components/ui/AppSelect';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   processPools,
   scopeProcessModel,
@@ -16,6 +16,7 @@ import { getWorkspaceDocuments } from '@/lib/documents/document-types';
 import { useMiningStore } from '@/lib/mining-store';
 import { PetriNetView } from './PetriNetView';
 import { ActivityMappingEditor } from './ActivityMappingEditor';
+import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
 export function ReferenceConformancePanel({
   onCheck,
 }: {
@@ -25,9 +26,13 @@ export function ReferenceConformancePanel({
   const copy = getMiningEvidenceCopy(locale);
   const workspace = useWorkspaceStore();
   const documents = getWorkspaceDocuments(workspace);
-  const [selected, setSelected] = useState(workspace.activeDocumentId);
-  const [poolId, setPoolId] = useState('');
-  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const reference = useMiningStore((state) => state.reference);
+  const setReference = useMiningStore((state) => state.setReference);
+  const selected = reference.documentId;
+  const poolId = reference.poolId;
+  const mapping = reference.mapping;
+  const result = useMiningStore((state) => state.result);
+  const replay = useMiningStore((state) => state.replay);
   const document = documents.find((item) => item.id === selected);
   const model = document?.processModel;
   const pools = model ? processPools(model).filter((pool) => !pool.blackBox) : [];
@@ -56,6 +61,10 @@ export function ReferenceConformancePanel({
   );
   return (
     <section className="space-y-4 text-xs">
+      <div className="space-y-1 break-words rounded-lg bg-[var(--surface-raised)] p-3">
+        <p className="font-semibold">{getMiningDataCopy(locale).current}</p>
+        <p>{replay?.kind === 'file' ? replay.fileName : result?.logName}</p>
+      </div>
       <p className="leading-5 text-[var(--muted)]">{copy.referenceHint}</p>
       <AppField id="mining-reference" label={copy.reference}>
         <AppSelect
@@ -69,9 +78,7 @@ export function ReferenceConformancePanel({
             })),
           ]}
           onValueChange={(value) => {
-            setSelected(value);
-            setPoolId('');
-            setMapping({});
+            setReference({ documentId: value, poolId: '', mapping: {} });
           }}
         />
       </AppField>
@@ -85,8 +92,7 @@ export function ReferenceConformancePanel({
             ...pools.map((pool) => ({ value: pool.id, label: pool.label })),
           ]}
           onValueChange={(value) => {
-            setPoolId(value);
-            setMapping({});
+            setReference({ ...reference, poolId: value, mapping: {} });
           }}
         />
       ) : null}
@@ -95,7 +101,7 @@ export function ReferenceConformancePanel({
         tasks={tasks}
         mapping={mapping}
         onChange={(name, value) =>
-          setMapping((current) => ({ ...current, [name]: value }))
+          setReference({ ...reference, mapping: { ...mapping, [name]: value } })
         }
       />
       <AppButton
@@ -109,6 +115,11 @@ export function ReferenceConformancePanel({
       {error ? (
         <p role="alert" className="text-[var(--danger)]">
           {error}
+        </p>
+      ) : null}
+      {stored && !evidence ? (
+        <p role="status" className="leading-5 text-[var(--muted-strong)]">
+          {copy.referenceChanged}
         </p>
       ) : null}
       {evidence ? (

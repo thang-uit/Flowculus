@@ -57,6 +57,7 @@ export function useMiningClient(): MiningClient {
   const requestIdRef = useRef(0);
   const restartsRef = useRef(0);
   const disposedRef = useRef(false);
+  const generationRef = useRef(0);
   // Lets the worker's error handler start its replacement without the
   // callback referring to itself.
   const startWorkerRef = useRef<() => Worker | null>(() => null);
@@ -71,6 +72,7 @@ export function useMiningClient(): MiningClient {
   }, []);
 
   const stopWorker = useCallback(() => {
+    generationRef.current += 1;
     workerRef.current?.terminate();
     workerRef.current = null;
   }, []);
@@ -129,8 +131,13 @@ export function useMiningClient(): MiningClient {
       const worker = workerRef.current ?? (fallback ? null : startWorker());
       if (!worker) {
         const session = fallback ?? (fallbackRef.current = createMiningSession());
+        const generation = generationRef.current;
         return new Promise((resolve, reject) => {
           window.setTimeout(() => {
+            if (disposedRef.current || generation !== generationRef.current) {
+              reject(new MiningAbortError('cancelled'));
+              return;
+            }
             try {
               resolve(session(miningRequest));
             } catch (error) {

@@ -61,7 +61,8 @@ export function BottleneckList({ bottlenecks }: Readonly<{ bottlenecks: Bottlene
                   {item.kind === 'transition'
                     ? copy.miningHandoverDelay
                     : copy.miningServiceTime}{' '}
-                  · {item.frequency}× · {formatPercent(item.share)} {copy.miningOfTotal}
+                  · {item.frequency}× · {formatPercent(item.share, 1, locale)}{' '}
+                  {copy.miningOfTotal}
                 </span>
               </span>
             </div>

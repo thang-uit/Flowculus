@@ -149,7 +149,7 @@ export function AnalysisDock() {
               {/* CTE badge */}
               {report.cycleTimeEfficiency != null ? (
                 <span className="hidden items-center gap-1 rounded-md bg-[var(--surface-soft)] px-2 py-0.5 font-mono text-[11px] font-medium text-[var(--muted-strong)] lg:inline-flex">
-                  <span>CTE {formatPercent(report.cycleTimeEfficiency)}</span>
+                  <span>CTE {formatPercent(report.cycleTimeEfficiency, 1, locale)}</span>
                 </span>
               ) : null}
 

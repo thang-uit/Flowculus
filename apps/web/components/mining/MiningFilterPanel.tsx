@@ -50,7 +50,12 @@ export function MiningFilterPanel() {
         [
           ['minActivityShare', copy.miningActivityThreshold, 100, '%'],
           ['minEdgeShare', copy.miningEdgeThreshold, 100, '%'],
-          ['minTransitionHours', copy.miningDurationThreshold, maxTransitionHours, ' h'],
+          [
+            'minTransitionHours',
+            copy.miningDurationThreshold,
+            maxTransitionHours,
+            locale === 'vi' ? ' giờ' : ' h',
+          ],
         ] as const
       ).map(([key, label, max, unit]) => {
         const value =
@@ -66,7 +71,10 @@ export function MiningFilterPanel() {
                 {label}
               </label>
               <span className="font-mono text-[11px] font-semibold text-[var(--text)]">
-                ≥ {Number(value.toFixed(1))}
+                ≥{' '}
+                {new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+                  maximumFractionDigits: 1,
+                }).format(value)}
                 {unit}
               </span>
             </div>

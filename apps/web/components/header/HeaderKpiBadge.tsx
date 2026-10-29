@@ -29,7 +29,7 @@ export function HeaderKpiBadge({ compact = false }: Readonly<{ compact?: boolean
   const quality = empty ? copy.emptyAnalysis : qualityLabel(report.quality, copy);
   const ct = formatKpiMinutes(report.cycleTimeMinutes, copy.emptyValue);
   const tct = formatKpiMinutes(report.theoreticalCycleTimeMinutes, copy.emptyValue);
-  const cte = formatPercent(report.cycleTimeEfficiency) ?? copy.emptyValue;
+  const cte = formatPercent(report.cycleTimeEfficiency, 1, locale) ?? copy.emptyValue;
   const summary = `CT ${ct} · TCT ${tct} · CTE ${cte} · ${quality}`;
 
   return (

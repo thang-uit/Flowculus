@@ -24,10 +24,14 @@ export const formatKpiMinutes = (
 export const formatPercent = (
   value: number | null | undefined,
   digits = 1,
+  locale: Locale = 'en',
 ): string | null =>
   value == null || !Number.isFinite(value)
     ? null
-    : `${Number((value * 100).toFixed(digits))}%`;
+    : new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+        style: 'percent',
+        maximumFractionDigits: digits,
+      }).format(value);
 
 export const formatCost = (
   value: number | null | undefined,
@@ -48,19 +52,33 @@ export const formatCost = (
   }
 };
 
-/** Human duration from milliseconds: `45m`, `6.5h`, `3d 4h`. */
-export const formatDurationMs = (milliseconds: number | null | undefined): string => {
-  if (milliseconds == null || !Number.isFinite(milliseconds)) return '–';
+/** Human duration from milliseconds, with locale-aware numbers and units. */
+export const formatDurationMs = (
+  milliseconds: number | null | undefined,
+  locale: Locale = 'en',
+): string => {
+  if (milliseconds == null || !Number.isFinite(milliseconds) || milliseconds < 0)
+    return '–';
+  const number = (value: number, fractionDigits = 0) =>
+    new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+      maximumFractionDigits: fractionDigits,
+    }).format(value);
+  const unit =
+    locale === 'vi'
+      ? { second: ' giây', minute: ' phút', hour: ' giờ', day: ' ngày' }
+      : { second: 's', minute: 'm', hour: 'h', day: 'd' };
   const minutes = milliseconds / 60_000;
-  if (minutes < 1) return `${Math.round(milliseconds / 1000)}s`;
-  if (minutes < 60) return `${Number(minutes.toFixed(minutes < 10 ? 1 : 0))}m`;
+  if (milliseconds < 59_500)
+    return `${number(Math.round(milliseconds / 1000))}${unit.second}`;
+  if (minutes < 59.5) return `${number(minutes, minutes < 10 ? 1 : 0)}${unit.minute}`;
   const hours = minutes / 60;
-  if (hours < 24) return `${Number(hours.toFixed(1))}h`;
-  const days = Math.floor(hours / 24);
-  const restHours = Math.round(hours - days * 24);
+  if (hours < 23.95) return `${number(hours, 1)}${unit.hour}`;
+  const roundedHours = Math.round(hours);
+  const days = Math.floor(roundedHours / 24);
+  const restHours = roundedHours % 24;
   return restHours > 0 && days < 10
-    ? `${days}d ${restHours}h`
-    : `${Number((hours / 24).toFixed(1))}d`;
+    ? `${number(days)}${unit.day} ${number(restHours)}${unit.hour}`
+    : `${number(hours / 24, 1)}${unit.day}`;
 };
 
 export const formatInteger = (value: number, locale: Locale): string =>

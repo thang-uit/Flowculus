@@ -19,6 +19,7 @@ import { useMiningStore } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
 import { MiningCurrentSource } from './MiningCurrentSource';
+import { getMiningTabsCopy } from '@/lib/i18n/mining-tabs-copy';
 
 const PRESET_ICONS: Record<MiningPresetId, typeof ShoppingCart> = {
   'order-to-cash': ShoppingCart,
@@ -164,13 +165,24 @@ export function MiningSourcePanel({
         </div>
       ) : null}
       {status === 'error' && error ? (
-        <p
-          className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/40 px-2.5 py-2 text-[11px] text-[var(--danger)]"
-          role="alert"
-        >
-          <WarningCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
-          {error}
-        </p>
+        <div className="space-y-2">
+          <p
+            className="flex items-start gap-2 rounded-lg border border-[var(--danger)]/40 px-2.5 py-2 text-[11px] text-[var(--danger)]"
+            role="alert"
+          >
+            <WarningCircle size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+            {error}
+          </p>
+          {replay ? (
+            <button
+              type="button"
+              className="app-button app-button--secondary"
+              onClick={() => useMiningStore.getState().reloadTab()}
+            >
+              {getMiningTabsCopy(locale).retry}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       {result &&
       (result.skippedRows > 0 ||

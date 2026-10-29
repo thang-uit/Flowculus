@@ -29,6 +29,9 @@ export function MiningWorkspace() {
   const replay = useMiningStore((state) => state.replay);
   const mappingTable = useMiningStore((state) => state.mappingTable);
   const status = useMiningStore((state) => state.status);
+  const storageStatus = useMiningStore((state) => state.storageStatus);
+  const storageHydrated = useMiningStore((state) => state.storageHydrated);
+  const activeTabId = useMiningStore((state) => state.activeTabId);
   const [namingProcess, setNamingProcess] = useState(false);
   const [logTableOpen, setLogTableOpen] = useState(false);
   const {
@@ -44,6 +47,11 @@ export function MiningWorkspace() {
   return (
     <div
       ref={workspaceRef}
+      role={activeTabId ? 'tabpanel' : 'region'}
+      id={activeTabId ? `mining-panel-${activeTabId}` : undefined}
+      aria-labelledby={activeTabId ? `mining-log-tab-${activeTabId}` : undefined}
+      aria-label={activeTabId ? undefined : copy.miningSource}
+      inert={!storageHydrated || storageStatus === 'conflict'}
       className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden"
     >
       <aside className="shrink-0 border-b border-[var(--border)] bg-[var(--surface)] lg:w-[var(--mining-source-width,288px)] lg:overflow-y-auto lg:border-b-0 scrollbar-thin">
@@ -117,7 +125,7 @@ export function MiningWorkspace() {
         <ColumnMappingDialog
           table={mappingTable}
           onConfirm={session.applyMapping}
-          onCancel={() => useMiningStore.getState().setMappingTable(null)}
+          onCancel={() => useMiningStore.getState().reloadTab()}
         />
       ) : null}
       {result && logTableOpen && status === 'ready' && !mappingTable ? (

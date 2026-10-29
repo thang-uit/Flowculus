@@ -8,8 +8,6 @@ import type { SocialNetwork } from '@flowculus/process-mining';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-const score = (value: number) => value.toFixed(3);
-
 /** Directed handoff metrics, computed only for the bounded resource network. */
 export function ResourceCentralityTable({
   network,
@@ -17,6 +15,10 @@ export function ResourceCentralityTable({
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const evidence = getMiningEvidenceCopy(locale);
+  const score = new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
   const [sort, setSort] = useState<
     'incomingHandoffs' | 'inDegree' | 'betweenness' | 'pageRank'
   >('incomingHandoffs');
@@ -109,10 +111,10 @@ export function ResourceCentralityTable({
                   <td className="px-2 py-2">{resource.outgoingHandoffs}</td>
                   <td className="px-2 py-2">{resource.handoffs}</td>
                   <td className="px-2 py-2">{resource.inDegree + resource.outDegree}</td>
-                  <td className="px-2 py-2">{score(resource.betweenness)}</td>
-                  <td className="px-2 py-2">{score(resource.closeness)}</td>
-                  <td className="px-2 py-2">{score(resource.eigenvector)}</td>
-                  <td className="px-2 py-2">{score(resource.pageRank)}</td>
+                  <td className="px-2 py-2">{score.format(resource.betweenness)}</td>
+                  <td className="px-2 py-2">{score.format(resource.closeness)}</td>
+                  <td className="px-2 py-2">{score.format(resource.eigenvector)}</td>
+                  <td className="px-2 py-2">{score.format(resource.pageRank)}</td>
                 </tr>
               ))}
           </tbody>

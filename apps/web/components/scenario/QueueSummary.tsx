@@ -55,7 +55,7 @@ export function QueueSummary() {
             <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[10px] text-[var(--muted)]">
               <span>
                 {copy.queueUtilization}:{' '}
-                {formatPercent(queue.utilization) ?? copy.emptyValue}
+                {formatPercent(queue.utilization, 1, locale) ?? copy.emptyValue}
               </span>
               <span>
                 {copy.averageQueue}:{' '}

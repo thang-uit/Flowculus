@@ -4,6 +4,7 @@ import { ImageSquare, ShareNetwork, SidebarSimple } from '@phosphor-icons/react'
 import { useCallback, useRef, type ChangeEvent } from 'react';
 import { ExportNameDialog } from '@/components/documents/ExportNameDialog';
 import { DocumentTabs } from '@/components/documents/DocumentTabs';
+import { MiningTabs } from '@/components/mining/MiningTabs';
 import { DocumentDialog } from '@/components/documents/DocumentDialog';
 import { useDocumentCommands } from '@/lib/documents/use-document-commands';
 
@@ -23,6 +24,7 @@ import { useWorkspaceActions } from '@/lib/use-workspace-actions';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { useDeviceOpen } from '@/lib/documents/use-device-open';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
+import { getMiningTabsCopy } from '@/lib/i18n/mining-tabs-copy';
 
 import type { WorkspaceImportSelection } from '@/lib/use-workspace-import';
 
@@ -40,9 +42,11 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
   const { runExport, share, pendingExport, confirmExport, cancelExport } =
     useWorkspaceActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const miningInputRef = useRef<HTMLInputElement>(null);
   const fallbackOpen = useCallback(() => fileInputRef.current?.click(), []);
+  const openMiningFile = useCallback(() => miningInputRef.current?.click(), []);
   const openFile = useDeviceOpen(onImportFiles, fallbackOpen);
-  useDocumentCommands(openFile);
+  useDocumentCommands(openFile, openMiningFile);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
@@ -55,7 +59,7 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
   return (
     <>
       <header
-        inert={restoringDrafts}
+        inert={mode === 'model' && restoringDrafts}
         className="workspace-header relative flex h-12 min-h-12 min-w-0 shrink-0 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-2 sm:px-4"
       >
         {/* Mobile */}
@@ -174,8 +178,20 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
           aria-label={copy.openFile}
           onChange={handleFileChange}
         />
+        <input
+          ref={miningInputRef}
+          type="file"
+          accept=".csv,.tsv,.json,.xes,.xml,.txt,.xlsx"
+          className="sr-only"
+          aria-label={getMiningTabsCopy(locale).open}
+          onChange={handleFileChange}
+        />
       </header>
-      <DocumentTabs onOpen={openFile} />
+      {mode === 'model' ? (
+        <DocumentTabs onOpen={openFile} />
+      ) : (
+        <MiningTabs onOpen={openMiningFile} />
+      )}
       <DocumentDialog />
       {pendingExport ? (
         <ExportNameDialog

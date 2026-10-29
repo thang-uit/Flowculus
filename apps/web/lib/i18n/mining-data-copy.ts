@@ -7,7 +7,7 @@ const EN = {
   samples: 'Sample logs',
   data: 'Event data',
   view: 'View event data',
-  replace: 'Replace log',
+  replace: 'Open another log',
   remove: 'Clear log',
   close: 'Close',
   cancel: 'Cancel',
@@ -15,9 +15,8 @@ const EN = {
   clearHint:
     'The log, mining results and comparison evidence will be removed from this session. Your process tabs and files stay available.',
   mapped: 'Columns confirmed',
-  modelTabs: 'Process tabs',
   tabsHint:
-    'These tabs contain BPMN models. Switching tabs keeps the event log. Choose the reference explicitly in BPMN comparison.',
+    'Switch event-log tabs to restore each log’s results and settings. Choose a BPMN reference explicitly in BPMN comparison.',
   search: 'Search case, activity or resource',
   caseFilter: 'Filter case ID',
   activityFilter: 'Filter activity',
@@ -51,7 +50,7 @@ const VI: typeof EN = {
   samples: 'Nhật ký mẫu',
   data: 'Dữ liệu sự kiện',
   view: 'Xem dữ liệu sự kiện',
-  replace: 'Thay nhật ký',
+  replace: 'Mở thêm nhật ký',
   remove: 'Xóa nhật ký',
   close: 'Đóng',
   cancel: 'Hủy',
@@ -59,9 +58,8 @@ const VI: typeof EN = {
   clearHint:
     'Nhật ký, kết quả khai phá và bằng chứng đối chiếu sẽ được xóa khỏi phiên. Các tab quy trình và tệp trên thiết bị vẫn được giữ.',
   mapped: 'Đã xác nhận cột',
-  modelTabs: 'Tab quy trình',
   tabsHint:
-    'Các tab này chứa mô hình BPMN. Chuyển tab vẫn giữ nhật ký. Hãy chọn mô hình chuẩn trong Đối chiếu BPMN.',
+    'Chuyển tab nhật ký để xem lại kết quả và cấu hình của từng tệp. Chọn mô hình chuẩn trong Đối chiếu BPMN.',
   search: 'Tìm mã ca, hoạt động hoặc người thực hiện',
   caseFilter: 'Lọc mã ca',
   activityFilter: 'Lọc hoạt động',

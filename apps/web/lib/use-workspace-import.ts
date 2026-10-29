@@ -19,6 +19,7 @@ import { useImageReferenceStore } from '@/lib/use-image-reference-store';
 import { useMiningStore } from '@/lib/mining-store';
 import { MAX_OPEN_DOCUMENTS } from '@/lib/documents/document-types';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { assertMiningCapacity } from './mining-tabs';
 
 export type WorkspaceImportSelection = File[] | (() => Promise<File[]>);
 
@@ -57,6 +58,43 @@ export function useWorkspaceImport(fallbackName: string) {
         const files = typeof selection === 'function' ? await selection() : selection;
         signal.throwIfAborted();
         if (!files.length) return false;
+        const batch = await importDocumentBatch(files, fallbackName, signal);
+        const imported = batch[0]!;
+        signal.throwIfAborted();
+        if (imported.kind === 'event-log') {
+          if (files.length > 1) throw new Error('multiple-event-logs');
+          if (!useMiningStore.getState().storageHydrated) {
+            await new Promise<void>((resolve, reject) => {
+              const check = () => {
+                const mining = useMiningStore.getState();
+                if (signal.aborted) finish(new DOMException('Cancelled', 'AbortError'));
+                else if (mining.storageHydrated) finish();
+                else if (
+                  mining.storageStatus === 'error' ||
+                  mining.storageStatus === 'conflict'
+                )
+                  finish(new Error('mining-storage-error'));
+              };
+              const finish = (error?: Error) => {
+                stop();
+                signal.removeEventListener('abort', check);
+                if (error) reject(error);
+                else resolve();
+              };
+              const stop = useMiningStore.subscribe(check);
+              signal.addEventListener('abort', check, { once: true });
+              check();
+            });
+          }
+          signal.throwIfAborted();
+          const mining = useMiningStore.getState();
+          if (mining.storageStatus === 'conflict')
+            throw new Error('mining-storage-conflict');
+          assertMiningCapacity(mining, imported.source.length);
+          mining.queueUpload({ fileName: imported.fileName, source: imported.source });
+          useWorkspaceStore.getState().setMode('mining');
+          return true;
+        }
         if (useWorkspaceStore.getState().draftStatus === 'loading') {
           await new Promise<void>((resolve, reject) => {
             const stop = useWorkspaceStore.subscribe((state) => {
@@ -74,9 +112,6 @@ export function useWorkspaceImport(fallbackName: string) {
             if (signal.aborted) cancel();
           });
         }
-        const batch = await importDocumentBatch(files, fallbackName, signal);
-        const imported = batch[0]!;
-        signal.throwIfAborted();
         if (imported.kind === 'image') {
           const requestId = useImageReferenceStore.getState().beginUpload();
           imageRequestId = requestId;
@@ -105,14 +140,6 @@ export function useWorkspaceImport(fallbackName: string) {
           return true;
         }
         const state = useWorkspaceStore.getState();
-        if (imported.kind === 'event-log') {
-          useMiningStore.getState().queueUpload({
-            fileName: imported.fileName,
-            source: imported.source,
-          });
-          state.setMode('mining');
-          return true;
-        }
         if (state.documents.length + batch.length > MAX_OPEN_DOCUMENTS)
           throw new Error('document-limit');
         const connections = new Map<object, DeviceFileBinding>();

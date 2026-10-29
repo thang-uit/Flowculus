@@ -1,7 +1,6 @@
 'use client';
 
 import { Briefcase } from '@phosphor-icons/react';
-import { useState } from 'react';
 
 import { DfgCanvas } from '@/components/mining/DfgCanvas';
 import { MiningKpiStrip } from '@/components/mining/MiningKpiStrip';
@@ -22,7 +21,8 @@ export function MiningMapView() {
   const result = useMiningStore((state) => state.result);
   const selectedVariantId = useMiningStore((state) => state.selectedVariantId);
   const edgeMetric = useMiningStore((state) => state.edgeMetric);
-  const [mapMode, setMapMode] = useState<'process' | 'resources'>('process');
+  const mapMode = useMiningStore((state) => state.mapMode);
+  const setMapMode = useMiningStore((state) => state.setMapMode);
   const discovery = result?.discovery;
   const variant = discovery?.variants.find((item) => item.id === selectedVariantId);
 

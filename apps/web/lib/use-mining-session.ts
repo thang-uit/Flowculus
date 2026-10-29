@@ -21,6 +21,9 @@ import {
 import { MiningAbortError, useMiningClient } from '@/lib/use-mining-client';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
+import { replayMiningLog } from './mining-replay';
+import { assertMiningCapacity } from './mining-tabs';
+import { getMiningTabsCopy } from './i18n/mining-tabs-copy';
 
 const LOG_EXTENSION = /\.(csv|tsv|json|xes|xml|txt|xlsx)$/i;
 
@@ -39,14 +42,21 @@ export function useMiningSession() {
   const copy = getWorkspaceCopy(locale);
   const { request, cancel: cancelWorker } = useMiningClient();
   const pendingUpload = useMiningStore((state) => state.pendingUpload);
+  const storageHydrated = useMiningStore((state) => state.storageHydrated);
   const sequenceRef = useRef(0);
   const bootedRef = useRef(false);
   const convertingRef = useRef(false);
   const conformanceTicket = useRef(0);
   const { readFile, cancelFileRead } = useMiningUpload();
+  const ownerRevision = useRef(useMiningStore.getState().workerRevision).current;
+  const isOwner = useCallback(
+    () => useMiningStore.getState().workerRevision === ownerRevision,
+    [ownerRevision],
+  );
   useEffect(
     () => () => {
       sequenceRef.current += 1;
+      bootedRef.current = false;
     },
     [],
   );
@@ -61,7 +71,9 @@ export function useMiningSession() {
     sequenceRef.current += 1;
     cancelFileRead();
     cancelWorker();
-    useMiningStore.getState().abortSession(null);
+    const state = useMiningStore.getState();
+    if (state.activeTabId) state.closeTab(state.activeTabId);
+    else state.abortSession(null);
   }, [cancelFileRead, cancelWorker]);
 
   const fail = useCallback(
@@ -79,18 +91,23 @@ export function useMiningSession() {
           );
         return;
       }
+      const tabsCopy = getMiningTabsCopy(usePreferencesStore.getState().locale);
       const message =
-        reason instanceof Error && reason.message === 'document-limit'
-          ? copy.documentLimit
-          : reason instanceof Error && reason.message === 'file-too-large'
-            ? copy.fileTooLarge
-            : reason instanceof Error && reason.message === 'xlsx-timeout'
-              ? copy.resilience.miningTimeout
-              : reason instanceof Error && reason.message.startsWith('xlsx-')
-                ? copy.fileError
-                : reason instanceof Error
-                  ? reason.message
-                  : copy.fileError;
+        reason instanceof Error && reason.message === 'mining-tab-limit'
+          ? tabsCopy.limit
+          : reason instanceof Error && reason.message === 'mining-source-limit'
+            ? tabsCopy.sourceLimit
+            : reason instanceof Error && reason.message === 'document-limit'
+              ? copy.documentLimit
+              : reason instanceof Error && reason.message === 'file-too-large'
+                ? copy.fileTooLarge
+                : reason instanceof Error && reason.message === 'xlsx-timeout'
+                  ? copy.resilience.miningTimeout
+                  : reason instanceof Error && reason.message.startsWith('xlsx-')
+                    ? copy.fileError
+                    : reason instanceof Error
+                      ? reason.message
+                      : copy.fileError;
       useMiningStore.getState().setStatus('error', message);
     },
     [copy],
@@ -103,19 +120,25 @@ export function useMiningSession() {
       useMiningStore.getState().setStatus('loading');
       try {
         const response = await task();
-        if (sequence !== sequenceRef.current) return;
+        if (sequence !== sequenceRef.current || !isOwner()) return;
         useMiningStore.getState().setResult(response, nextReplay);
       } catch (reason) {
-        if (sequence === sequenceRef.current) {
+        if (sequence === sequenceRef.current && isOwner()) {
           fail(reason);
         }
       }
     },
-    [fail],
+    [fail, isOwner],
   );
 
   const loadPreset = useCallback(
     (presetId: MiningPresetId) => {
+      try {
+        assertMiningCapacity(useMiningStore.getState());
+      } catch (reason) {
+        fail(reason);
+        return Promise.resolve();
+      }
       cancelFileRead();
       return run(
         async () =>
@@ -130,7 +153,7 @@ export function useMiningSession() {
         { kind: 'preset', presetId },
       );
     },
-    [cancelFileRead, request, run],
+    [cancelFileRead, fail, request, run],
   );
 
   const inspectUpload = useCallback(
@@ -140,18 +163,19 @@ export function useMiningSession() {
       sequenceRef.current = sequence;
       useMiningStore.getState().setStatus('loading');
       try {
+        assertMiningCapacity(useMiningStore.getState(), upload.source.length);
         const response = await request({ type: 'inspect-file', ...upload });
-        if (sequence !== sequenceRef.current) return;
+        if (sequence !== sequenceRef.current || !isOwner()) return;
         if (response.type !== 'table') throw new Error('Unexpected mining response.');
         useMiningStore.getState().setMappingTable({ ...response, source: upload.source });
         useMiningStore
           .getState()
           .setStatus(useMiningStore.getState().result ? 'ready' : 'idle');
       } catch (reason) {
-        if (sequence === sequenceRef.current) fail(reason);
+        if (sequence === sequenceRef.current && isOwner()) fail(reason);
       }
     },
-    [cancelFileRead, fail, request],
+    [cancelFileRead, fail, request, isOwner],
   );
 
   const applyMapping = useCallback(
@@ -179,7 +203,7 @@ export function useMiningSession() {
   // Boot: a queued upload wins, otherwise rebuild the previous session or
   // remain empty until a person chooses a source.
   useEffect(() => {
-    if (bootedRef.current) return;
+    if (bootedRef.current || !storageHydrated) return;
     bootedRef.current = true;
     const state = useMiningStore.getState();
     const upload = state.takePendingUpload();
@@ -188,26 +212,20 @@ export function useMiningSession() {
       return;
     }
     const previous = state.replay;
-    if (previous?.kind === 'preset') void loadPreset(previous.presetId);
-    else if (previous?.kind === 'file') {
+    if (previous) {
       void run(async () => {
-        await request({
-          type: 'inspect-file',
-          fileName: previous.fileName,
-          source: previous.source,
-        });
-        return asDiscovery(
-          await request({
-            type: 'apply-mapping',
-            mapping: previous.mapping,
-            name: previous.fileName.replace(LOG_EXTENSION, ''),
-            filter: state.filter,
-            timePolicy: state.timePolicy,
-          }),
+        const response = await replayMiningLog(
+          request,
+          previous,
+          state.filter,
+          state.timePolicy,
+          isOwner,
         );
+        if (!response) throw new MiningAbortError('cancelled');
+        return response;
       });
     }
-  }, [inspectUpload, loadPreset, request, run]);
+  }, [inspectUpload, request, run, isOwner, storageHydrated]);
 
   // Files dropped or opened while the view is visible.
   useEffect(() => {
@@ -231,17 +249,21 @@ export function useMiningSession() {
       if (!file) return;
       const sequence = ++sequenceRef.current;
       useMiningStore.getState().setStatus('loading');
-      void readFile(file).then(
-        (source) => {
-          if (source !== null && sequence === sequenceRef.current)
-            return inspectUpload({ fileName: file.name, source });
-        },
-        (error: unknown) => {
-          if (sequence === sequenceRef.current) fail(error);
-        },
-      );
+      void readFile(file)
+        .then(
+          (source) => {
+            if (source !== null && sequence === sequenceRef.current && isOwner())
+              return inspectUpload({ fileName: file.name, source });
+          },
+          (error: unknown) => {
+            if (sequence === sequenceRef.current && isOwner()) fail(error);
+          },
+        )
+        .catch((error: unknown) => {
+          if (sequence === sequenceRef.current && isOwner()) fail(error);
+        });
     },
-    [fail, inspectUpload, readFile],
+    [fail, inspectUpload, readFile, isOwner],
   );
 
   const sendToCanvas = useCallback(
@@ -253,21 +275,23 @@ export function useMiningSession() {
         return await createMiningCanvasDocument(
           name,
           request,
-          () => sequence === sequenceRef.current,
+          () => sequence === sequenceRef.current && isOwner(),
         );
       } catch (reason) {
-        if (sequence === sequenceRef.current) fail(reason);
+        if (sequence === sequenceRef.current && isOwner()) fail(reason);
         return 'failed';
       } finally {
         convertingRef.current = false;
       }
     },
-    [fail, request],
+    [fail, request, isOwner],
   );
 
   const downloadLog = useCallback(async () => {
+    const sequence = sequenceRef.current;
     try {
       const response = await request({ type: 'export-log' });
+      if (!isOwner() || sequence !== sequenceRef.current) return;
       if (response.type !== 'csv') throw new Error('Unexpected mining response.');
       downloadTextFile(
         exportFileName(response.logName, 'event-log', 'csv'),
@@ -275,9 +299,9 @@ export function useMiningSession() {
         'text/csv',
       );
     } catch (reason) {
-      fail(reason);
+      if (isOwner() && sequence === sequenceRef.current) fail(reason);
     }
-  }, [fail, request]);
+  }, [fail, request, isOwner]);
 
   const checkConformance = useCallback(
     async (
@@ -290,10 +314,13 @@ export function useMiningSession() {
         model,
         options,
         request,
-        () => sequence === sequenceRef.current && ticket === conformanceTicket.current,
+        () =>
+          isOwner() &&
+          sequence === sequenceRef.current &&
+          ticket === conformanceTicket.current,
       );
     },
-    [request],
+    [request, isOwner],
   );
 
   return {

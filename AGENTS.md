@@ -143,8 +143,13 @@ path, params }`. Packages never return user-facing sentences; the web app
   (latest request wins, cancellation of stale long runs, timeout, bounded
   restart, main-thread fallback only when workers cannot run).
 - Mining runs in `workers/mining.worker.ts` through `useMiningClient`
-  (timeout, cancel, bounded restart). The worker holds the log, so an abort
-  clears the mining session.
+  (timeout, cancel, bounded restart). Mining event-log tabs are independent of BPMN
+  document tabs and use separate IndexedDB storage and a separate writer lock.
+  Keep at most 10 logs and 30 million source-text characters. Only the active tab
+  owns a worker. Tab switches invalidate old requests before replaying the source.
+  Worker loss clears dependent evidence but preserves the source for retry. Persist
+  only validated sources and per-log settings, never cached conclusions or reference
+  models. A log import adds a tab only after successful parsing and mapping.
 - XLSX extraction runs in `workers/xlsx-log.worker.ts` on the first worksheet
   only, with a 10 MB file limit. Mining conformance must use the current
   confirmed BPMN model as its reference; the graph discovered from the log

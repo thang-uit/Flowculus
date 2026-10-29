@@ -4,14 +4,9 @@ import { create } from 'zustand';
 
 import {
   DEFAULT_DISCOVERY_FILTER,
-  ELAPSED_TIME_POLICY,
-  DEFAULT_WORK_CALENDAR,
-  type WorkCalendar,
   type TimePolicy,
-  type ColumnMapping,
   type DiscoveryFilter,
   type MiningConversionWarning,
-  type MiningPresetId,
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
 
@@ -20,24 +15,34 @@ import type {
   MiningTableResponse,
   MiningConformanceResponse,
 } from '@/lib/mining-engine';
-
-export type MiningStatus = 'idle' | 'loading' | 'ready' | 'error';
-export type DfgEdgeMetric = 'frequency' | 'duration';
-
-/** Enough to rebuild the worker session after the mining view remounts. */
-export type MiningReplay =
-  | { kind: 'preset'; presetId: MiningPresetId }
-  | { kind: 'file'; fileName: string; source: string; mapping: ColumnMapping };
+import {
+  emptyMiningSnapshot,
+  openMiningTab,
+  activateMiningTab,
+  closeMiningTab,
+  type MiningSnapshot,
+  type MiningTabsState,
+  type MiningReplay,
+  type MiningStatus,
+  type DfgEdgeMetric,
+  type MiningInsight,
+} from './mining-tabs';
+export type { MiningReplay, MiningStatus, DfgEdgeMetric } from './mining-tabs';
+export { miningTabs } from './mining-tabs';
 
 export interface PendingUpload {
   fileName: string;
   source: string;
 }
 
-interface MiningState {
-  status: MiningStatus;
-  error: string | null;
-  replay: MiningReplay | null;
+interface MiningState extends MiningTabsState {
+  storageHydrated: boolean;
+  storageAttempt: number;
+  retryStorage: () => void;
+  setStorageHydrated: (ready: boolean) => void;
+  storageStatus: 'loading' | 'saving' | 'saved' | 'error' | 'conflict';
+  setStorageStatus: (status: MiningState['storageStatus']) => void;
+  workerRevision: number;
   /** A file imported elsewhere (header, drop) waiting for the mining view. */
   pendingUpload: PendingUpload | null;
   /** The uploaded file waiting for its column mapping. */
@@ -52,7 +57,6 @@ interface MiningState {
   checkingConformance: boolean;
   filter: DiscoveryFilter;
   timePolicy: TimePolicy;
-  workCalendar: WorkCalendar;
   setTimePolicy: (policy: TimePolicy) => void;
   selectedVariantId: string | null;
   edgeMetric: DfgEdgeMetric;
@@ -76,12 +80,27 @@ interface MiningState {
   setConversionWarnings: (warnings: MiningConversionWarning[]) => void;
   /** The worker lost its log (cancel, timeout, crash): drop what depends on it. */
   abortSession: (error: string | null) => void;
+  switchTab: (id: string) => void;
+  closeTab: (id: string) => void;
+  setMapMode: (mode: MiningSnapshot['mapMode']) => void;
+  setInsight: (tab: MiningInsight) => void;
+  setReference: (reference: MiningSnapshot['reference']) => void;
+  restoreTabs: (tabs: MiningTabsState['tabs'], activeTabId: string | null) => void;
+  reloadTab: () => void;
+  reorderTab: (id: string, index: number) => void;
 }
 
 export const useMiningStore = create<MiningState>((set, get) => ({
-  status: 'idle',
-  error: null,
-  replay: null,
+  ...emptyMiningSnapshot(),
+  tabs: [],
+  activeTabId: null,
+  storageStatus: 'loading',
+  storageHydrated: false,
+  storageAttempt: 0,
+  retryStorage: () => set((state) => ({ storageAttempt: state.storageAttempt + 1 })),
+  setStorageHydrated: (storageHydrated) => set({ storageHydrated }),
+  setStorageStatus: (storageStatus) => set({ storageStatus }),
+  workerRevision: 0,
   pendingUpload: null,
   mappingTable: null,
   result: null,
@@ -89,8 +108,6 @@ export const useMiningStore = create<MiningState>((set, get) => ({
   conformanceError: null,
   checkingConformance: false,
   filter: DEFAULT_DISCOVERY_FILTER,
-  timePolicy: ELAPSED_TIME_POLICY,
-  workCalendar: structuredClone(DEFAULT_WORK_CALENDAR),
   setTimePolicy: (timePolicy) =>
     set((state) => ({
       timePolicy,
@@ -111,22 +128,26 @@ export const useMiningStore = create<MiningState>((set, get) => ({
   setStatus: (status, error = null) => set({ status, error }),
   setMappingTable: (mappingTable) => set({ mappingTable }),
   setResult: (result, replay) =>
-    set((state) => ({
-      result,
-      conformance: replay ? null : state.conformance,
-      conformanceError: null,
-      checkingConformance: false,
-      replay: replay ?? state.replay,
-      status: 'ready',
-      error: null,
-      selectedVariantId:
-        replay ||
-        !result.discovery.variants.some(
-          (variant) => variant.id === state.selectedVariantId,
-        )
-          ? null
-          : state.selectedVariantId,
-    })),
+    set((state) =>
+      replay
+        ? openMiningTab(state, replay, result)
+        : {
+            result,
+            conformance: replay ? null : state.conformance,
+            conformanceError: null,
+            checkingConformance: false,
+            replay: replay ?? state.replay,
+            status: 'ready',
+            error: null,
+            selectedVariantId:
+              replay ||
+              !result.discovery.variants.some(
+                (variant) => variant.id === state.selectedVariantId,
+              )
+                ? null
+                : state.selectedVariantId,
+          },
+    ),
   setConformance: (evidence, model, optionsKey) =>
     set({
       conformance: { model, evidence, optionsKey },
@@ -150,10 +171,69 @@ export const useMiningStore = create<MiningState>((set, get) => ({
       conformance: null,
       conformanceError: null,
       checkingConformance: false,
-      replay: null,
       pendingUpload: null,
       mappingTable: null,
       selectedVariantId: null,
       conversionWarnings: [],
+    }),
+  switchTab: (id) =>
+    set((state) => {
+      const next = activateMiningTab(state, id);
+      return next
+        ? {
+            ...next,
+            workerRevision: state.workerRevision + 1,
+            pendingUpload: null,
+            mappingTable: null,
+          }
+        : state;
+    }),
+  closeTab: (id) =>
+    set((state) => {
+      const next = closeMiningTab(state, id);
+      if (!next) return state;
+      if (state.activeTabId !== id) return next;
+      return {
+        ...next,
+        workerRevision: state.workerRevision + 1,
+        pendingUpload: null,
+        mappingTable: null,
+      };
+    }),
+  setMapMode: (mapMode) => set({ mapMode }),
+  setInsight: (insight) => set({ insight }),
+  setReference: (reference) => set({ reference }),
+  restoreTabs: (tabs, activeTabId) =>
+    set((state) => {
+      const tab = tabs.find((item) => item.id === activeTabId) ?? tabs[0];
+      return {
+        ...(tab ?? emptyMiningSnapshot()),
+        tabs,
+        activeTabId: tab?.id ?? null,
+        workerRevision: state.workerRevision + 1,
+      };
+    }),
+  reloadTab: () =>
+    set((state) => ({
+      workerRevision: state.workerRevision + 1,
+      mappingTable: null,
+      pendingUpload: null,
+      status: state.replay ? 'loading' : 'idle',
+      error: null,
+    })),
+  reorderTab: (id, index) =>
+    set((state) => {
+      const from = state.tabs.findIndex((tab) => tab.id === id);
+      if (
+        from < 0 ||
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= state.tabs.length ||
+        from === index
+      )
+        return state;
+      const tabs = [...state.tabs];
+      tabs.splice(index, 0, tabs.splice(from, 1)[0]);
+      return { tabs };
     }),
 }));

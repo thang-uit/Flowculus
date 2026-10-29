@@ -35,7 +35,7 @@ export function MiningKpiStrip({ stats }: Readonly<{ stats: EventLogStats }>) {
     },
     {
       label: copy.miningHappyPath,
-      value: formatPercent(stats.happyPathShare) ?? copy.emptyValue,
+      value: formatPercent(stats.happyPathShare, 1, locale) ?? copy.emptyValue,
       hint: copy.miningHappyPathHint,
     },
   ];

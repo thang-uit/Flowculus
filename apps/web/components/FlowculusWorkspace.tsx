@@ -30,6 +30,8 @@ import { useWorkspaceRoute } from '@/lib/use-workspace-route';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import type { WorkspaceMode } from '@/lib/workspace-store';
+import { useMiningStore } from '@/lib/mining-store';
+import { useMiningDraft } from '@/lib/use-mining-draft';
 
 // The mining view (worker, map and tables) is only loaded when it is opened.
 const MiningWorkspace = dynamic(
@@ -67,6 +69,7 @@ export function FlowculusWorkspace({
   const restoringDrafts = useWorkspaceStore((state) => state.draftStatus === 'loading');
   const activeDocumentId = useWorkspaceStore((state) => state.activeDocumentId);
   const storedMode = useWorkspaceStore((state) => state.mode);
+  const miningRevision = useMiningStore((state) => state.workerRevision);
   const mode = routeReady ? storedMode : initialMode;
   const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
   const setInspectorOpen = useWorkspaceStore((state) => state.setInspectorOpen);
@@ -77,6 +80,7 @@ export function FlowculusWorkspace({
   const dockedInspector = useMediaQuery('(min-width: 1280px)');
 
   useLocalDraft();
+  useMiningDraft();
   useReferenceAsset();
   useAnalysisWorker();
 
@@ -129,7 +133,7 @@ export function FlowculusWorkspace({
             </div>
           ) : (
             <SectionErrorBoundary section="mining">
-              <MiningWorkspace />
+              <MiningWorkspace key={miningRevision} />
             </SectionErrorBoundary>
           )}
           {routeReady && mode === 'model' && !dockedInspector ? (

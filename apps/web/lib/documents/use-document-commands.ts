@@ -8,6 +8,8 @@ import { commitPendingInput } from './pending-input';
 import { getDocumentCopy } from '@/lib/i18n/document-copy';
 import { showNotice } from '@/lib/ui/notice-store';
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { getMiningTabsCopy } from '@/lib/i18n/mining-tabs-copy';
+import { useMiningStore } from '@/lib/mining-store';
 import { getWorkspaceDocuments, isDocumentDirty } from './document-types';
 import { hasDeviceFile, saveDocumentToDevice } from './device-file';
 
@@ -47,7 +49,7 @@ export function requestDocumentClose(id: string) {
 }
 
 /** Global save shortcuts and a bounded, ordered auto-save for explicitly chosen files. */
-export function useDocumentCommands(onOpen: () => void) {
+export function useDocumentCommands(onOpenModel: () => void, onOpenMining: () => void) {
   // Preference changes replace the open callback, but must not cancel pending writes.
   useEffect(() => subscribeDeviceAutoSave(), []);
   useEffect(() => {
@@ -56,10 +58,29 @@ export function useDocumentCommands(onOpen: () => void) {
         return;
       const key = event.key.toLowerCase();
       if (!['s', 'o'].includes(key)) return;
+      if (useWorkspaceStore.getState().mode !== 'model') {
+        event.preventDefault();
+        if (document.querySelector('[role="dialog"]')) return;
+        if (key === 's') {
+          const copy = getMiningTabsCopy(usePreferencesStore.getState().locale);
+          const status = useMiningStore.getState().storageStatus;
+          showNotice(
+            status === 'error'
+              ? copy.storageError
+              : status === 'conflict'
+                ? copy.conflict
+                : status === 'loading' || status === 'saving'
+                  ? copy.saving
+                  : copy.shortcutSave,
+            status === 'error' || status === 'conflict' ? 'error' : 'info',
+          );
+        } else onOpenMining();
+        return;
+      }
       event.preventDefault();
       if (document.querySelector('[role="dialog"]')) return;
       if (key === 's') requestDocumentSave(event.shiftKey);
-      else onOpen();
+      else onOpenModel();
     };
     const beforeUnload = (event: BeforeUnloadEvent) => {
       // Device-dirty tabs already have browser drafts. Warn only when that safety net failed.
@@ -76,5 +97,5 @@ export function useDocumentCommands(onOpen: () => void) {
       window.removeEventListener('keydown', keydown);
       window.removeEventListener('beforeunload', beforeUnload);
     };
-  }, [onOpen]);
+  }, [onOpenModel, onOpenMining]);
 }

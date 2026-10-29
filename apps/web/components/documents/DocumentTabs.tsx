@@ -21,7 +21,6 @@ import { cn } from '@/lib/cn';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { getDocumentCopy } from '@/lib/i18n/document-copy';
-import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
 import {
   getWorkspaceDocuments,
   MAX_OPEN_DOCUMENTS,
@@ -43,8 +42,6 @@ import { documentSaveLabel } from '@/lib/documents/document-display';
 export function DocumentTabs({ onOpen }: Readonly<{ onOpen: () => void }>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getDocumentCopy(locale);
-  const mode = useWorkspaceStore((state) => state.mode);
-  const miningCopy = getMiningDataCopy(locale);
   const state = useWorkspaceStore(
     useShallow((state) => ({
       documents: state.documents,
@@ -171,13 +168,6 @@ export function DocumentTabs({ onOpen }: Readonly<{ onOpen: () => void }>) {
   return (
     <div className="document-workspace-bar" data-testid="document-bar">
       <div className="document-tab-row" inert={draftStatus === 'loading'}>
-        {mode === 'mining' ? (
-          <Tooltip content={miningCopy.tabsHint}>
-            <span className="hidden shrink-0 px-2 text-xs font-medium text-[var(--muted)] sm:inline">
-              {miningCopy.modelTabs}
-            </span>
-          </Tooltip>
-        ) : null}
         <Tooltip
           content={
             documents.length >= MAX_OPEN_DOCUMENTS ? copy.tabLimit : copy.newDocument

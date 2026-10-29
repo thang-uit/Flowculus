@@ -8,6 +8,6 @@ export function useMiningDuration() {
   const locale = usePreferencesStore((s) => s.locale);
   return (ms: number) =>
     basis === 'working'
-      ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(ms / 3600000)} h`
-      : formatDurationMs(ms);
+      ? `${new Intl.NumberFormat(locale === 'vi' ? 'vi-VN' : 'en-US', { maximumFractionDigits: 2 }).format(ms / 3600000)} ${locale === 'vi' ? 'giờ' : 'h'}`
+      : formatDurationMs(ms, locale);
 }

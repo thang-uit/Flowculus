@@ -111,16 +111,29 @@ fork của bạn theo [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```mermaid
 flowchart LR
-  UI["Giao diện và workspace"] --> MODEL["ProcessModel"]
+  UI["Không gian Mô hình"] --> MODEL["ProcessModel"]
+  MINING["Không gian Khai phá · tab nhật ký riêng"] --> LOGS["Event log và cấu hình từng tab"]
+  LOGS --> MINER["Một Mining worker đang hoạt động"]
+  MINER --> EVIDENCE["DFG · Alpha/Petri · nhân sự · kết luận"]
+  EVIDENCE --> MINING
+  LOGS --> LOGSTORE["IndexedDB Mining riêng"]
+  MODEL -. "Chọn rõ mô hình để đối chiếu" .-> MINER
   MODEL --> VALIDATION["Schema và ngữ nghĩa"]
   MODEL --> WORKERS["Web Workers"]
-  WORKERS --> ENGINE["Phân tích và Mining"]
+  WORKERS --> ENGINE["Phân tích mô hình"]
   ENGINE --> RESULT["Kết quả, giả định và chẩn đoán"]
   RESULT --> UI
   FILES["File do người dùng chọn"] --> ADAPTERS["Adapter định dạng"]
   ADAPTERS --> MODEL
   MODEL --> STORAGE["Bản nháp cục bộ"]
 ```
+
+Tab BPMN và tab nhật ký có trạng thái, lưu trữ và vòng đời riêng. Mỗi log giữ nguồn,
+mapping, lịch, bộ lọc và kết quả riêng. Chuyển tab dựng lại phiên worker từ nguồn
+đã lưu, vô hiệu hóa tác vụ cũ bằng mã phiên. Tối đa 10 log và tổng 30 triệu ký tự
+nguồn, không thêm worker cho các tab ẩn. Bản nháp Mining chỉ lưu nguồn và cấu hình,
+không lưu kết luận hoặc bằng chứng đối chiếu. Web Lock độc lập ngăn hai cửa sổ ghi
+đè phiên Mining. Quy trình thao tác và giới hạn được giải thích trong Knowledge.
 
 ```text
 apps/web/
@@ -374,16 +387,30 @@ Contributors should clone their own fork as described in [CONTRIBUTING.md](CONTR
 
 ```mermaid
 flowchart LR
-  UI["Interface and workspace"] --> MODEL["ProcessModel"]
+  UI["Model workspace"] --> MODEL["ProcessModel"]
+  MINING["Mining workspace · independent log tabs"] --> LOGS["Event logs and per-tab settings"]
+  LOGS --> MINER["One active Mining worker"]
+  MINER --> EVIDENCE["DFG · Alpha/Petri · resources · conclusions"]
+  EVIDENCE --> MINING
+  LOGS --> LOGSTORE["Separate Mining IndexedDB"]
+  MODEL -. "Explicit reference selection" .-> MINER
   MODEL --> VALIDATION["Schema and semantics"]
   MODEL --> WORKERS["Web Workers"]
-  WORKERS --> ENGINE["Analysis and Mining"]
+  WORKERS --> ENGINE["Model analysis"]
   ENGINE --> RESULT["Results, assumptions and diagnostics"]
   RESULT --> UI
   FILES["User-selected files"] --> ADAPTERS["Format adapters"]
   ADAPTERS --> MODEL
   MODEL --> STORAGE["Local drafts"]
 ```
+
+BPMN documents and event-log tabs have separate state, storage and lifecycles.
+Each log retains its source, mapping, calendar, filters and evidence. Tab switches
+rebuild the active worker from its saved source and invalidate stale requests.
+There are at most 10 logs with a combined 30-million-character source budget,
+and inactive tabs do not create workers. Mining drafts persist source/settings,
+not conclusions or alignment evidence. An independent Web Lock prevents competing
+browser windows from overwriting Mining sessions. Knowledge documents user workflows.
 
 ```text
 apps/web/

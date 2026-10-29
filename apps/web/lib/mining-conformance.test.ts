@@ -54,7 +54,7 @@ describe('conformance worker lifecycle', () => {
       );
       const state = useMiningStore.getState();
       expect(state.result).toBeNull();
-      expect(state.replay).toBeNull();
+      expect(state.replay).toEqual({ kind: 'preset', presetId: 'it-service-desk' });
       expect(state.checkingConformance).toBe(false);
       const copy = getWorkspaceCopy('vi');
       expect(state.error).toBe(

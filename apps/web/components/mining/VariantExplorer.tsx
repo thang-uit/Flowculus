@@ -60,7 +60,7 @@ export function VariantExplorer({ variants }: Readonly<{ variants: TraceVariant[
                   ) : null}
                 </span>
                 <span className="shrink-0 font-mono text-[11px] text-[var(--muted-strong)]">
-                  {formatPercent(variant.share)} · {variant.caseCount}
+                  {formatPercent(variant.share, 1, locale)} · {variant.caseCount}
                 </span>
               </span>
               <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-[var(--surface-soft)]">

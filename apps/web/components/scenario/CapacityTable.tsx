@@ -64,7 +64,7 @@ export function CapacityTable() {
                 {formatValue(pool.capacityPerDay, '', copy.emptyValue)}
               </td>
               <td className="px-3 py-1.5">
-                {formatPercent(pool.utilization) ?? copy.emptyValue}
+                {formatPercent(pool.utilization, 1, locale) ?? copy.emptyValue}
               </td>
               <td className="px-3 py-1.5">
                 {pool.queue?.status === 'ready'
