@@ -66,7 +66,9 @@ function DocumentForm({
   fallbackName: string;
 }>) {
   const [name, setName] = useState(document.processModel.name);
-  const [filename, setFilename] = useState(deviceFileName(document.processModel.name));
+  const [filename, setFilename] = useState(
+    document.deviceFileName ?? deviceFileName(document.processModel.name),
+  );
   const [fileNameEdited, setFileNameEdited] = useState(false);
   const [automatic, setAutomatic] = useState(() =>
     hasDeviceFile(document.id) ? isDeviceAutoSave(document.id) : true,
@@ -106,15 +108,16 @@ function DocumentForm({
       return;
     }
     if (!rename()) return;
-    if (!saving) {
+    if (!saving && kind !== 'close') {
       cancel();
       return;
     }
     setBusy(true);
     setError(null);
     const result = await saveDocumentToDevice(document.id, {
-      saveAs: true,
-      fileName: deviceFileName(filename),
+      saveAs: saving,
+      fileName:
+        !saving && hasDeviceFile(document.id) ? undefined : deviceFileName(filename),
       autoSave: automatic,
     });
     setBusy(false);
@@ -125,7 +128,8 @@ function DocumentForm({
       if (closeAfterSave && current && !isDocumentDirty(current)) closeDocument();
       else cancel();
     } else if (result === 'blocked') cancel();
-    else if (result === 'error') setError(copy.error);
+    else if (result === 'error' || result === 'permission' || result === 'conflict')
+      setError(copy[result]);
   };
   const closing = kind === 'close' && !saving;
   const needsSave = isDocumentDirty(document);
@@ -157,6 +161,11 @@ function DocumentForm({
           <p className="break-words text-sm font-semibold">
             {document.processModel.name}
           </p>
+          {error ? (
+            <p role="alert" className="mt-3 text-xs leading-5 text-[var(--danger)]">
+              {error}
+            </p>
+          ) : null}
           <div className="mt-5 flex flex-wrap justify-end gap-2">
             <AppButton type="button" variant="ghost" size="sm" onClick={cancel}>
               {copy.cancel}
@@ -165,20 +174,36 @@ function DocumentForm({
               type="button"
               variant="danger"
               size="sm"
-              disabled={writing}
+              disabled={writing || busy}
               onClick={closeDocument}
             >
               {needsSave ? copy.discard : copy.closeSaved}
             </AppButton>
+            {error ? (
+              <AppButton
+                variant="primary"
+                size="sm"
+                disabled={busy || writing}
+                onClick={() => {
+                  setError(null);
+                  setSaving(true);
+                }}
+              >
+                {copy.saveAs}
+              </AppButton>
+            ) : null}
             {needsSave ? (
               <AppButton
                 type="button"
                 variant="primary"
                 size="sm"
-                disabled={writing}
+                disabled={writing || busy}
                 onClick={() => {
-                  setSaving(true);
-                  setCloseAfterSave(true);
+                  if (hasDeviceFile(document.id)) void submit();
+                  else {
+                    setSaving(true);
+                    setCloseAfterSave(true);
+                  }
                 }}
               >
                 {copy.saveAndClose}

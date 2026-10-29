@@ -17,13 +17,25 @@ export const wrapText = (
   const lines: string[] = [];
   let line = '';
   for (const word of words) {
+    if (context.measureText(word).width > maxWidth) {
+      if (line) {
+        lines.push(line);
+        line = '';
+      }
+      // Labels and URLs may contain no spaces. Split at Unicode code-point boundaries.
+      for (const character of word) {
+        if (line && context.measureText(line + character).width > maxWidth) {
+          lines.push(line);
+          line = character;
+        } else line += character;
+      }
+      continue;
+    }
     const candidate = line ? `${line} ${word}` : word;
     if (line && context.measureText(candidate).width > maxWidth) {
       lines.push(line);
       line = word;
-    } else {
-      line = candidate;
-    }
+    } else line = candidate;
   }
   if (line) lines.push(line);
   return lines;

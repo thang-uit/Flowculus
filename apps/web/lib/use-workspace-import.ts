@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { getNodeBounds } from '@flowculus/process-model';
 
+import {
+  fingerprintText,
+  pickedFileBinding,
+  type DeviceFileBinding,
+} from '@/lib/documents/device-file-access';
+import { bindDeviceFile } from '@/lib/documents/device-file-bindings';
 import { importDocumentBatch } from '@/lib/documents/import-document-batch';
 import {
   documentContentKey,
@@ -13,6 +19,8 @@ import { useImageReferenceStore } from '@/lib/use-image-reference-store';
 import { useMiningStore } from '@/lib/mining-store';
 import { MAX_OPEN_DOCUMENTS } from '@/lib/documents/document-types';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+
+export type WorkspaceImportSelection = File[] | (() => Promise<File[]>);
 
 /** Header and drop imports share one latest-request lifecycle. */
 export function useWorkspaceImport(fallbackName: string) {
@@ -32,8 +40,11 @@ export function useWorkspaceImport(fallbackName: string) {
   }, []);
 
   return useCallback(
-    async (files: File[], externalSignal?: AbortSignal): Promise<boolean> => {
-      if (files.length === 0) return false;
+    async (
+      selection: WorkspaceImportSelection,
+      externalSignal?: AbortSignal,
+    ): Promise<boolean> => {
+      if (Array.isArray(selection) && selection.length === 0) return false;
       current.current?.abort();
       const controller = new AbortController();
       current.current = controller;
@@ -43,6 +54,9 @@ export function useWorkspaceImport(fallbackName: string) {
       if (externalSignal?.aborted) controller.abort();
       let imageRequestId: number | undefined;
       try {
+        const files = typeof selection === 'function' ? await selection() : selection;
+        signal.throwIfAborted();
+        if (!files.length) return false;
         if (useWorkspaceStore.getState().draftStatus === 'loading') {
           await new Promise<void>((resolve, reject) => {
             const stop = useWorkspaceStore.subscribe((state) => {
@@ -101,6 +115,23 @@ export function useWorkspaceImport(fallbackName: string) {
         }
         if (state.documents.length + batch.length > MAX_OPEN_DOCUMENTS)
           throw new Error('document-limit');
+        const connections = new Map<object, DeviceFileBinding>();
+        for (const result of batch) {
+          if (result.kind !== 'model') continue;
+          const binding = result.nativeFile && pickedFileBinding(result.nativeFile);
+          if (binding)
+            connections.set(result, {
+              ...binding,
+              contentFingerprint: await fingerprintText(
+                documentContentKey({
+                  processModel: { ...result.model, name: result.modelName },
+                  analysisOptions: result.analysisOptions,
+                  drawioSource: result.drawioSource,
+                }),
+              ),
+            });
+        }
+        signal.throwIfAborted();
         // Everything is parsed before mutation. A multi-file selection is all-or-nothing.
         for (const result of batch) {
           if (result.kind !== 'model') continue;
@@ -112,12 +143,15 @@ export function useWorkspaceImport(fallbackName: string) {
             },
           );
           if (id) {
+            const binding = connections.get(result);
             const document = getWorkspaceDocuments(useWorkspaceStore.getState()).find(
               (item) => item.id === id,
             )!;
+            if (binding) bindDeviceFile(id, binding);
             state.updateDocumentFile(id, {
               savedContent: documentContentKey(document),
               deviceStatus: 'opened',
+              deviceFileName: result.nativeFile?.name ?? null,
             });
           }
         }
@@ -126,6 +160,7 @@ export function useWorkspaceImport(fallbackName: string) {
       } catch (error) {
         if (
           signal.aborted ||
+          (error instanceof Error && error.name === 'AbortError') ||
           (imageRequestId !== undefined &&
             imageRequestId !== useImageReferenceStore.getState().requestId)
         )

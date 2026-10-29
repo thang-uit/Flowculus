@@ -36,7 +36,7 @@ full of guesses could still be exported and shared as if it were fact.
 ## Consequences
 
 - Some models that used to show a number now show `simulation-required` with
-  a diagnostic (documented in the README changelog). Book examples, the
+  a diagnostic (documented in the relevant change description and domain documentation). Book examples, the
   starter model and the mining presets keep identical, pinned numbers.
 - Every new diagnostic code needs English and Vietnamese text, enforced by the
   type checker and a test.

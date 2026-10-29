@@ -3,7 +3,6 @@ import {
   createXmlElement as el,
   getXmlAttribute as attr,
   setXmlAttribute,
-  getChildElements,
 } from '@flowculus/xml-tree';
 import {
   readDrawioCells,

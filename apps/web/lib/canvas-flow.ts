@@ -44,8 +44,9 @@ export const toFlowNodes = (
       return {
         id: container.id,
         type: 'container',
-        draggable: container.kind === 'pool',
-        deletable: false,
+        draggable: true,
+        dragHandle: '.process-container__label',
+        deletable: true,
         connectable: false,
         parentId: parent?.id,
         position: {

@@ -77,7 +77,7 @@ export function CollaborationControls() {
             </AppButton>
           </div>
           {pools.length ? (
-            <label className="block space-y-1 text-sm">
+            <label className="flex min-w-0 flex-col gap-1.5 text-sm">
               <span>{copy.process}</span>
               <AppSelect
                 id={'collaboration-process'}
@@ -205,7 +205,7 @@ export function CollaborationControls() {
             ))}
           </div>
           {pools.length ? (
-            <label className="block space-y-1 text-sm">
+            <label className="flex min-w-0 flex-col gap-1.5 text-sm">
               <span>{copy.assign}</span>
               <AppSelect
                 id={'collaboration-membership'}

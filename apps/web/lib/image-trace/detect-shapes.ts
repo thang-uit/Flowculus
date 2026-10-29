@@ -43,7 +43,7 @@ export function detectTraceShapes(cv: CV, binary: OpenCV.Mat): TraceCandidate[] 
             area < 350 ||
             area > width * height * 0.35 ||
             rect.width < 28 ||
-            rect.height < 24 ||
+            rect.height < 40 ||
             rect.width > width * 0.75 ||
             rect.height > height * 0.95
           )
@@ -72,37 +72,12 @@ export function detectTraceShapes(cv: CV, binary: OpenCV.Mat): TraceCandidate[] 
             continue;
           // A convex hull can turn arbitrary ink into a shape. Require actual ink
           // near most of its perimeter, including open shapes.
-          let hits = 0;
-          let samples = 0;
-          for (let edge = 0; edge < vertices.length; edge++) {
-            const a = vertices[edge],
-              b = vertices[(edge + 1) % vertices.length];
-            const steps = Math.max(2, Math.ceil(Math.hypot(a.x - b.x, a.y - b.y) / 3));
-            for (let step = 0; step < steps; step++) {
-              const x = Math.round(a.x + ((b.x - a.x) * step) / steps);
-              const y = Math.round(a.y + ((b.y - a.y) * step) / steps);
-              let ink = false;
-              for (let dy = -3; dy <= 3 && !ink; dy++)
-                for (let dx = -3; dx <= 3; dx++) {
-                  const px = x + dx,
-                    py = y + dy;
-                  if (
-                    px >= 0 &&
-                    py >= 0 &&
-                    px < width &&
-                    py < height &&
-                    binary.data[py * width + px]
-                  ) {
-                    ink = true;
-                    break;
-                  }
-                }
-              hits += Number(ink);
-              samples++;
-            }
-          }
-          const support = hits / samples;
-          if (support < 0.72) continue;
+          const support = contourSupport(binary, shape, vertices, rect);
+          // Rounded corners and anti-aliased strokes leave gaps on the hull. A
+          // rectangle is still credible when most of its four straight sides
+          // have nearby ink. Diamonds and ellipses keep the stricter threshold
+          // because their hull is part of the semantic geometry.
+          if (support < (shape === 'rectangle' ? 0.3 : 0.72)) continue;
           proposals.push({
             id: '',
             shape,
@@ -134,7 +109,22 @@ export function detectTraceShapes(cv: CV, binary: OpenCV.Mat): TraceCandidate[] 
     b.bounds.y + b.bounds.height <= a.bounds.y + a.bounds.height + 8;
   const selected: TraceCandidate[] = [];
   for (const candidate of proposals.sort((a, b) => area(b) - area(a))) {
-    if (selected.some((other) => contains(other, candidate))) continue;
+    const containing = selected.find((other) => contains(other, candidate));
+    if (
+      containing &&
+      candidate.shape === 'rectangle' &&
+      containing.shape === 'rectangle' &&
+      containing.bounds.width >= candidate.bounds.width * 1.15 &&
+      containing.bounds.height <= candidate.bounds.height * 1.15
+    ) {
+      // A connector that touches a box can extend its contour horizontally.
+      // Prefer the nested, shape-sized rectangle and remove the connector hull.
+      selected.splice(selected.indexOf(containing), 1);
+    } else if (containing) {
+      continue;
+    }
+    const contained = selected.find((other) => contains(candidate, other));
+    if (contained) continue;
     // A loop around several activities can itself resemble a rectangle. Prefer
     // separate, supported shapes over an enclosing fragment of the whole graph.
     const interior: TraceCandidate[] = [];
@@ -163,4 +153,54 @@ export function detectTraceShapes(cv: CV, binary: OpenCV.Mat): TraceCandidate[] 
   return selected
     .sort((a, b) => a.bounds.x - b.bounds.x || a.bounds.y - b.bounds.y)
     .map((candidate, index) => ({ ...candidate, id: `trace-node-${index + 1}` }));
+}
+
+function contourSupport(
+  binary: OpenCV.Mat,
+  shape: NonNullable<ReturnType<typeof classifyContour>>,
+  vertices: readonly { x: number; y: number }[],
+  rect: { x: number; y: number; width: number; height: number },
+) {
+  const perimeter =
+    shape === 'rectangle'
+      ? [
+          { x: rect.x, y: rect.y },
+          { x: rect.x + rect.width - 1, y: rect.y },
+          { x: rect.x + rect.width - 1, y: rect.y + rect.height - 1 },
+          { x: rect.x, y: rect.y + rect.height - 1 },
+        ]
+      : vertices;
+  let hits = 0;
+  let samples = 0;
+  for (let edge = 0; edge < perimeter.length; edge++) {
+    const start = perimeter[edge];
+    const end = perimeter[(edge + 1) % perimeter.length];
+    const steps = Math.max(
+      2,
+      Math.ceil(Math.hypot(start.x - end.x, start.y - end.y) / 3),
+    );
+    for (let step = 0; step < steps; step++) {
+      const x = Math.round(start.x + ((end.x - start.x) * step) / steps);
+      const y = Math.round(start.y + ((end.y - start.y) * step) / steps);
+      let ink = false;
+      for (let dy = -3; dy <= 3 && !ink; dy++)
+        for (let dx = -3; dx <= 3; dx++) {
+          const px = x + dx;
+          const py = y + dy;
+          if (
+            px >= 0 &&
+            py >= 0 &&
+            px < binary.cols &&
+            py < binary.rows &&
+            binary.data[py * binary.cols + px]
+          ) {
+            ink = true;
+            break;
+          }
+        }
+      hits += Number(ink);
+      samples++;
+    }
+  }
+  return hits / samples;
 }

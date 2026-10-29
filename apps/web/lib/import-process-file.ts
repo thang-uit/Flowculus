@@ -19,6 +19,7 @@ export const MAX_IMPORT_FILE_BYTES = 50 * 1024 * 1024;
 export type ImportedWorkspaceFile =
   | {
       kind: 'model';
+      nativeFile?: File;
       model: ProcessModel;
       drawioSource: DrawioSource | null;
       analysisOptions: AnalysisOptions;
@@ -78,11 +79,12 @@ const looksLikeXes = (source: string): boolean => /<log[\s>]/.test(source.slice(
 const restoreBounds = async (
   model: ProcessModel,
   drawioXml?: string,
+  pageIndex = 0,
 ): Promise<ProcessModel> => {
   if (Object.values(model.nodes).every((node) => node.bounds)) return model;
   if (drawioXml) {
     try {
-      const imported = await importDrawioXml(drawioXml);
+      const imported = await importDrawioXml(drawioXml, { pageIndex });
       const nodes = Object.fromEntries(
         Object.entries(model.nodes).map(([id, node]) => [
           id,
@@ -170,7 +172,12 @@ export const importWorkspaceFiles = async (
     }
     return {
       kind: 'model',
-      model: await restoreBounds(validated.model, flowculus.drawioXml),
+      nativeFile: file,
+      model: await restoreBounds(
+        validated.model,
+        flowculus.drawioXml,
+        flowculus.drawioPageIndex,
+      ),
       drawioSource: await drawioSourceFor(flowculus.drawioXml, flowculus.drawioPageIndex),
       analysisOptions: flowculus.analysisOptions ?? {},
       modelName: flowculus.model.name || modelName,

@@ -5,8 +5,14 @@ export function documentSaveLabel(
   document: WorkspaceDocument,
   copy: DocumentCopy,
 ): string {
-  if (['saving', 'error', 'review'].includes(document.deviceStatus))
-    return copy[document.deviceStatus as 'saving' | 'error' | 'review'];
+  if (
+    ['saving', 'error', 'review', 'permission', 'conflict'].includes(
+      document.deviceStatus,
+    )
+  )
+    return copy[
+      document.deviceStatus as 'saving' | 'error' | 'review' | 'permission' | 'conflict'
+    ];
   if (isDocumentDirty(document))
     return document.savedContent === null ? copy.unsaved : copy.modified;
   if (document.deviceStatus === 'opened') return copy.opened;

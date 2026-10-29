@@ -158,8 +158,8 @@ export function useMiningClient(): MiningClient {
   );
 
   const cancel = useCallback(() => {
-    if (pendingRef.current.size === 0) return;
     stopWorker();
+    fallbackRef.current = null;
     rejectAll('cancelled');
   }, [rejectAll, stopWorker]);
 

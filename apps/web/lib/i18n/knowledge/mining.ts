@@ -102,6 +102,30 @@ export const MINING: KnowledgeEntry[] = [
               ],
             ],
           },
+          { kind: 'heading', text: 'Inspect the imported data' },
+          {
+            kind: 'list',
+            items: [
+              'Check the filename and extension in Current event log. Samples are identified separately from uploaded files.',
+              'Open View event data to read accepted events in pages of 50. Search by case, activity or resource, narrow by case/activity and sort by completion time.',
+              'The event number follows imported accepted-event order. It is not the original file line number. Timestamps use ISO UTC.',
+              'Graph filters affect the diagram. They do not remove events from this table. Filter and calendar edits made during source loading are applied after that source is ready.',
+            ],
+          },
+          {
+            kind: 'notice',
+            text: 'Clear log asks for confirmation and removes the live Mining session. Process tabs and device files remain available. Logs are not embedded in a saved process file. After refreshing the page, upload the source again.',
+          },
+          { kind: 'heading', text: 'Read the Conclusions tab' },
+          {
+            kind: 'paragraph',
+            text: 'After discovery, Conclusions explains the accepted case and event counts, the selected clock, frequent routes, long handover intervals and measured activity durations. It also identifies prominent resources in the handover network and explains what their centrality scores measure. These observations use the full accepted log, before graph filters.',
+          },
+          {
+            kind: 'example',
+            title: 'From an observation to an investigation',
+            text: 'If the handover from Review to Approval has the longest mean gap, inspect its case histories and entry conditions first. A person with high incoming handoffs receives many recorded transfers, but that count alone does not show who caused the delay. To investigate a missing approval step, choose an approved BPMN reference and run comparison. The conclusions then identify missing model steps and unmatched log events for the examined cases.',
+          },
           {
             kind: 'example',
             title: 'Minimum CSV',
@@ -151,6 +175,30 @@ export const MINING: KnowledgeEntry[] = [
               ],
             ],
           },
+          { kind: 'heading', text: 'Kiểm tra dữ liệu đã nhập' },
+          {
+            kind: 'list',
+            items: [
+              'Kiểm tra tên tệp và phần mở rộng trong Nhật ký đang phân tích. Dữ liệu mẫu được phân biệt với tệp bạn tải lên.',
+              'Mở Xem dữ liệu sự kiện để đọc các sự kiện hợp lệ theo trang 50 dòng. Tìm mã ca, hoạt động hoặc người thực hiện, lọc riêng mã ca/hoạt động và sắp xếp theo thời điểm hoàn thành.',
+              'Số sự kiện là thứ tự sự kiện hợp lệ nhập vào, không phải số dòng gốc của tệp. Thời điểm hiển thị theo ISO UTC.',
+              'Bộ lọc đồ thị chỉ thay đổi sơ đồ, không xóa sự kiện khỏi bảng. Nếu đổi bộ lọc hoặc lịch trong lúc tải nguồn, lựa chọn mới nhất được áp dụng khi nguồn đã sẵn sàng.',
+            ],
+          },
+          {
+            kind: 'notice',
+            text: 'Xóa nhật ký có xác nhận và chỉ xóa phiên Mining. Các tab quy trình và tệp trên thiết bị được giữ nguyên. Tệp lưu quy trình không chứa event log. Sau khi tải lại trang, hãy tải lại tệp nhật ký.',
+          },
+          { kind: 'heading', text: 'Đọc tab Kết luận' },
+          {
+            kind: 'paragraph',
+            text: 'Sau khi khai phá, tab Kết luận giải thích số ca và sự kiện hợp lệ, lịch đo đang dùng, luồng phổ biến, các khoảng bàn giao dài và thời lượng hoạt động đo được. Phần nhân sự chỉ ra những người có vị trí đáng chú ý trong mạng bàn giao và giải thích ý nghĩa của các độ đo trung tâm. Nhận xét dựa trên toàn bộ nhật ký hợp lệ, trước khi lọc đồ thị.',
+          },
+          {
+            kind: 'example',
+            title: 'Từ số liệu đến việc cần kiểm tra',
+            text: 'Nếu chặng từ Rà soát sang Phê duyệt có khoảng cách trung bình dài nhất, hãy xem lịch sử các ca và điều kiện tiếp nhận công việc trước. Người có nhiều lượt bàn giao đến nhận nhiều lần chuyển việc được ghi nhận, nhưng riêng số lượt chưa cho biết ai gây chậm. Muốn kiểm tra bước phê duyệt có bị thiếu, hãy chọn BPMN chuẩn rồi chạy đối chiếu. Kết luận sẽ chỉ ra bước chuẩn chưa ghi nhận và sự kiện không khớp ở những ca đã kiểm tra.',
+          },
           {
             kind: 'example',
             title: 'CSV tối thiểu',
@@ -197,7 +245,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Hiding activities projects traces and can create a direct A→C edge when B is hidden. That edge is not proof that a case skipped B. Frequency/duration filters are display choices; summary statistics remain based on the full log.',
+            text: 'Hiding activities projects traces and can create a direct A→C edge when B is hidden. That edge is not proof that a case skipped B. Frequency/duration filters are display choices. Summary statistics remain based on the full log. Exported Mining evidence includes the active filters and hidden activity/edge counts so a projected graph is not mistaken for the full observed process.',
           },
           {
             kind: 'paragraph',
@@ -229,7 +277,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Ẩn hoạt động làm phép chiếu trace, có thể tạo cạnh A→C khi B bị ẩn. Cạnh này không chứng minh ca đã bỏ B. Bộ lọc tần suất/thời gian chỉ đổi phần hiển thị; số liệu tổng quan vẫn dựa trên toàn bộ log.',
+            text: 'Ẩn hoạt động làm phép chiếu trace, có thể tạo cạnh A→C khi B bị ẩn. Cạnh này không chứng minh ca đã bỏ B. Bộ lọc tần suất/thời gian chỉ đổi phần hiển thị. Số liệu tổng quan vẫn dựa trên toàn bộ log. File kết quả Mining ghi cả bộ lọc và số hoạt động, cạnh bị ẩn để người đọc phân biệt đồ thị đã lọc với quy trình quan sát đầy đủ.',
           },
           {
             kind: 'paragraph',
@@ -262,7 +310,7 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Cumulative time and share',
             expression:
               'Total = mean time × measured samples; share = Total / Σ Total of the same kind',
-            note: 'Service totals use only executions with measured starts. The UI ranks by mean time, not cumulative time.',
+            note: 'Service totals use only executions with measured starts. The UI ranks by mean time, not cumulative time. Standards comparisons group activity and performer pairs. Use Previous and Next to inspect every result when the table spans multiple pages.',
           },
           {
             kind: 'notice',
@@ -289,7 +337,7 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Tổng thời gian và tỷ trọng',
             expression:
               'Tổng = thời gian trung bình × số mẫu đo; tỷ trọng = Tổng / Σ Tổng cùng loại',
-            note: 'Tổng xử lý chỉ dùng lượt có giờ bắt đầu đo được. Giao diện xếp hạng theo thời gian trung bình, không phải tổng tích lũy.',
+            note: 'Tổng xử lý chỉ dùng lượt có giờ bắt đầu đo được. Giao diện xếp hạng theo thời gian trung bình, không phải tổng tích lũy. Khi đối chiếu định mức với nhiều nhóm hoạt động và người thực hiện, dùng nút trang trước và trang sau để xem đầy đủ kết quả.',
           },
           {
             kind: 'notice',
@@ -363,7 +411,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Open the intended BPMN reference in Model, confirm any inferred semantics, then select it in Mining. Choose the process pool and check the activity mapping. A unique, exactly matching task label maps automatically. Duplicate labels and different names need an explicit choice. Alignment compares the observed sequence with a valid model execution.',
+            text: 'Open the intended BPMN reference in Model, confirm any inferred semantics, then select it in Mining. Choose the process pool and check the activity mapping. A unique, exactly matching task label maps automatically. Duplicate labels and different names need an explicit choice. Alignment compares the observed sequence with a valid model execution. While a replacement log is loading, comparison is unavailable. A timeout or worker restart clears results tied to the lost log. Reload the source and compare again. Editing or closing the reference while comparison is running invalidates that result.',
           },
           {
             kind: 'table',
@@ -403,7 +451,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Mở BPMN chuẩn trong Mô hình, xác nhận các ngữ nghĩa suy luận, rồi chọn tài liệu đó trong Khai phá. Chọn pool cần xét và kiểm tra ánh xạ hoạt động. Nhãn task giống hoàn toàn và duy nhất được gán tự động. Nhãn trùng hoặc khác tên cần chọn rõ. Alignment đối chiếu chuỗi sự kiện với một cách thực hiện hợp lệ trong mô hình.',
+            text: 'Mở BPMN chuẩn trong Mô hình, xác nhận các ngữ nghĩa suy luận, rồi chọn tài liệu đó trong Khai phá. Chọn pool cần xét và kiểm tra ánh xạ hoạt động. Nhãn task giống hoàn toàn và duy nhất được gán tự động. Nhãn trùng hoặc khác tên cần chọn rõ. Alignment đối chiếu chuỗi sự kiện với một cách thực hiện hợp lệ trong mô hình. Khi đang tải nhật ký thay thế, chức năng đối chiếu tạm dừng. Nếu hết thời gian xử lý hoặc worker khởi động lại, kết quả phụ thuộc nhật ký cũ được xóa. Hãy tải lại nguồn rồi đối chiếu lại. Sửa hoặc đóng quy trình chuẩn trong lúc đối chiếu cũng làm kết quả đó hết hiệu lực.',
           },
           {
             kind: 'table',

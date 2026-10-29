@@ -18,13 +18,16 @@ import { WorkspaceCanvasControls } from '@/components/WorkspaceToolbar';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { cn } from '@/lib/cn';
 import { getWorkspaceCopy } from '@/lib/i18n';
-import { describeImportError } from '@/lib/import-error';
+import { reportWorkspaceImport } from '@/lib/documents/import-feedback';
 import { useWorkspaceActions } from '@/lib/use-workspace-actions';
 import { useWorkspaceStore } from '@/lib/workspace-store';
+import { useDeviceOpen } from '@/lib/documents/use-device-open';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
+import type { WorkspaceImportSelection } from '@/lib/use-workspace-import';
+
 interface WorkspaceHeaderProps {
-  onImportFiles: (files: File[]) => Promise<boolean>;
+  onImportFiles: (files: WorkspaceImportSelection) => Promise<boolean>;
 }
 
 export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
@@ -34,20 +37,17 @@ export function WorkspaceHeader({ onImportFiles }: WorkspaceHeaderProps) {
   const mode = useWorkspaceStore((state) => state.mode);
   const inspectorOpen = useWorkspaceStore((state) => state.inspectorOpen);
   const toggleInspector = useWorkspaceStore((state) => state.toggleInspector);
-  const { runExport, share, showStatus, pendingExport, confirmExport, cancelExport } =
+  const { runExport, share, pendingExport, confirmExport, cancelExport } =
     useWorkspaceActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const openFile = useCallback(() => fileInputRef.current?.click(), []);
+  const fallbackOpen = useCallback(() => fileInputRef.current?.click(), []);
+  const openFile = useDeviceOpen(onImportFiles, fallbackOpen);
   useDocumentCommands(openFile);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     event.target.value = '';
-    void onImportFiles(files)
-      .then((applied) => {
-        if (applied) showStatus(copy.fileReady, 'success');
-      })
-      .catch((error: unknown) => showStatus(describeImportError(error, copy), 'error'));
+    void reportWorkspaceImport(onImportFiles(files));
   };
 
   const brand = (compact: boolean) => <WorkspaceProjectMenu compact={compact} />;

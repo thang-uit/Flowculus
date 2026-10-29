@@ -11,6 +11,24 @@ export const ANALYSIS: KnowledgeEntry[] = [
         keywords: ['cycle time', 'TCT', 'CTE', 'efficiency', 'percent'],
         blocks: [
           {
+            kind: 'table',
+            headers: ['Term', 'Meaning'],
+            rows: [
+              [
+                'CT · Cycle Time',
+                'Time from process start to completion, including waiting under the chosen clock.',
+              ],
+              [
+                'TCT · Theoretical Cycle Time',
+                'Time along the same process when only processing remains. Parallel branches still synchronize.',
+              ],
+              [
+                'CTE · Cycle-Time Efficiency',
+                'The share of cycle time represented by TCT. Multiply the ratio by 100 to display a percentage.',
+              ],
+            ],
+          },
+          {
             kind: 'formula',
             mathId: 'efficiency',
             label: 'Cycle-time efficiency',
@@ -20,7 +38,7 @@ export const ANALYSIS: KnowledgeEntry[] = [
           {
             kind: 'example',
             title: 'An illustrative request process',
-            text: 'CT = 35.2 minutes; TCT = 12.8 minutes. CTE = 12.8 / 35.2 ≈ 0.3636, displayed as 36.4%. In the raw model/API, efficiency remains a ratio.',
+            text: 'A request takes 35.2 minutes from start to finish. With waiting removed, the same flow takes 12.8 minutes. CTE = 12.8 / 35.2 ≈ 0.3636, or 36.4%. Exported data stores the ratio, while the interface shows the percentage.',
           },
           {
             kind: 'notice',
@@ -34,6 +52,24 @@ export const ANALYSIS: KnowledgeEntry[] = [
         keywords: ['thời gian chu trình', 'TCT', 'CTE', 'hiệu suất', 'phần trăm'],
         blocks: [
           {
+            kind: 'table',
+            headers: ['Từ viết tắt', 'Ý nghĩa'],
+            rows: [
+              [
+                'CT · Cycle Time',
+                'Thời gian chu trình từ khi bắt đầu đến khi hoàn tất, gồm cả chờ theo lịch đo đã chọn.',
+              ],
+              [
+                'TCT · Theoretical Cycle Time',
+                'Thời gian chu trình lý thuyết khi chỉ giữ phần xử lý trên cùng quy trình. Các nhánh song song vẫn phải đồng bộ.',
+              ],
+              [
+                'CTE · Cycle-Time Efficiency',
+                'Hiệu suất thời gian chu trình, cho biết TCT chiếm bao nhiêu trong CT. Nhân tỷ lệ với 100 để hiển thị phần trăm.',
+              ],
+            ],
+          },
+          {
             kind: 'formula',
             mathId: 'efficiency',
             label: 'Hiệu suất thời gian chu trình',
@@ -43,7 +79,7 @@ export const ANALYSIS: KnowledgeEntry[] = [
           {
             kind: 'example',
             title: 'Ví dụ minh họa quy trình xử lý yêu cầu',
-            text: 'CT = 35,2 phút; TCT = 12,8 phút. CTE = 12,8 / 35,2 ≈ 0,3636, hiển thị 36,4%. Trong dữ liệu/API, hiệu suất vẫn là tỷ lệ.',
+            text: 'Một yêu cầu mất 35,2 phút từ lúc bắt đầu đến khi hoàn tất. Nếu bỏ thời gian chờ, cùng luồng đó còn 12,8 phút. CTE = 12,8 / 35,2 ≈ 0,3636, tức 36,4%. Tệp dữ liệu lưu tỷ lệ, còn giao diện hiển thị phần trăm.',
           },
           {
             kind: 'notice',

@@ -4,6 +4,13 @@ import type { ProcessModel } from '@flowculus/process-model';
 import { downloadDataUriFile } from '@/lib/browser-file-actions';
 import { REPORT_FONT, drawLines, drawRoundedRect, wrapText } from '@/lib/canvas-text';
 import type { Locale, WorkspaceCopy } from '@/lib/i18n';
+import {
+  assertReportTextBudget,
+  reportImageLayout,
+  ReportImageTooLargeError,
+  REPORT_IMAGE_WIDTH,
+  MAX_REPORT_IMAGE_HEIGHT,
+} from '@/lib/report-image-layout';
 import { buildReportContent } from '@/lib/report-content';
 
 type ReportImageFormat = 'png' | 'jpeg';
@@ -38,7 +45,7 @@ export async function downloadAnalysisReportImage({
   await image.decode();
   await document.fonts.ready;
 
-  const width = 1600;
+  const width = REPORT_IMAGE_WIDTH;
   const padding = 64;
   const contentWidth = width - padding * 2;
   const diagramMaxHeight = 680;
@@ -57,15 +64,22 @@ export async function downloadAnalysisReportImage({
         `${row.label}: CT ${row.cycleTime} ${copy.minutesShort} · ${row.source} · T ${row.processing} · Wq ${row.waiting}`,
     ),
   ];
-  const notes = [...content.errors, ...content.warnings].slice(0, 6);
-  const info = content.info.slice(0, 6);
+  const notes = [...content.errors, ...content.warnings];
+  const info = content.info;
+  assertReportTextBudget([title, ...formulaLines, ...notes, ...info]);
   const probe = document.createElement('canvas').getContext('2d');
-  const countLines = (lines: string[], font: string, maxWidth: number) =>
-    lines.reduce((total, line) => {
-      if (!probe) return total + 1;
-      probe.font = font;
-      return total + wrapText(probe, line, maxWidth).length;
-    }, 0);
+  if (!probe) throw new Error('Canvas export is not supported by this browser.');
+  probe.font = `700 36px ${REPORT_FONT}`;
+  const titleLines = wrapText(probe, title, contentWidth);
+  const countLines = (lines: string[], font: string, maxWidth: number) => {
+    probe.font = font;
+    let total = 0;
+    for (const line of lines) {
+      total += wrapText(probe, line, maxWidth).length;
+      if (total * 32 > MAX_REPORT_IMAGE_HEIGHT) throw new ReportImageTooLargeError();
+    }
+    return total;
+  };
   const formulaLineCount = countLines(
     formulaLines,
     `400 22px ${REPORT_FONT}`,
@@ -83,10 +97,13 @@ export async function downloadAnalysisReportImage({
       (contentWidth - 24) / 2,
     ),
   );
-  const height = Math.max(
-    1120,
-    padding + 92 + diagramHeight + 190 + formulaLineCount * 32 + listLineCount * 32,
-  );
+  const { height, metaTop, diagramY, metricsTop, formulaTop, notesTop } =
+    reportImageLayout(
+      diagramHeight,
+      formulaLineCount,
+      Math.max(listLineCount, 1),
+      titleLines.length,
+    );
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -97,13 +114,12 @@ export async function downloadAnalysisReportImage({
   context.fillRect(0, 0, width, height);
   context.fillStyle = '#17202a';
   context.font = `700 36px ${REPORT_FONT}`;
-  context.fillText(title, padding, 72);
+  titleLines.forEach((line, index) => context.fillText(line, padding, 72 + index * 44));
   context.fillStyle = '#65717d';
   context.font = `400 18px ${REPORT_FONT}`;
-  context.fillText(`${copy.subtitle} / ${copy.workspace}`, padding, 102);
+  context.fillText(`${copy.subtitle} / ${copy.workspace}`, padding, metaTop);
 
   const diagramX = Math.round((width - diagramWidth) / 2);
-  const diagramY = 136;
   context.fillStyle = '#ffffff';
   context.strokeStyle = '#d8dee5';
   context.lineWidth = 2;
@@ -117,7 +133,6 @@ export async function downloadAnalysisReportImage({
   );
   context.drawImage(image, diagramX, diagramY, diagramWidth, diagramHeight);
 
-  const metricsTop = diagramY + diagramHeight + 54;
   const metricGap = 16;
   const metricWidth = (contentWidth - metricGap * 3) / 4;
   content.metrics.forEach(({ label, value, quality }, index) => {
@@ -136,7 +151,6 @@ export async function downloadAnalysisReportImage({
     context.fillText(quality, x + 18, metricsTop + 94);
   });
 
-  const formulaTop = metricsTop + 146;
   context.fillStyle = '#f3f5f7';
   context.strokeStyle = '#d8dee5';
   drawRoundedRect(
@@ -159,7 +173,6 @@ export async function downloadAnalysisReportImage({
     32,
   );
 
-  const notesTop = formulaTop + formulaLineCount * 32 + 86;
   const columnWidth = (contentWidth - 24) / 2;
   const drawNoteColumn = (
     x: number,

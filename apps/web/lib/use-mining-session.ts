@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useRef, type ChangeEvent } from 'react';
 
 import type { ColumnMapping, MiningPresetId } from '@flowculus/process-mining';
-import { checkSemanticGate } from '@flowculus/validation';
 
 import { downloadTextFile } from '@/lib/browser-file-actions';
 import { exportFileName } from '@/lib/file-name';
 import { createMiningCanvasDocument, type MiningCanvasOutcome } from './mining-canvas';
 import { getWorkspaceCopy } from '@/lib/i18n';
+import { runMiningConformance } from '@/lib/mining-conformance';
 import { useMiningUpload } from '@/lib/use-mining-upload';
+import { useMiningRediscovery } from '@/lib/use-mining-rediscovery';
+import type { MiningRediscoveryRequest } from '@/lib/mining-rediscovery';
 import type { MiningDiscoveryResponse, MiningResponse } from '@/lib/mining-engine';
 import {
   useMiningStore,
@@ -20,7 +22,6 @@ import { MiningAbortError, useMiningClient } from '@/lib/use-mining-client';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 
-const FILTER_DEBOUNCE_MS = 140;
 const LOG_EXTENSION = /\.(csv|tsv|json|xes|xml|txt|xlsx)$/i;
 
 const asDiscovery = (response: MiningResponse): MiningDiscoveryResponse => {
@@ -37,12 +38,11 @@ export function useMiningSession() {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const { request, cancel: cancelWorker } = useMiningClient();
-  const filter = useMiningStore((state) => state.filter);
-  const timePolicy = useMiningStore((state) => state.timePolicy);
   const pendingUpload = useMiningStore((state) => state.pendingUpload);
   const sequenceRef = useRef(0);
   const bootedRef = useRef(false);
   const convertingRef = useRef(false);
+  const conformanceTicket = useRef(0);
   const { readFile, cancelFileRead } = useMiningUpload();
   useEffect(
     () => () => {
@@ -56,6 +56,13 @@ export function useMiningSession() {
     cancelWorker();
     useMiningStore.getState().abortSession(copy.resilience.miningCancelled);
   }, [cancelFileRead, cancelWorker, copy.resilience.miningCancelled]);
+
+  const clear = useCallback(() => {
+    sequenceRef.current += 1;
+    cancelFileRead();
+    cancelWorker();
+    useMiningStore.getState().abortSession(null);
+  }, [cancelFileRead, cancelWorker]);
 
   const fail = useCallback(
     (reason: unknown) => {
@@ -209,26 +216,13 @@ export function useMiningSession() {
     if (upload) void inspectUpload(upload);
   }, [inspectUpload, pendingUpload]);
 
-  // Slider changes re-run discovery off the main thread, debounced.
-  const filterKey = `${filter.minActivityShare}|${filter.minEdgeShare}|${filter.minTransitionHours}|${JSON.stringify(timePolicy)}`;
-  const lastFilterKeyRef = useRef(filterKey);
-  useEffect(() => {
-    if (lastFilterKeyRef.current === filterKey) return;
-    lastFilterKeyRef.current = filterKey;
-    if (!useMiningStore.getState().replay) return;
-    const timer = window.setTimeout(() => {
-      void run(async () =>
-        asDiscovery(
-          await request({
-            type: 'discover',
-            filter: useMiningStore.getState().filter,
-            timePolicy: useMiningStore.getState().timePolicy,
-          }),
-        ),
-      );
-    }, FILTER_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [filterKey, request, run]);
+  const rediscover = useCallback(
+    (options: MiningRediscoveryRequest) => {
+      void run(async () => asDiscovery(await request(options)));
+    },
+    [request, run],
+  );
+  useMiningRediscovery(rediscover);
 
   const handleFile = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -290,37 +284,16 @@ export function useMiningSession() {
       model = useWorkspaceStore.getState().processModel,
       options: import('@flowculus/process-mining').ConformanceOptions = {},
     ) => {
-      const gate = checkSemanticGate(model);
-      if (!gate.ok) {
-        useMiningStore
-          .getState()
-          .setConformanceError(copy.semantics.blockedStatus(gate.items.length));
-        return;
-      }
       const sequence = sequenceRef.current;
-      useMiningStore.getState().startConformance();
-      try {
-        const response = await request({
-          type: 'check-conformance',
-          model: gate.model,
-          options,
-        });
-        if (sequence !== sequenceRef.current) return;
-        if (response.type !== 'conformance')
-          throw new Error('Unexpected mining response.');
-        useMiningStore
-          .getState()
-          .setConformance(response, model, JSON.stringify(options));
-      } catch (reason) {
-        if (sequence === sequenceRef.current)
-          useMiningStore
-            .getState()
-            .setConformanceError(
-              reason instanceof Error ? reason.message : copy.fileError,
-            );
-      }
+      const ticket = ++conformanceTicket.current;
+      await runMiningConformance(
+        model,
+        options,
+        request,
+        () => sequence === sequenceRef.current && ticket === conformanceTicket.current,
+      );
     },
-    [copy.fileError, copy.semantics, request],
+    [request],
   );
 
   return {
@@ -332,5 +305,6 @@ export function useMiningSession() {
     request,
     checkConformance,
     cancel,
+    clear,
   };
 }

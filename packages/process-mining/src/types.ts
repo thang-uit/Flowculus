@@ -117,6 +117,12 @@ export interface TraceVariant {
   caseIds: string[];
 }
 
+export interface MiningObservations {
+  handovers: DfgEdge[];
+  services: DfgActivity[];
+  repeatedCases: number;
+}
+
 export interface Bottleneck {
   kind: 'transition' | 'activity';
   id: string;
@@ -147,6 +153,7 @@ export const DEFAULT_DISCOVERY_FILTER: DiscoveryFilter = {
 };
 
 export interface ProcessDiscovery {
+  observations: MiningObservations;
   timePolicy: import('./business-calendar').TimePolicy;
   stats: EventLogStats;
   dfg: DirectlyFollowsGraph;

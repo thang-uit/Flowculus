@@ -4,12 +4,15 @@ import { Info, Trash, WarningCircle, X } from '@phosphor-icons/react';
 import { useEffect, useId, useRef } from 'react';
 
 import { EdgeInspector } from '@/components/inspector/EdgeInspector';
+import { ContainerInspector } from '@/components/inspector/ContainerInspector';
+import { getCollaborationCopy } from '@/lib/i18n/collaboration-copy';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { NodeInspector } from '@/components/inspector/NodeInspector';
 import { SemanticReviewPanel } from '@/components/semantics/SemanticReviewPanel';
 import { IconButton } from '@/components/ui/IconButton';
 import { PanelHeader } from '@/components/ui/PanelHeader';
 import { cn } from '@/lib/cn';
+import { dismissInspectorOnOutsidePointer } from '@/lib/inspector-dismissal';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { removeElements } from '@/lib/model-editing';
 import { useWorkspaceStore } from '@/lib/workspace-store';
@@ -22,6 +25,8 @@ export function InspectorPanel({
 }: Readonly<{ mobile?: boolean; open?: boolean; onClose?: () => void }>) {
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
+  const collaboration = getCollaborationCopy(locale);
+  const containers = useWorkspaceStore((state) => state.processModel.containers);
   const nodes = useWorkspaceStore((state) => state.processModel.nodes);
   const edges = useWorkspaceStore((state) => state.processModel.edges);
   // A newly loaded model starts a fresh review (no stale "all confirmed").
@@ -36,16 +41,9 @@ export function InspectorPanel({
   useEffect(() => {
     if (mobile || !open) return;
     const onPointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (panelRef.current?.contains(target)) return;
-      if (
-        target.closest(
-          '[data-inspector-toggle], [data-radix-popper-content-wrapper], [role="dialog"]',
-        )
-      )
-        return;
-      closeInspector(false);
+      dismissInspectorOnOutsidePointer(event, panelRef.current, () =>
+        closeInspector(false),
+      );
     };
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       if (
@@ -65,11 +63,15 @@ export function InspectorPanel({
     };
   }, [closeInspector, mobile, open]);
   const node = selectedNodeIds.length === 1 ? nodes[selectedNodeIds[0]] : undefined;
+  const container =
+    selectedNodeIds.length === 1 ? containers?.[selectedNodeIds[0]] : undefined;
   const edge =
     selectedNodeIds.length === 0 && selectedEdgeId ? edges[selectedEdgeId] : undefined;
 
   let body;
   if (node) body = <NodeInspector key={node.id} node={node} />;
+  else if (container)
+    body = <ContainerInspector key={container.id} container={container} />;
   else if (edge) body = <EdgeInspector key={edge.id} edge={edge} />;
   else if (selectedNodeIds.length > 1) {
     body = (
@@ -142,7 +144,7 @@ export function InspectorPanel({
         </label>
         <AppSelect
           id={selectId}
-          value={node?.id ?? ''}
+          value={node?.id ?? container?.id ?? ''}
           onValueChange={(next) =>
             setSelection({
               nodeIds: next ? [next] : [],
@@ -151,6 +153,10 @@ export function InspectorPanel({
           }
           options={[
             { value: '', label: copy.noSelectionOption },
+            ...Object.values(containers ?? {}).map((item) => ({
+              value: item.id,
+              label: `${item.label} (${collaboration[item.kind]})`,
+            })),
             ...Object.values(nodes).map((item) => ({
               value: item.id,
               label: `${item.label} (${copy.shapeTypes[item.kind] ?? copy.shapeTypes.unknown})`,

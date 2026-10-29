@@ -1,0 +1,88 @@
+import type { Locale } from './types';
+
+const EN = {
+  current: 'Current event log',
+  file: 'Uploaded file',
+  sample: 'Sample log',
+  samples: 'Sample logs',
+  data: 'Event data',
+  view: 'View event data',
+  replace: 'Replace log',
+  remove: 'Clear log',
+  close: 'Close',
+  cancel: 'Cancel',
+  clearTitle: 'Clear this event log?',
+  clearHint:
+    'The log, mining results and comparison evidence will be removed from this session. Your process tabs and files stay available.',
+  mapped: 'Columns confirmed',
+  modelTabs: 'Process tabs',
+  tabsHint:
+    'These tabs contain BPMN models. Switching tabs keeps the event log. Choose the reference explicitly in BPMN comparison.',
+  search: 'Search case, activity or resource',
+  caseFilter: 'Filter case ID',
+  activityFilter: 'Filter activity',
+  sort: 'Event order',
+  sourceOrder: 'Imported order',
+  earliest: 'Completion: earliest first',
+  latest: 'Completion: latest first',
+  reset: 'Reset table filters',
+  previous: 'Previous',
+  next: 'Next',
+  row: 'Event no.',
+  caption: 'Accepted events from the current log',
+  hint: 'This table contains accepted events before graph filters. Lifecycle start/complete rows are paired. Invalid rows are omitted and reported in the source panel. Timestamps are displayed in UTC.',
+  noRows: 'No events match these filters.',
+  loading: 'Loading events…',
+  retry: 'Retry',
+  error: 'Events could not be loaded. Retry or upload the log again.',
+  eventCount: (count: number, formatted: string) =>
+    `${formatted} ${count === 1 ? 'event' : 'events'}`,
+  caseCount: (count: number, formatted: string) =>
+    `${formatted} ${count === 1 ? 'case' : 'cases'}`,
+  activityCount: (count: number, formatted: string) =>
+    `${formatted} ${count === 1 ? 'activity' : 'activities'}`,
+  count: (first: number, last: number, matched: number, total: number) =>
+    `Events ${first}–${last} of ${matched} matching · ${total} total`,
+};
+const VI: typeof EN = {
+  current: 'Nhật ký đang phân tích',
+  file: 'Tệp đã tải lên',
+  sample: 'Nhật ký mẫu',
+  samples: 'Nhật ký mẫu',
+  data: 'Dữ liệu sự kiện',
+  view: 'Xem dữ liệu sự kiện',
+  replace: 'Thay nhật ký',
+  remove: 'Xóa nhật ký',
+  close: 'Đóng',
+  cancel: 'Hủy',
+  clearTitle: 'Xóa nhật ký khỏi phiên này?',
+  clearHint:
+    'Nhật ký, kết quả khai phá và bằng chứng đối chiếu sẽ được xóa khỏi phiên. Các tab quy trình và tệp trên thiết bị vẫn được giữ.',
+  mapped: 'Đã xác nhận cột',
+  modelTabs: 'Tab quy trình',
+  tabsHint:
+    'Các tab này chứa mô hình BPMN. Chuyển tab vẫn giữ nhật ký. Hãy chọn mô hình chuẩn trong Đối chiếu BPMN.',
+  search: 'Tìm mã ca, hoạt động hoặc người thực hiện',
+  caseFilter: 'Lọc mã ca',
+  activityFilter: 'Lọc hoạt động',
+  sort: 'Thứ tự sự kiện',
+  sourceOrder: 'Thứ tự nhập vào',
+  earliest: 'Hoàn thành: sớm nhất trước',
+  latest: 'Hoàn thành: muộn nhất trước',
+  reset: 'Đặt lại bộ lọc bảng',
+  previous: 'Trước',
+  next: 'Sau',
+  row: 'Số sự kiện',
+  caption: 'Các sự kiện hợp lệ trong nhật ký hiện tại',
+  hint: 'Bảng hiển thị sự kiện hợp lệ trước khi lọc đồ thị. Các dòng start/complete được ghép theo vòng đời. Dòng không hợp lệ được bỏ qua và thống kê tại nguồn nhật ký. Thời điểm hiển thị theo UTC.',
+  noRows: 'Không có sự kiện phù hợp với bộ lọc.',
+  loading: 'Đang tải sự kiện…',
+  retry: 'Thử lại',
+  error: 'Chưa tải được sự kiện. Hãy thử lại hoặc tải nhật ký lên lần nữa.',
+  eventCount: (_count, formatted) => `${formatted} sự kiện`,
+  caseCount: (_count, formatted) => `${formatted} ca`,
+  activityCount: (_count, formatted) => `${formatted} hoạt động`,
+  count: (first, last, matched, total) =>
+    `Sự kiện ${first}–${last} trong ${matched} kết quả · tổng ${total}`,
+};
+export const getMiningDataCopy = (locale: Locale) => (locale === 'vi' ? VI : EN);

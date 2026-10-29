@@ -38,6 +38,33 @@ it('retains the selected draw.io source page inside a portable model backup', as
   }
 });
 
+it('recovers missing bounds from the selected embedded draw.io page, preserving explicit native coordinates', async () => {
+  const page = (id: string, x: number) =>
+    `<diagram id="${id}" name="${id}"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/><object id="task" label="Task" flowculus-kind="task"><mxCell vertex="1" parent="1"><mxGeometry x="${x}" y="80" width="176" height="84" as="geometry"/></mxCell></object></root></mxGraphModel></diagram>`;
+  const xml = `<mxfile>${page('one', 10)}${page('two', 740)}</mxfile>`;
+  const native = {
+    ...model,
+    nodes: {
+      ...model.nodes,
+      start: { ...model.nodes.start!, bounds: { x: 321, y: 42, width: 48, height: 48 } },
+    },
+  };
+  const result = await importWorkspaceFiles([
+    file(
+      'legacy.flowculus.json',
+      JSON.stringify({
+        schemaVersion: 1,
+        model: native,
+        drawioXml: xml,
+        drawioPageIndex: 1,
+      }),
+    ),
+  ]);
+  if (result.kind !== 'model') throw new Error('expected model');
+  expect(result.model.nodes.task?.bounds?.x).toBe(740);
+  expect(result.model.nodes.start?.bounds?.x).toBe(321);
+});
+
 describe('importWorkspaceFiles', () => {
   it('does not read an already cancelled import', async () => {
     const controller = new AbortController();

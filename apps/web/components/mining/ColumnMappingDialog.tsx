@@ -8,6 +8,7 @@ import { useId, useState } from 'react';
 import { isCompleteMapping, type ColumnMapping } from '@flowculus/process-mining';
 
 import { AppSelect } from '@/components/ui/AppSelect';
+import { AppField } from '@/components/ui/AppField';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import type { MiningTableResponse } from '@/lib/mining-engine';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
@@ -36,14 +37,15 @@ function MappingSelect({
 }>) {
   const id = useId();
   return (
-    <div className="min-w-0 space-y-1.5">
-      <label
-        htmlFor={id}
-        className="block text-[11px] font-medium text-[var(--muted-strong)]"
-      >
-        {label}
-        {required ? <span className="text-[var(--danger)]"> *</span> : null}
-      </label>
+    <AppField
+      id={id}
+      label={
+        <>
+          {label}
+          {required ? <span className="text-[var(--danger)]"> *</span> : null}
+        </>
+      }
+    >
       <AppSelect
         id={id}
         value={value ?? ''}
@@ -54,7 +56,7 @@ function MappingSelect({
           ...headers.map((header) => ({ value: header, label: header })),
         ]}
       />
-    </div>
+    </AppField>
   );
 }
 

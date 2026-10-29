@@ -9,38 +9,27 @@ import {
   type WorkspaceDocument,
 } from './document-types';
 
-interface WritableFile {
-  write: (value: string) => Promise<void>;
-  close: () => Promise<void>;
-  abort: () => Promise<void>;
-}
-export interface DeviceFileHandle {
-  name: string;
-  createWritable: () => Promise<WritableFile>;
-}
-interface SavePickerWindow extends Window {
-  showSaveFilePicker?: (options: {
-    suggestedName: string;
-    types: { description: string; accept: Record<string, string[]> }[];
-  }) => Promise<DeviceFileHandle>;
-}
-const handles = new Map<string, DeviceFileHandle>();
-const automatic = new Set<string>();
+import {
+  fingerprintFile,
+  fingerprintText,
+  permitDeviceWrite,
+  pickSaveFile,
+  MAX_DEVICE_FILE_BYTES,
+} from './device-file-access';
+import {
+  bindDeviceFile,
+  getDeviceBinding,
+  setDeviceAutoSave,
+} from './device-file-bindings';
+export { supportsDeviceFiles } from './device-file-access';
+export type { DeviceFileHandle } from './device-file-access';
+export {
+  hasDeviceFile,
+  isDeviceAutoSave,
+  setDeviceAutoSave,
+  forgetDeviceFile,
+} from './device-file-bindings';
 const running = new Set<string>();
-
-export const supportsDeviceFiles = (): boolean =>
-  typeof window !== 'undefined' &&
-  typeof (window as SavePickerWindow).showSaveFilePicker === 'function';
-export const hasDeviceFile = (id: string) => handles.has(id);
-export const isDeviceAutoSave = (id: string) => automatic.has(id);
-export const setDeviceAutoSave = (id: string, enabled: boolean) => {
-  if (enabled && handles.has(id)) automatic.add(id);
-  else automatic.delete(id);
-};
-export const forgetDeviceFile = (id: string) => {
-  handles.delete(id);
-  automatic.delete(id);
-};
 
 export const deviceFileName = (name: string): string =>
   `${safeFileStem(name.replace(/\.flowculus\.json$/i, ''))}.flowculus.json`;
@@ -66,7 +55,8 @@ export function serializeDeviceDocument(document: WorkspaceDocument): string {
   });
 }
 
-export type DeviceSaveResult = 'saved' | 'cancelled' | 'blocked' | 'error' | 'busy';
+export type DeviceSaveResult =
+  'saved' | 'cancelled' | 'blocked' | 'error' | 'busy' | 'permission' | 'conflict';
 /** Capture the originating tab; picker cancellation/failure never marks it saved. */
 export async function saveDocumentToDevice(
   id: string,
@@ -96,40 +86,69 @@ export async function saveDocumentToDevice(
   try {
     if (options.fileName && !isValidDeviceFileName(options.fileName))
       throw new Error('invalid-file-name');
-    // Invoke picker before any async work so browser user activation is retained.
-    let handle = options.saveAs ? undefined : handles.get(id);
-    const picker = (window as SavePickerWindow).showSaveFilePicker;
+    // Invoke picker before async work so browser user activation is retained.
+    const binding = options.saveAs ? undefined : getDeviceBinding(id);
+    let handle = binding?.handle;
     if (!handle && options.automatic) {
       state.updateDocumentFile(id, { deviceStatus: document.deviceStatus });
       return 'cancelled';
     }
-    if (!handle && picker)
-      handle = await picker.call(window, {
-        suggestedName: options.fileName ?? deviceFileName(document.processModel.name),
-        types: [
-          {
-            description: 'Flowculus',
-            accept: { 'application/json': ['.flowculus.json'] },
-          },
-        ],
-      });
+    if (!handle)
+      handle = await pickSaveFile(
+        options.fileName ?? deviceFileName(document.processModel.name),
+      );
+    if (handle && !(await permitDeviceWrite(handle, !!options.automatic))) {
+      setDeviceAutoSave(id, false);
+      state.updateDocumentFile(id, { deviceStatus: 'permission' });
+      return 'permission';
+    }
     const value = serializeDeviceDocument(document);
-    if (new Blob([value]).size > 50 * 1024 * 1024) throw new Error('file-too-large');
+    if (new Blob([value]).size > MAX_DEVICE_FILE_BYTES) throw new Error('file-too-large');
+    // Closing a tab while a permission dialog was open must not write its file.
+    if (!useWorkspaceStore.getState().documents.some((item) => item.id === id))
+      return 'cancelled';
     if (handle) {
-      const writer = await handle.createWritable();
-      try {
-        await writer.write(value);
-        await writer.close();
-      } catch (error) {
+      const target = handle;
+      const fingerprint = await fingerprintText(value);
+      const contentFingerprint = await fingerprintText(documentContentKey(document));
+      const write = async () => {
+        if (!useWorkspaceStore.getState().documents.some((item) => item.id === id))
+          throw new DOMException('Closed document', 'AbortError');
+        if (
+          binding?.fingerprint &&
+          target.getFile &&
+          (await fingerprintFile(await target.getFile())) !== binding.fingerprint
+        )
+          throw new Error('device-file-changed');
+        const writer = await target.createWritable();
         try {
-          await writer.abort();
-        } catch {
-          /* Original write failure is retained. */
+          await writer.write(value);
+          await writer.close();
+        } catch (error) {
+          try {
+            await writer.abort();
+          } catch {
+            /* Retain the write failure. */
+          }
+          throw error;
         }
-        throw error;
-      }
-      handles.set(id, handle);
-      if (options.autoSave !== undefined) setDeviceAutoSave(id, options.autoSave);
+        if (useWorkspaceStore.getState().documents.some((item) => item.id === id)) {
+          bindDeviceFile(id, {
+            handle: target,
+            fingerprint,
+            contentFingerprint,
+          });
+          if (options.autoSave !== undefined) setDeviceAutoSave(id, options.autoSave);
+        }
+      };
+      // Serialize same-named device writes across editor windows when supported.
+      if (typeof navigator !== 'undefined' && navigator.locks)
+        await navigator.locks.request(
+          `flowculus-device:${target.name}`,
+          { signal: AbortSignal.timeout(15_000) },
+          write,
+        );
+      else await write();
     } else
       downloadTextFile(
         options.fileName ?? deviceFileName(document.processModel.name),
@@ -144,15 +163,22 @@ export async function saveDocumentToDevice(
     });
     return 'saved';
   } catch (error) {
-    const cancelled = error instanceof DOMException && error.name === 'AbortError';
+    const name = error instanceof Error ? error.name : '';
+    const cancelled = name === 'AbortError';
+    const failure =
+      error instanceof Error && error.message === 'device-file-changed'
+        ? 'conflict'
+        : ['NotAllowedError', 'SecurityError'].includes(name)
+          ? 'permission'
+          : 'error';
+    if (!cancelled) setDeviceAutoSave(id, false);
     useWorkspaceStore.getState().updateDocumentFile(id, {
-      deviceStatus: cancelled ? document.deviceStatus : 'error',
+      deviceStatus: cancelled ? document.deviceStatus : failure,
     });
     if (!cancelled) {
-      automatic.delete(id);
-      console.error('Flowculus device save failed', error);
+      if (failure === 'error') console.error('Flowculus device save failed', error);
     }
-    return cancelled ? 'cancelled' : 'error';
+    return cancelled ? 'cancelled' : failure;
   } finally {
     running.delete(id);
   }

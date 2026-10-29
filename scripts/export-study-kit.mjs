@@ -3,8 +3,15 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-const { studyModel, studyLog, studyViolationLog, STUDY_CALENDAR, STUDY_LABELS } =
-  await import('../packages/process-mining/src/__fixtures__/report-study.ts');
+import { writeImageSamples } from './demo/image-samples.mjs';
+const {
+  studyModel,
+  studyLog,
+  studyViolationLog,
+  studyDeviationLog,
+  STUDY_CALENDAR,
+  STUDY_LABELS,
+} = await import('../packages/process-mining/src/__fixtures__/report-study.ts');
 const { analyzeProcess } = await import('../packages/analysis-engine/src/index.ts');
 const { exportBpmnXml } = await import('../packages/bpmn-adapter/src/index.ts');
 const { serializeFlowculusFile } = await import('../packages/file-formats/src/index.ts');
@@ -79,6 +86,14 @@ for (const variant of ['as-is', 'to-be']) {
 const bad = studyViolationLog();
 files['12_to_be_deviations.csv'] = eventLogToCsv(bad);
 metrics.deviations = alignmentConformance(bad, studyModel('to-be'));
+for (const [name, kind] of [
+  ['12a_skip_qa.csv', 'skip-qa'],
+  ['12b_bypass_handover.csv', 'bypass-handover'],
+]) {
+  const focused = studyDeviationLog(kind);
+  files[name] = eventLogToCsv(focused);
+  metrics[kind] = alignmentConformance(focused, studyModel('to-be'));
+}
 files['13_service_standards.csv'] =
   'activity,max_service_minutes\n' +
   STUDY_LABELS.qa +
@@ -96,6 +111,7 @@ for (const [name, content] of Object.entries(files)) {
   mkdirSync(dirname(p), { recursive: true });
   writeFileSync(p, content);
 }
+const imageSampleHashes = writeImageSamples(target);
 writeFileSync(
   resolve(target, 'study-manifest.json'),
   JSON.stringify(
@@ -106,12 +122,15 @@ writeFileSync(
         'Model minutes, ISO timestamps, working calendar in 14_work_calendar.json',
       sourceState:
         'Generated from current sources. Expected results use the same engine and are not independent validation.',
-      files: Object.fromEntries(
-        Object.entries(files).map(([name, text]) => [
-          name,
-          createHash('sha256').update(text).digest('hex'),
-        ]),
-      ),
+      files: {
+        ...Object.fromEntries(
+          Object.entries(files).map(([name, text]) => [
+            name,
+            createHash('sha256').update(text).digest('hex'),
+          ]),
+        ),
+        ...imageSampleHashes,
+      },
     },
     null,
     2,

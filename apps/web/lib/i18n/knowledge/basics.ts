@@ -199,6 +199,11 @@ export const BASICS: KnowledgeEntry[] = [
             caption: 'A and B both run. The AND join synchronizes their completion.',
           },
           {
+            kind: 'example',
+            title: 'Read max as the slowest branch',
+            text: 'Two checks start together. One takes 20 minutes and the other takes 35 minutes. The process continues after 35 minutes, because both checks must finish. Their combined processing effort is 55 person-minutes if each uses one person throughout. Elapsed time and total effort answer different questions.',
+          },
+          {
             kind: 'formula',
             mathId: 'inclusive',
             label: 'Inclusive block under independent selection',
@@ -234,6 +239,11 @@ export const BASICS: KnowledgeEntry[] = [
             kind: 'diagram',
             diagram: 'and',
             caption: 'A và B đều chạy. AND join đồng bộ lúc hoàn tất.',
+          },
+          {
+            kind: 'example',
+            title: 'Đọc max là chờ nhánh chậm nhất',
+            text: 'Hai việc kiểm tra bắt đầu cùng lúc. Việc thứ nhất mất 20 phút, việc thứ hai mất 35 phút. Quy trình đi tiếp sau 35 phút vì cần cả hai việc hoàn tất. Nếu mỗi việc dùng một người làm liên tục, tổng công sức là 55 phút công. Thời gian trôi qua và tổng công sức trả lời hai câu hỏi khác nhau.',
           },
           {
             kind: 'formula',

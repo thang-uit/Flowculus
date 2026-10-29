@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { exportDrawioXml, importDrawioXml } from '@flowculus/drawio-adapter';
-import { withAutoLayout } from '@flowculus/file-formats';
+import { changeDrawioPage } from './drawio-page-transition';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 
 /** A page switch must never apply to a different tab or overwrite intervening edits. */
@@ -24,24 +23,15 @@ export function useDrawioPage() {
     setFailed(false);
     setBusy(true);
     try {
-      const xml = await exportDrawioXml(state.processModel, source.xml);
-      const imported = await importDrawioXml(xml, {
-        pageIndex,
-        fallbackName: state.modelName,
-      });
+      await changeDrawioPage(pageIndex, () => ticket.current === request);
+    } catch {
       const current = useWorkspaceStore.getState();
       if (
-        ticket.current !== request ||
-        current.activeDocumentId !== state.activeDocumentId ||
-        current.processModel !== state.processModel ||
-        current.drawioSource !== source
+        ticket.current === request &&
+        current.activeDocumentId === state.activeDocumentId &&
+        current.modelRevision === state.modelRevision
       )
-        return;
-      current.loadModel(withAutoLayout(imported.model), {
-        drawioSource: { xml, pages: imported.pages, pageIndex: imported.pageIndex },
-      });
-    } catch {
-      if (ticket.current === request) setFailed(true);
+        setFailed(true);
     } finally {
       if (ticket.current === request) setBusy(false);
     }

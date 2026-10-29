@@ -148,7 +148,7 @@ export function ScenarioComparison() {
             { label: copy.before, value: before, set: setBefore },
             { label: copy.after, value: after, set: setAfter },
           ].map((field) => (
-            <label key={field.label} className="block space-y-1 text-sm">
+            <label key={field.label} className="flex min-w-0 flex-col gap-1.5 text-sm">
               <span>{field.label}</span>
               <AppSelect
                 id={`scenario-${field.value === before ? 'before' : 'after'}-${field.label}`}

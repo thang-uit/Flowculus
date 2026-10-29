@@ -1,5 +1,14 @@
 import type { Locale } from './types';
 const EN = {
+  referenceChanged:
+    'The reference was edited or closed during comparison. Select the current process and compare again.',
+  previous: 'Previous',
+  next: 'Next',
+  resultRows: (first: number, last: number, total: number) =>
+    `Rows ${first}–${last} of ${total}`,
+  checking: 'Comparing the event log with the reference…',
+  conformanceFailed:
+    'Could not compare this log with the reference. Try again, or reload the log.',
   timedEvents: 'Events with measured service time / all events',
   comparedEvents: 'Events compared with a configured standard / all events',
   searchActivity: 'Search observed activities',
@@ -87,6 +96,15 @@ const EN = {
   resultVersion: 'Results belong to the selected log, mapping and reference snapshot.',
 };
 const VI: typeof EN = {
+  referenceChanged:
+    'Quy trình chuẩn đã được sửa hoặc đóng trong lúc đối chiếu. Chọn phiên bản hiện tại rồi đối chiếu lại.',
+  previous: 'Trang trước',
+  next: 'Trang sau',
+  resultRows: (first: number, last: number, total: number) =>
+    `Dòng ${first}–${last} trong ${total} dòng`,
+  checking: 'Đang đối chiếu nhật ký với quy trình chuẩn…',
+  conformanceFailed:
+    'Không thể đối chiếu nhật ký với quy trình chuẩn. Hãy thử lại hoặc tải lại nhật ký.',
   timedEvents: 'Sự kiện đo được thời gian xử lý / toàn bộ sự kiện',
   comparedEvents: 'Sự kiện được đối chiếu định mức / toàn bộ sự kiện',
   searchActivity: 'Tìm hoạt động trong log',

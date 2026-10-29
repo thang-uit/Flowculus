@@ -1,5 +1,6 @@
 'use client';
 import { AppSelect } from '@/components/ui/AppSelect';
+import { AppField } from '@/components/ui/AppField';
 import { useState } from 'react';
 import { getMiningEvidenceCopy } from '@/lib/i18n/mining-evidence-copy';
 import type { SocialNetwork } from '@flowculus/process-mining';
@@ -35,8 +36,7 @@ export function ResourceCentralityTable({
         </p>
       ) : null}
       <p className="text-xs text-[var(--muted)]">{evidence.networkHint}</p>
-      <label className="block text-xs">
-        {evidence.sort}
+      <AppField id="resource-ranking" label={evidence.sort}>
         <AppSelect
           id={'resource-ranking'}
           value={sort}
@@ -48,7 +48,7 @@ export function ResourceCentralityTable({
           ]}
           onValueChange={(value) => setSort(value as typeof sort)}
         />
-      </label>
+      </AppField>
       <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full min-w-[560px] text-left text-[11px] tabular-nums">
           <thead className="border-b border-[var(--border)] text-[var(--muted-strong)]">

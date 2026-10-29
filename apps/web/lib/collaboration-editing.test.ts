@@ -124,16 +124,24 @@ describe('collaboration preservation', () => {
     expect(analyzeProcess(moved).cycleTimeMinutes).toBe(387);
     expect(nudgeCollaboration(model, ['backend'], 10000, 0)).toBeNull();
   });
-  it('rejects lane resizing outside its pool or over an adjacent lane', () => {
+  it('rejects invalid lane resizing and moves a shared divider without overlapping', () => {
     const model = deliveryModel();
     const lane = model.containers!.lane_be;
     expect(
       resizeContainer(model, lane.id, { ...lane.bounds, width: lane.bounds.width + 1 }),
     ).toBe(model);
+    const resized = resizeContainer(model, lane.id, {
+      ...lane.bounds,
+      height: lane.bounds.height + 10,
+    });
+    expect(resized.containers!.lane_be.bounds.height).toBe(180);
+    expect(resized.containers!.lane_mb.bounds.y).toBe(350);
+    expect(resized.containers!.lane_mb.bounds.height).toBe(160);
+    expect(resized.nodes).toBe(model.nodes);
     expect(
       resizeContainer(model, lane.id, {
         ...lane.bounds,
-        height: lane.bounds.height + 10,
+        height: lane.bounds.height + 150,
       }),
     ).toBe(model);
     expect(resizeContainer(model, lane.id, { ...lane.bounds, width: NaN })).toBe(model);

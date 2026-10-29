@@ -22,6 +22,8 @@ const en = {
   cancel: 'Cancel',
   confirm: 'Apply name',
   nameHint: 'This name appears in the tab, exports and analysis reports.',
+  invalidField:
+    'Correct the highlighted value before saving. Your drawing has been kept.',
   invalidName: 'Enter a name between 1 and 120 characters, without control characters.',
   saveTitle: 'Save process to your device',
   saveHint:
@@ -44,6 +46,11 @@ const en = {
   opened: 'Opened from a file',
   saving: 'Saving to device…',
   error: 'Device save failed — try Save as',
+  permission:
+    'File write permission is needed. Press Save to retry, or Save as to keep a separate copy.',
+  conflict:
+    'The file changed outside this process tab. Use Save as to keep your changes without overwriting it.',
+  connected: 'Connected file',
   review: 'Review inferred semantics before saving',
   closeTitle: 'Save changes before closing?',
   closeSavedTitle: 'Close this process?',
@@ -57,15 +64,16 @@ const en = {
   discard: 'Close without saving',
   saveAndClose: 'Save and close',
   autoSave: 'Auto-save to this file',
+  stopAutoSave: 'Turn off file auto-save',
   autoHint:
-    'Available after choosing a file in a supported browser. Stops when this tab is closed or the page reloads.',
+    'Updates the connected file after edits. Auto-save stops on reload, lost permission or an external file change.',
   downloadHint:
     'This browser downloads a new copy on each save. It cannot update a device file automatically.',
   tabLimit:
     'Up to 20 processes can be open. Save and close a tab before opening another.',
   fileNameInvalid:
     'Use a file name of 1–120 characters without / \\ : * ? " < > | or control characters.',
-  reconnect: 'Save again to reconnect a device file after reloading.',
+  reconnect: 'Press Save to choose or reconnect your device file.',
 };
 export type DocumentCopy = typeof en;
 const vi: DocumentCopy = {
@@ -89,6 +97,7 @@ const vi: DocumentCopy = {
   cancel: 'Hủy',
   confirm: 'Đổi tên',
   nameHint: 'Tên này dùng trên tab, tệp xuất và báo cáo phân tích.',
+  invalidField: 'Hãy sửa ô đang báo lỗi trước khi lưu. Bản đang vẽ vẫn được giữ nguyên.',
   invalidName: 'Nhập tên từ 1 đến 120 ký tự, không có ký tự điều khiển.',
   saveTitle: 'Lưu quy trình vào thiết bị',
   saveHint:
@@ -110,6 +119,11 @@ const vi: DocumentCopy = {
   opened: 'Đã mở từ tệp',
   saving: 'Đang lưu vào thiết bị…',
   error: 'Lưu tệp thất bại — hãy chọn Lưu thành',
+  permission:
+    'Cần quyền ghi tệp. Bấm Lưu để cấp lại quyền, hoặc Lưu thành để giữ một bản riêng.',
+  conflict:
+    'Tệp đã thay đổi bên ngoài tab quy trình này. Chọn Lưu thành để giữ bản đang vẽ và tránh ghi đè.',
+  connected: 'Tệp đang kết nối',
   review: 'Cần xác nhận ngữ nghĩa trước khi lưu tệp',
   closeTitle: 'Lưu thay đổi trước khi đóng?',
   closeSavedTitle: 'Đóng quy trình này?',
@@ -123,14 +137,15 @@ const vi: DocumentCopy = {
   discard: 'Đóng không lưu',
   saveAndClose: 'Lưu và đóng',
   autoSave: 'Tự lưu vào tệp này',
+  stopAutoSave: 'Tắt tự lưu vào tệp',
   autoHint:
-    'Có sau khi chọn tệp trong trình duyệt hỗ trợ. Dừng khi đóng tab hoặc tải lại trang.',
+    'Cập nhật tệp đang kết nối sau khi chỉnh sửa. Tự lưu dừng khi tải lại trang, mất quyền ghi hoặc tệp bị sửa bên ngoài.',
   downloadHint:
     'Trình duyệt này tải một bản mới mỗi lần lưu, chưa hỗ trợ tự cập nhật tệp trên thiết bị.',
   tabLimit: 'Mở tối đa 20 quy trình. Hãy lưu và đóng một tab trước khi mở thêm.',
   fileNameInvalid:
     'Tên tệp cần 1–120 ký tự, không chứa / \\ : * ? " < > | hoặc ký tự điều khiển.',
-  reconnect: 'Lưu lại để kết nối tệp trên thiết bị sau khi tải lại trang.',
+  reconnect: 'Bấm Lưu để chọn hoặc kết nối lại tệp trên thiết bị.',
 };
 export const getDocumentCopy = (locale: Locale): DocumentCopy =>
   locale === 'vi' ? vi : en;

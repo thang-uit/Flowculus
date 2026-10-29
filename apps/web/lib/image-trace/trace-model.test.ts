@@ -74,6 +74,21 @@ describe('image trace candidate model', () => {
     expect(
       classifyContour(
         [
+          { x: 8, y: 0 },
+          { x: 92, y: 0 },
+          { x: 100, y: 8 },
+          { x: 100, y: 42 },
+          { x: 92, y: 50 },
+          { x: 8, y: 50 },
+          { x: 0, y: 42 },
+          { x: 0, y: 8 },
+        ],
+        0.68,
+      ),
+    ).toBe('rectangle');
+    expect(
+      classifyContour(
+        [
           { x: 0, y: 0 },
           { x: 2, y: 1 },
           { x: 3, y: 2 },

@@ -17,7 +17,6 @@ import {
   type ConformanceOptions,
   type AlignmentConformance,
   buildSocialNetwork,
-  checkModelConformance,
   mineAlpha,
   dfgToProcessModel,
   createProcessDiscovery,
@@ -35,10 +34,14 @@ import {
   type ProcessDiscovery,
   type SocialNetwork,
   type AlphaMiningResult,
-  type ModelConformance,
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
 import { isValidDocumentName, normalizeDocumentName } from './documents/document-types';
+import {
+  createMiningLogReader,
+  type MiningLogPage,
+  type MiningLogQuery,
+} from './mining-log-page';
 
 export type MiningRequest =
   | {
@@ -59,12 +62,15 @@ export type MiningRequest =
   | { type: 'to-model'; filter: DiscoveryFilter; name: string }
   | { type: 'check-conformance'; model: ProcessModel; options?: ConformanceOptions }
   | { type: 'compare-standards'; standards: TaskStandard[]; timePolicy?: TimePolicy }
-  | { type: 'export-log' };
+  | { type: 'export-log' }
+  | ({ type: 'read-log-page' } & MiningLogQuery);
 
 export interface MiningDiscoveryResponse {
   type: 'discovery';
   logName: string;
   hasStartTimes: boolean;
+  /** Includes blank, invalid and late start timestamps in accepted events. */
+  missingStartTimes: number;
   /** Full-log labels; graph display filters must not hide mapping choices. */
   activityNames: string[];
   discovery: ProcessDiscovery;
@@ -102,7 +108,6 @@ export interface MiningCsvResponse {
 
 export interface MiningConformanceResponse {
   type: 'conformance';
-  result: ModelConformance;
   alignment: AlignmentConformance;
   referencePetri: PetriConversion;
   verification: PetriVerification | null;
@@ -113,6 +118,7 @@ export type MiningResponse =
   | MiningTableResponse
   | MiningModelResponse
   | MiningCsvResponse
+  | MiningLogPage
   | MiningConformanceResponse
   | {
       type: 'standards';
@@ -129,6 +135,8 @@ export type MiningResponse =
  */
 export const createMiningSession = () => {
   let table: EventTable | null = null;
+  let logVersion = 0;
+  let logReader: ((query: MiningLogQuery) => MiningLogPage) | null = null;
   let timePolicy: TimePolicy = ELAPSED_TIME_POLICY;
   let log: EventLog | null = null;
   let buildSummary = { skippedRows: 0, invalidTimestamps: 0, invalidStartTimes: 0 };
@@ -140,6 +148,7 @@ export const createMiningSession = () => {
   > | null = null;
   let discover: ReturnType<typeof createProcessDiscovery> | null = null;
   let activityNames: string[] | null = null;
+  let missingStartTimes: number | null = null;
 
   const requireLog = (): EventLog => {
     if (!log) throw new Error('No event log is loaded.');
@@ -162,6 +171,10 @@ export const createMiningSession = () => {
       type: 'discovery',
       logName: current.name,
       hasStartTimes: current.hasStartTimes,
+      missingStartTimes: (missingStartTimes ??= current.events.reduce(
+        (count, event) => count + (event.startTime == null ? 1 : 0),
+        0,
+      )),
       activityNames: (activityNames ??= [
         ...new Set(current.events.map((event) => event.activity)),
       ].sort()),
@@ -179,11 +192,14 @@ export const createMiningSession = () => {
         if (!isTimePolicy(timePolicy)) throw new Error('invalid-work-calendar');
         table = null;
         log = generatePresetLog(request.presetId);
+        logVersion += 1;
+        logReader = createMiningLogReader(log, logVersion);
         socialNetwork = null;
         alpha = null;
         evidence = null;
         discover = null;
         activityNames = null;
+        missingStartTimes = null;
         buildSummary = { skippedRows: 0, invalidTimestamps: 0, invalidStartTimes: 0 };
         return discovery(request.filter);
       case 'inspect-file':
@@ -207,11 +223,14 @@ export const createMiningSession = () => {
         }
         log = result.log;
         table = null;
+        logVersion += 1;
+        logReader = createMiningLogReader(log, logVersion);
         socialNetwork = null;
         alpha = null;
         evidence = null;
         discover = null;
         activityNames = null;
+        missingStartTimes = null;
         buildSummary = {
           skippedRows: result.skippedRows,
           invalidTimestamps: result.invalidTimestamps,
@@ -222,8 +241,10 @@ export const createMiningSession = () => {
       case 'discover':
         if (request.timePolicy) {
           if (!isTimePolicy(request.timePolicy)) throw new Error('invalid-work-calendar');
-          timePolicy = structuredClone(request.timePolicy);
-          discover = null;
+          if (JSON.stringify(timePolicy) !== JSON.stringify(request.timePolicy)) {
+            timePolicy = structuredClone(request.timePolicy);
+            discover = null;
+          }
         }
         return discovery(request.filter);
       case 'to-model': {
@@ -259,6 +280,10 @@ export const createMiningSession = () => {
         const current = requireLog();
         return { type: 'csv', csv: eventLogToCsv(current), logName: current.name };
       }
+      case 'read-log-page': {
+        if (!logReader) throw new Error('No event log is loaded.');
+        return logReader(request);
+      }
       case 'check-conformance': {
         const referencePetri = bpmnToPetri(request.model, request.options?.poolId);
         const alignment = alignmentConformance(
@@ -272,7 +297,6 @@ export const createMiningSession = () => {
           verification:
             referencePetri.status === 'ready' ? verifyPetri(referencePetri.net) : null,
           type: 'conformance',
-          result: checkModelConformance(requireLog(), request.model),
         };
       }
     }

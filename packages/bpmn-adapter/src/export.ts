@@ -1,9 +1,4 @@
-import {
-  getNodeBounds,
-  nodePoolId,
-  processPools,
-  type ProcessModel,
-} from '@flowculus/process-model';
+import { getNodeBounds, nodePoolId, processPools } from '@flowculus/process-model';
 import {
   assertConfirmedModel,
   validateModelStructure,

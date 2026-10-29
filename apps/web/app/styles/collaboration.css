@@ -28,6 +28,53 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
+  background: var(--surface-soft);
+  cursor: grab;
+  touch-action: none;
+}
+.process-container__label:hover,
+.process-container[data-selected] .process-container__label {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.process-container__label:active {
+  cursor: grabbing;
+}
+.process-container__add {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.process-container__name {
+  position: absolute;
+  top: 8px;
+  left: 44px;
+  width: min(260px, calc(100% - 60px));
+  height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-control, 8px);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px;
+  z-index: 2;
+}
+.process-container__divider {
+  border-color: var(--accent);
+}
+.react-flow__node-container {
+  --xy-resize-background-color: var(--accent);
+}
+.react-flow__node-container .react-flow__resize-control.handle {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--surface);
+  border-radius: 3px;
+}
+.react-flow__node-container .react-flow__resize-control::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
 }
 .process-container[data-orientation='vertical'] .process-container__label {
   inset: 0 0 auto;

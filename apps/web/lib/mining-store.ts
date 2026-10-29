@@ -12,7 +12,6 @@ import {
   type DiscoveryFilter,
   type MiningConversionWarning,
   type MiningPresetId,
-  type ModelConformance,
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
 
@@ -45,7 +44,6 @@ interface MiningState {
   mappingTable: (MiningTableResponse & { source: string }) | null;
   result: MiningDiscoveryResponse | null;
   conformance: {
-    result: ModelConformance;
     model: ProcessModel;
     evidence: MiningConformanceResponse;
     optionsKey: string;
@@ -131,13 +129,14 @@ export const useMiningStore = create<MiningState>((set, get) => ({
     })),
   setConformance: (evidence, model, optionsKey) =>
     set({
-      conformance: { result: evidence.result, model, evidence, optionsKey },
+      conformance: { model, evidence, optionsKey },
       conformanceError: null,
       checkingConformance: false,
     }),
   setConformanceError: (conformanceError) =>
-    set({ conformanceError, checkingConformance: false }),
-  startConformance: () => set({ conformanceError: null, checkingConformance: true }),
+    set({ conformance: null, conformanceError, checkingConformance: false }),
+  startConformance: () =>
+    set({ conformance: null, conformanceError: null, checkingConformance: true }),
   setFilter: (filter) => set((state) => ({ filter: { ...state.filter, ...filter } })),
   resetFilter: () => set({ filter: DEFAULT_DISCOVERY_FILTER }),
   setSelectedVariantId: (selectedVariantId) => set({ selectedVariantId }),
@@ -152,7 +151,9 @@ export const useMiningStore = create<MiningState>((set, get) => ({
       conformanceError: null,
       checkingConformance: false,
       replay: null,
+      pendingUpload: null,
       mappingTable: null,
       selectedVariantId: null,
+      conversionWarnings: [],
     }),
 }));

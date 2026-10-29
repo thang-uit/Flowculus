@@ -13,6 +13,7 @@ import { MiningPanelResizeHandle } from '@/components/mining/MiningPanelResizeHa
 import { MiningEvidenceExport } from './MiningEvidenceExport';
 import { MiningSourcePanel } from '@/components/mining/MiningSourcePanel';
 import { MiningCreateProcessDialog } from '@/components/mining/MiningCreateProcessDialog';
+import { MiningLogTableDialog } from '@/components/mining/MiningLogTableDialog';
 import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { useMiningSession } from '@/lib/use-mining-session';
@@ -25,9 +26,11 @@ export function MiningWorkspace() {
   const copy = getWorkspaceCopy(locale);
   const session = useMiningSession();
   const result = useMiningStore((state) => state.result);
+  const replay = useMiningStore((state) => state.replay);
   const mappingTable = useMiningStore((state) => state.mappingTable);
   const status = useMiningStore((state) => state.status);
   const [namingProcess, setNamingProcess] = useState(false);
+  const [logTableOpen, setLogTableOpen] = useState(false);
   const {
     workspaceRef,
     widths,
@@ -49,6 +52,11 @@ export function MiningWorkspace() {
           onFile={session.handleFile}
           onDownloadLog={() => void session.downloadLog()}
           onCancel={session.cancel}
+          onViewLog={() => setLogTableOpen(true)}
+          onClearLog={() => {
+            setLogTableOpen(false);
+            session.clear();
+          }}
         />
         <MiningTimeControls />
         <MiningFilterPanel />
@@ -110,6 +118,15 @@ export function MiningWorkspace() {
           table={mappingTable}
           onConfirm={session.applyMapping}
           onCancel={() => useMiningStore.getState().setMappingTable(null)}
+        />
+      ) : null}
+      {result && logTableOpen && status === 'ready' && !mappingTable ? (
+        <MiningLogTableDialog
+          key={replay?.kind === 'file' ? replay.fileName : result.logName}
+          open={logTableOpen}
+          onClose={() => setLogTableOpen(false)}
+          request={session.request}
+          sourceName={replay?.kind === 'file' ? replay.fileName : result.logName}
         />
       ) : null}
     </div>

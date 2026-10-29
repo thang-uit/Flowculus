@@ -8,6 +8,7 @@ import {
 } from '@flowculus/process-model';
 import type { ConformanceOptions } from '@flowculus/process-mining';
 import { AppButton } from '@/components/ui/AppButton';
+import { AppField } from '@/components/ui/AppField';
 import { getMiningEvidenceCopy } from '@/lib/i18n/mining-evidence-copy';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { useWorkspaceStore } from '@/lib/workspace-store';
@@ -34,6 +35,13 @@ export function ReferenceConformancePanel({
   const activities = useMiningStore((state) => state.result?.activityNames);
   const stored = useMiningStore((state) => state.conformance);
   const busy = useMiningStore((state) => state.checkingConformance);
+  const canCheck = useMiningStore(
+    (state) =>
+      state.status === 'ready' &&
+      !!state.result &&
+      !state.mappingTable &&
+      !state.pendingUpload,
+  );
   const error = useMiningStore((state) => state.conformanceError);
   const options = useMemo(
     () => ({ poolId: poolId || undefined, activityMapping: mapping }),
@@ -49,8 +57,7 @@ export function ReferenceConformancePanel({
   return (
     <section className="space-y-4 text-xs">
       <p className="leading-5 text-[var(--muted)]">{copy.referenceHint}</p>
-      <label className="block space-y-1">
-        <span className="font-semibold">{copy.reference}</span>
+      <AppField id="mining-reference" label={copy.reference}>
         <AppSelect
           id={'mining-reference'}
           value={document ? selected : ''}
@@ -67,7 +74,7 @@ export function ReferenceConformancePanel({
             setMapping({});
           }}
         />
-      </label>
+      </AppField>
       {pools.length ? (
         <AppSelect
           id={'mining-reference-pool'}
@@ -93,12 +100,12 @@ export function ReferenceConformancePanel({
       />
       <AppButton
         variant="primary"
-        disabled={!model || !scope || busy}
+        disabled={!model || !scope || busy || !canCheck}
         onClick={() => model && onCheck(model, options)}
       >
         {copy.run}
       </AppButton>
-      {busy ? <p role="status">{copy.states}…</p> : null}
+      {busy ? <p role="status">{copy.checking}</p> : null}
       {error ? (
         <p role="alert" className="text-[var(--danger)]">
           {error}

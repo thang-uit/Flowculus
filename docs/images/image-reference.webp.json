@@ -1,4 +1,5 @@
 {
-  "prompt": "Source: actual local Flowculus production capture on 2026-10-26, 1440px desktop width, image-reference. Shared menu/dialog/button system and sortable process tabs. Illustrative imported data only; no user work. Compressed to WebP.",
-  "createdAt": "2026-10-26T20:13:24.408873+07:00"
+  "prompt": "Source: actual local Flowculus production browser capture on 2026-10-29 Asia/Ho_Chi_Minh, 1440x1000, Vietnamese dark Image Trace review. The external synthetic 05_hand_drawn_photo.png sample was explicitly uploaded and detected as three tasks with two connectors. Handwritten hours remain blank for manual entry, as explained by the updated hint. The preceding synthetic 03 sample was manually reviewed as 2h, 3h and 4h and produced CT 9h. No user work. Compressed to WebP.",
+  "createdAt": "2026-10-29T11:51:20+07:00",
+  "dimensions": [1440, 1000]
 }

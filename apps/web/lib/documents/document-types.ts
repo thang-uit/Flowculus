@@ -32,7 +32,15 @@ export interface WorkspaceDocument extends DocumentContent {
   deviceFileName: string | null;
   hasReferenceImage: boolean;
   deviceStatus:
-    'idle' | 'saving' | 'saved' | 'downloaded' | 'opened' | 'error' | 'review';
+    | 'idle'
+    | 'saving'
+    | 'saved'
+    | 'downloaded'
+    | 'opened'
+    | 'error'
+    | 'review'
+    | 'permission'
+    | 'conflict';
 }
 
 export interface WorkspaceDocumentsState extends DocumentContent {
