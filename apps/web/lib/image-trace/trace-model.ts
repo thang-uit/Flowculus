@@ -1,7 +1,10 @@
-import { SEMANTIC_METADATA_KEYS, type ProcessModel } from '@flowculus/process-model';
+import {
+  DEFAULT_NODE_SIZE,
+  SEMANTIC_METADATA_KEYS,
+  type ProcessModel,
+} from '@flowculus/process-model';
 
 import type { TraceResult, TraceShape } from './trace-types';
-const MIN_TRACE_TASK_SIZE = { width: 120, height: 72 };
 export type {
   TraceCandidate,
   TraceConnector,
@@ -111,28 +114,23 @@ export function mergeTracedModel(
   return { model: { ...current, nodes, edges }, nodeIds: [...remap.values()] };
 }
 
-/** Keep detected centres while giving task labels and chips enough space. */
+/**
+ * Keep detected centres while using the shared canvas footprint for every
+ * imported shape. OpenCV contours include nearby ink and connector strokes,
+ * so their bounds are not a reliable presentation size. The default footprint
+ * is shared with palette-created nodes, rendering and export.
+ */
 function readableTraceBounds(
   kind: ProcessModel['nodes'][string]['kind'],
   bounds: NonNullable<ProcessModel['nodes'][string]['bounds']>,
   scale: number,
   origin: { x: number; y: number },
 ) {
-  const task = kind === 'task' || kind === 'subprocess';
-  const minimum = kind === 'gateway' ? 56 : 44;
-  const width = Math.max(
-    task ? MIN_TRACE_TASK_SIZE.width : minimum,
-    bounds.width * scale,
-  );
-  const height = Math.max(
-    task ? MIN_TRACE_TASK_SIZE.height : minimum,
-    bounds.height * scale,
-  );
+  const size = DEFAULT_NODE_SIZE[kind];
   return {
-    x: origin.x + (bounds.x + bounds.width / 2) * scale - width / 2,
-    y: origin.y + (bounds.y + bounds.height / 2) * scale - height / 2,
-    width,
-    height,
+    x: origin.x + (bounds.x + bounds.width / 2) * scale - size.width / 2,
+    y: origin.y + (bounds.y + bounds.height / 2) * scale - size.height / 2,
+    ...size,
   };
 }
 

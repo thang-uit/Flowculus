@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { collectUnconfirmedSemantics } from '@flowculus/validation';
-import type { ProcessModel } from '@flowculus/process-model';
+import { DEFAULT_NODE_SIZE, type ProcessModel } from '@flowculus/process-model';
 import {
   classifyContour,
   mergeTracedModel,
@@ -161,8 +161,11 @@ describe('image trace candidate model', () => {
     expect(merged.nodeIds).toHaveLength(2);
     const bounds = merged.model.nodes[merged.nodeIds[0]]!.bounds!;
     expect(bounds.x + bounds.width / 2).toBe(430);
-    expect(bounds.width).toBeGreaterThanOrEqual(120);
-    expect(bounds.height).toBeGreaterThanOrEqual(72);
+    expect(bounds.width).toBe(DEFAULT_NODE_SIZE.task.width);
+    expect(bounds.height).toBe(DEFAULT_NODE_SIZE.task.height);
+    const gatewayBounds = merged.model.nodes[merged.nodeIds[1]]!.bounds!;
+    expect(gatewayBounds.width).toBe(DEFAULT_NODE_SIZE.gateway.width);
+    expect(gatewayBounds.height).toBe(DEFAULT_NODE_SIZE.gateway.height);
     expect(Object.values(merged.model.edges)).toHaveLength(1);
     expect(collectUnconfirmedSemantics(merged.model)).toHaveLength(4);
   });
