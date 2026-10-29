@@ -80,6 +80,7 @@ const EN = {
   outDegree: 'Out-degree',
   inWeight: 'Incoming handoffs',
   outWeight: 'Outgoing handoffs',
+  handoffs: 'Handoffs',
   sort: 'Rank resources by',
   networkHint:
     'In-degree counts distinct senders; incoming handoffs counts observed transfers into a resource. Neither proves workload, responsibility or causation.',
@@ -176,6 +177,7 @@ const VI: typeof EN = {
   outDegree: 'Out-degree',
   inWeight: 'Lượt bàn giao đến',
   outWeight: 'Lượt bàn giao đi',
+  handoffs: 'Lần bàn giao',
   sort: 'Xếp hạng nhân sự theo',
   networkHint:
     'In-degree đếm người gửi phân biệt; lượt bàn giao đến đếm các lần chuyển tới một resource trong log. Không tự chứng minh khối lượng việc, trách nhiệm hoặc nguyên nhân.',

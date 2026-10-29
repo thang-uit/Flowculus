@@ -71,7 +71,7 @@ export function ResourceCentralityTable({
                 {evidence.outWeight}
               </th>
               <th scope="col" className="px-2 py-2">
-                {copy.miningHandoffs}
+                {evidence.handoffs}
               </th>
               <th scope="col" className="px-2 py-2">
                 {copy.miningDegree}
