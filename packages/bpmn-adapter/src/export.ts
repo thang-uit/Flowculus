@@ -237,7 +237,7 @@ export function exportBpmnXml(model: ConfirmedProcessModel): string {
             id: id(`definitions_${model.id}`),
             name: model.name,
             exporter: 'Flowculus',
-            exporterVersion: '0.1.0',
+            exporterVersion: '1.0.0',
             targetNamespace: 'https://flowculus.vercel.app/process',
           },
           roots,

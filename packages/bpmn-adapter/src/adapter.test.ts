@@ -11,6 +11,7 @@ it('reads namespace-qualified BPMN without DI and writes a standard diagram', ()
   if (!gate.ok) throw Error();
   const xml = exportBpmnXml(gate.model);
   expect(xml).toContain('BPMNDiagram');
+  expect(xml).toContain('exporterVersion="1.0.0"');
   expect(importBpmnXml(xml).nodes.a.label).toBe('Review');
 });
 it('rejects duplicate IDs, dangling flows, foreign namespaces and nested execution', () => {
