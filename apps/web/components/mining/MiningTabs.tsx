@@ -147,12 +147,6 @@ export function MiningTabs({ onOpen }: Readonly<{ onOpen: () => void }>) {
             <span className="px-3 py-2 text-xs text-[var(--muted)]">{copy.empty}</span>
           )}
         </div>
-        <span
-          className="hidden min-w-0 flex-1 truncate px-2 text-[11px] text-[var(--muted)] lg:inline"
-          title={copy.hint}
-        >
-          {copy.hint}
-        </span>
       </div>
       <div className="document-state-row">
         <span>

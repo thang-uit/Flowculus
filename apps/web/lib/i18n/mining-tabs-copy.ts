@@ -4,7 +4,6 @@ const EN = {
   tabs: 'Open event logs',
   open: 'Open event log',
   empty: 'Open a log to start mining',
-  hint: 'Each log has its own results, filters and working calendar. BPMN documents are available in Model.',
   close: (name: string) => `Close event log: ${name}`,
   closeTitle: 'Close this event log?',
   closeHint: (name: string) =>
@@ -31,7 +30,6 @@ const VI: typeof EN = {
   tabs: 'Nhật ký đang mở',
   open: 'Mở nhật ký sự kiện',
   empty: 'Mở nhật ký để bắt đầu khai phá',
-  hint: 'Mỗi nhật ký giữ kết quả, bộ lọc và lịch làm việc riêng. Các tài liệu BPMN nằm trong Mô hình.',
   close: (name) => `Đóng nhật ký: ${name}`,
   closeTitle: 'Đóng nhật ký này?',
   closeHint: (name) =>
