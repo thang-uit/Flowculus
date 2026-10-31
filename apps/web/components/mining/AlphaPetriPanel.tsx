@@ -38,10 +38,10 @@ export function AlphaPetriPanel({ result }: Readonly<{ result: AlphaMiningResult
           {copy.miningAlphaLoops}
         </p>
       ) : null}
-      <section>
-        <h3 className="mb-2 font-semibold text-[var(--text)]">
+      <details>
+        <summary className="mb-2 font-semibold text-[var(--text)]">
           {copy.miningPetriPlaces}
-        </h3>
+        </summary>
         <ol className="max-h-72 space-y-1.5 overflow-y-auto scrollbar-thin">
           {result.places.map((place, index) => (
             <li
@@ -63,7 +63,7 @@ export function AlphaPetriPanel({ result }: Readonly<{ result: AlphaMiningResult
             </li>
           ))}
         </ol>
-      </section>
+      </details>
       {result.replay ? (
         <section className="space-y-1">
           <h3 className="font-semibold text-[var(--text)]">{copy.miningAlphaReplay}</h3>

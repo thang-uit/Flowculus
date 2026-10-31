@@ -582,7 +582,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding: 10px 2px 16px;
-  font-family: math;
+  font-family: var(--app-font);
   font-size: clamp(19px, 1.5vw, 24px);
   font-weight: 400;
   color: var(--text);

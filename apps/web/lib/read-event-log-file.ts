@@ -41,7 +41,14 @@ export async function readEventLogFile(
     worker.onmessage = ({ data }: MessageEvent<XlsxReply>) => {
       finish();
       if (data.ok) resolve(data.source);
-      else reject(new Error(data.error));
+      else {
+        const code = ['xlsx-empty', 'xlsx-too-many-events', 'xlsx-invalid'].includes(
+          data.error,
+        )
+          ? data.error
+          : 'xlsx-invalid';
+        reject(new Error(code, { cause: data.error }));
+      }
     };
     const fail = () => {
       finish();

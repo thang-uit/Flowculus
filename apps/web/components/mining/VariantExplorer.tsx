@@ -70,7 +70,7 @@ export function VariantExplorer({ variants }: Readonly<{ variants: TraceVariant[
                 />
               </span>
               <span
-                className="mt-1.5 block truncate text-[11px] text-[var(--muted)]"
+                className="mt-2 block break-words text-xs leading-5 text-[var(--muted-strong)]"
                 title={variant.activities.join(' → ')}
               >
                 {variant.activities.length} {copy.miningSteps} ·{' '}

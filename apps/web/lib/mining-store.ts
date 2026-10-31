@@ -46,7 +46,7 @@ interface MiningState extends MiningTabsState {
   /** A file imported elsewhere (header, drop) waiting for the mining view. */
   pendingUpload: PendingUpload | null;
   /** The uploaded file waiting for its column mapping. */
-  mappingTable: (MiningTableResponse & { source: string }) | null;
+  mappingTable: (MiningTableResponse & { source: string; importId: string }) | null;
   result: MiningDiscoveryResponse | null;
   conformance: {
     model: ProcessModel;

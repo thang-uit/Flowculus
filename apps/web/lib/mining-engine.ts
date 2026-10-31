@@ -1,5 +1,4 @@
 import {
-  buildEventLog,
   isTimePolicy,
   ELAPSED_TIME_POLICY,
   type TimePolicy,
@@ -22,13 +21,13 @@ import {
   createProcessDiscovery,
   eventLogToCsv,
   generatePresetLog,
-  parseEventTable,
-  suggestColumnMapping,
+  type EventImportLayout,
+  type EventImportSettings,
+  type EventImportReview,
   type ColumnMapping,
   type DiscoveryFilter,
   type EventLog,
   type EventLogFormat,
-  type EventTable,
   type MiningConversionWarning,
   type MiningPresetId,
   type ProcessDiscovery,
@@ -36,6 +35,7 @@ import {
   type AlphaMiningResult,
 } from '@flowculus/process-mining';
 import type { ProcessModel } from '@flowculus/process-model';
+import { createMiningImportSession } from './mining-import-session';
 import { isValidDocumentName, normalizeDocumentName } from './documents/document-types';
 import {
   createMiningLogReader,
@@ -50,9 +50,16 @@ export type MiningRequest =
       filter: DiscoveryFilter;
       timePolicy?: TimePolicy;
     }
-  | { type: 'inspect-file'; fileName: string; source: string }
+  | {
+      type: 'inspect-file';
+      fileName: string;
+      source: string;
+      settings?: EventImportSettings;
+    }
+  | { type: 'review-import'; mapping: ColumnMapping; settings: EventImportSettings }
   | {
       type: 'apply-mapping';
+      settings?: EventImportSettings;
       mapping: ColumnMapping;
       name: string;
       filter: DiscoveryFilter;
@@ -71,6 +78,7 @@ export interface MiningDiscoveryResponse {
   hasStartTimes: boolean;
   /** Includes blank, invalid and late start timestamps in accepted events. */
   missingStartTimes: number;
+  importReview?: EventImportReview;
   /** Full-log labels; graph display filters must not hide mapping choices. */
   activityNames: string[];
   discovery: ProcessDiscovery;
@@ -92,6 +100,7 @@ export interface MiningTableResponse {
   sampleRows: string[][];
   rowCount: number;
   suggestion: Partial<ColumnMapping>;
+  layout: EventImportLayout;
 }
 
 export interface MiningModelResponse {
@@ -117,6 +126,7 @@ export type MiningResponse =
   | MiningDiscoveryResponse
   | MiningTableResponse
   | MiningModelResponse
+  | { type: 'import-review'; review: EventImportReview }
   | MiningCsvResponse
   | MiningLogPage
   | MiningConformanceResponse
@@ -134,7 +144,8 @@ export type MiningResponse =
  * slider changes only send the filter, never the whole log.
  */
 export const createMiningSession = () => {
-  let table: EventTable | null = null;
+  const pendingImport = createMiningImportSession();
+  let importReview: EventImportReview | undefined;
   let logVersion = 0;
   let logReader: ((query: MiningLogQuery) => MiningLogPage) | null = null;
   let timePolicy: TimePolicy = ELAPSED_TIME_POLICY;
@@ -182,6 +193,7 @@ export const createMiningSession = () => {
       socialNetwork: socialNetwork ?? (socialNetwork = buildSocialNetwork(current)),
       alpha: alpha ?? (alpha = mineAlpha(current)),
       ...buildSummary,
+      ...(importReview ? { importReview } : {}),
     };
   };
 
@@ -190,7 +202,8 @@ export const createMiningSession = () => {
       case 'load-preset':
         timePolicy = request.timePolicy ?? timePolicy;
         if (!isTimePolicy(timePolicy)) throw new Error('invalid-work-calendar');
-        table = null;
+        pendingImport.clear();
+        importReview = undefined;
         log = generatePresetLog(request.presetId);
         logVersion += 1;
         logReader = createMiningLogReader(log, logVersion);
@@ -203,26 +216,23 @@ export const createMiningSession = () => {
         buildSummary = { skippedRows: 0, invalidTimestamps: 0, invalidStartTimes: 0 };
         return discovery(request.filter);
       case 'inspect-file':
-        table = parseEventTable(request.fileName, request.source);
-        return {
-          type: 'table',
-          fileName: request.fileName,
-          format: table.format,
-          headers: table.headers,
-          sampleRows: table.rows.slice(0, 6),
-          rowCount: table.rows.length,
-          suggestion: suggestColumnMapping(table.headers),
-        };
+        return pendingImport.inspect(request.fileName, request.source, request.settings);
+      case 'review-import':
+        return pendingImport.review(request.mapping, request.settings);
       case 'apply-mapping': {
         timePolicy = request.timePolicy ?? timePolicy;
         if (!isTimePolicy(timePolicy)) throw new Error('invalid-work-calendar');
-        if (!table) throw new Error('No event log file is waiting for a column mapping.');
-        const result = buildEventLog(table, request.mapping, request.name);
+        const { result, review } = pendingImport.apply(
+          request.mapping,
+          request.name,
+          request.settings,
+        );
         if (result.log.events.length === 0) {
           throw new Error('No event could be read with this column mapping.');
         }
         log = result.log;
-        table = null;
+        importReview = review;
+        pendingImport.clear();
         logVersion += 1;
         logReader = createMiningLogReader(log, logVersion);
         socialNetwork = null;

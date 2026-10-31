@@ -20,7 +20,7 @@ export function BottleneckList({ bottlenecks }: Readonly<{ bottlenecks: Bottlene
   const slowest = bottlenecks[0]?.meanDurationMs ?? 1;
   return (
     <ol className="space-y-1.5" aria-label={copy.miningBottlenecks}>
-      {bottlenecks.map((item, index) => (
+      {bottlenecks.slice(0, 30).map((item, index) => (
         <li
           key={item.id}
           className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2"
@@ -46,16 +46,16 @@ export function BottleneckList({ bottlenecks }: Readonly<{ bottlenecks: Bottlene
               <span className="min-w-0 text-xs text-[var(--text)]">
                 {item.kind === 'transition' ? (
                   <span className="flex min-w-0 flex-wrap items-center gap-1">
-                    <span className="truncate">{item.source}</span>
+                    <span className="break-words">{item.source}</span>
                     <ArrowRight
                       size={11}
                       className="shrink-0 text-[var(--muted)]"
                       aria-hidden="true"
                     />
-                    <span className="truncate">{item.target}</span>
+                    <span className="break-words">{item.target}</span>
                   </span>
                 ) : (
-                  <span className="truncate">{item.activity}</span>
+                  <span className="break-words">{item.activity}</span>
                 )}
                 <span className="mt-0.5 block text-[10.5px] text-[var(--muted)]">
                   {item.kind === 'transition'

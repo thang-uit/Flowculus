@@ -2,6 +2,100 @@ import { QUALITY_COPY_VI, RESILIENCE_COPY_VI, SEMANTIC_COPY_VI } from './feature
 import type { WorkspaceCopy } from './types';
 
 export const VI: WorkspaceCopy = {
+  miningImport: {
+    statusActivity: 'Trạng thái mới',
+    statusTimestamp: 'Thời điểm đổi trạng thái',
+    mode: 'Ý nghĩa dữ liệu',
+    modes: {
+      events: 'Sự kiện hoạt động',
+      'jira-status': 'Lịch sử trạng thái Jira',
+      snapshot: 'Danh sách trạng thái hiện tại',
+    },
+    modeHints: {
+      events:
+        'Mỗi dòng ghi nhận một lần thực hiện hoạt động. Giờ bắt đầu hoặc cặp vòng đời start/complete giúp đo thời gian xử lý.',
+      'jira-status':
+        'Mỗi dòng ghi nhận lúc chuyển vào một trạng thái, không phải lúc hoàn thành tác vụ. Khoảng cách giữa các lần đổi trạng thái chưa chứng minh thời gian chờ hay xử lý. Changed by là người sửa trạng thái nên không được suy thành người thực hiện hoặc chi phí. Bản xuất danh sách issue thông thường của Jira không có lịch sử này.',
+      snapshot:
+        'Danh sách trạng thái hiện tại chưa phải lịch sử sự kiện. Hãy xuất changelog hoặc cung cấp các hoạt động có mã ca và thời điểm trước khi khai phá.',
+    },
+    caseHint:
+      'Một mã ca cần đại diện cho một lần chạy quy trình. Với Jira, chọn Issue key cho từng issue hoặc Parent key nếu các issue con thuộc cùng một lần chạy.',
+    dateOrder: 'Thứ tự ngày dạng số',
+    dateOrders: {
+      auto: 'Nhận diện từ dữ liệu',
+      'day-first': 'Ngày / tháng / năm',
+      'month-first': 'Tháng / ngày / năm',
+    },
+    timezone: 'Thời điểm chưa có múi giờ',
+    timezoneHint:
+      'Chọn độ lệch UTC của dữ liệu nguồn. Thời điểm đã có múi giờ và epoch được giữ nguyên. Thiết lập này không quy định lịch làm việc.',
+    header: 'Dòng tiêu đề',
+    headerOption: (row, label) => `Dòng ${row}: ${label}`,
+    firstSheet:
+      'XLSX đọc trang tính đầu tiên. Số dòng tiêu đề không tính dòng trống và chú thích.',
+    review: 'Kiểm tra trước khi nhập',
+    reviewing: 'Đang kiểm tra dữ liệu…',
+    reviewTitle: 'Kiểm tra dữ liệu nhập',
+    edit: 'Sửa ánh xạ',
+    accepted: (events, cases) => `${events} sự kiện hợp lệ thuộc ${cases} ca quy trình.`,
+    rejected: (count) =>
+      `Bỏ qua ${count} dòng do thiếu dữ liệu bắt buộc, sai số cột, thời điểm hoặc trạng thái vòng đời không dùng được.`,
+    duplicates: (count) =>
+      `Phát hiện ${count} dòng trùng. Các dòng vẫn được giữ vì bản ghi giống nhau có thể là những lần thực hiện riêng. Hãy xóa dòng trùng ngoài ý muốn trong tệp nguồn.`,
+    starts: (count) =>
+      `${count} sự kiện thiếu giờ bắt đầu hợp lệ nên chưa đo được thời gian xử lý. Luồng đến các sự kiện này dùng khoảng cách giữa hai lần hoàn thành.`,
+    unpaired: (count) =>
+      `${count} dòng bắt đầu vòng đời chưa có lần hoàn thành tương ứng nên không tạo thành sự kiện.`,
+    coverage: (resources, costs, total) =>
+      `Có người thực hiện: ${resources}/${total} sự kiện. Có giá trị chi phí: ${costs}/${total} sự kiện.`,
+    ambiguous:
+      'Ngày dạng số còn mơ hồ hoặc có thứ tự không nhất quán. Hãy chọn rõ ngày/tháng hoặc tháng/ngày rồi kiểm tra lại.',
+    noEvents: 'Chưa có sự kiện dùng được. Hãy sửa ánh xạ hoặc dữ liệu nguồn.',
+    issueHeading: 'Các dòng cần kiểm tra',
+    issueRow: (row, reason) => `Dòng dữ liệu ${row}: ${reason}`,
+    issues: {
+      shape: 'Số cột khác với tiêu đề.',
+      required: 'Thiếu mã ca hoặc hoạt động.',
+      timestamp: 'Không đọc được thời điểm.',
+      start:
+        'Giờ bắt đầu không hợp lệ hoặc sau lúc hoàn thành. Sự kiện được giữ nhưng bỏ giờ bắt đầu này.',
+      lifecycle:
+        'Vòng đời không phải start, complete hoặc completed nên dòng được bỏ qua.',
+    },
+    issueLimit:
+      'Hiển thị tối đa 50 chẩn đoán. Số dòng không tính dòng trống và chú thích.',
+    acknowledge: 'Tôi đã kiểm tra ý nghĩa dữ liệu và các giới hạn nêu trên.',
+    templates: 'Tệp CSV mẫu',
+    templateHint:
+      'Tải ví dụ giả lập nhỏ, thay các dòng bằng dữ liệu của bạn rồi tải lên. Lịch sử Jira cần bản xuất changelog, không phải danh sách issue hiện tại.',
+    canonicalTemplate: 'Mẫu sự kiện Flowculus',
+    jiraTemplate: 'Mẫu lịch sử Jira',
+    error:
+      'Chưa kiểm tra được dữ liệu. Hãy xem lại tiêu đề và ánh xạ, hoặc đóng rồi mở lại tệp để thử tiếp.',
+    errors: {
+      'import-empty-header':
+        'Một số tên cột đang trống. Hãy chọn dòng tiêu đề có tên cột đầy đủ và không trùng nhau.',
+      'import-empty': 'Bảng cần ít nhất ba cột và một dòng sự kiện.',
+      'import-duplicate-header':
+        'Tên cột cần có nội dung và không trùng nhau. Hãy chọn dòng tiêu đề khác hoặc sửa tệp.',
+      'import-snapshot':
+        'Danh sách trạng thái hiện tại chưa dựng được lịch sử. Hãy xuất changelog trước.',
+      'import-mapping':
+        'Mỗi trường ánh xạ phải dùng một cột có thật và không trùng nhau.',
+      'import-invalid-settings': 'Hãy kiểm tra thiết lập ngày, múi giờ và dòng tiêu đề.',
+      'import-invalid-header':
+        'Dòng này chưa dùng được làm tiêu đề. Hãy chọn dòng chứa tên các cột.',
+      'import-too-many-columns':
+        'Tệp vượt quá 256 cột. Hãy giữ lại các cột cần phân tích.',
+      'import-row-limit':
+        'Tệp vượt quá 500.000 dòng sự kiện. Hãy chia nhỏ trước khi nhập.',
+      'import-status-fields':
+        'Lịch sử trạng thái chưa xác định thời gian tác vụ, người thực hiện hay chi phí. Chỉ dùng mã ca, trạng thái và thời điểm thay đổi.',
+      'import-ambiguous-dates': 'Hãy chọn rõ thứ tự ngày dạng số rồi kiểm tra lại.',
+    },
+  },
+
   brandTooltip: 'Flowculus: vẽ luồng, để toán lo phần còn lại',
   nextLanguageName: 'English',
   workspace: 'Không gian làm việc',
@@ -359,7 +453,7 @@ export const VI: WorkspaceCopy = {
   littleLawForecast: 'Dự báo theo Định luật Little từ mô hình',
   liveKpiHint: 'Kết quả trực tiếp, tính lại sau mỗi thay đổi. Nhấn để mở phân tích.',
   mappingActivity: 'Hoạt động',
-  mappingCaseId: 'Mã ca (Case ID)',
+  mappingCaseId: 'Mã ca quy trình',
   mappingChoose: 'Chọn cột',
   mappingConfirm: 'Khai phá nhật ký',
   mappingCost: 'Chi phí',
@@ -367,7 +461,7 @@ export const VI: WorkspaceCopy = {
     `${fileName} · ${format} · ${rows} dòng. Chọn cột xác định ca, hoạt động và thời gian.`,
   mappingIncomplete:
     'Chọn Mã ca, Hoạt động và Thời điểm; mỗi trường phải dùng một cột khác nhau.',
-  mappingLifecycle: 'Vòng đời (start/complete)',
+  mappingLifecycle: 'Vòng đời (bắt đầu/hoàn thành)',
   mappingNone: 'Không có trong nhật ký',
   mappingPreview: 'Các dòng đầu của nhật ký đã tải lên',
   mappingResource: 'Nguồn lực',
@@ -400,10 +494,10 @@ export const VI: WorkspaceCopy = {
   miningFrequency: 'Tần suất',
   miningHandoverDelay: 'Độ trễ bàn giao',
   miningHappyPath: 'Luồng phổ biến',
-  miningDegree: 'Tổng bậc',
+  miningDegree: 'Kết nối trực tiếp',
   miningHappyPathBadge: 'Luồng phổ biến',
   miningHappyPathHint:
-    'Biến thể phổ biến nhất không lặp; là quan sát từ log, không phải quy trình chuẩn đã phê duyệt.',
+    'Luồng không lặp được ghi nhận nhiều nhất trong nhật ký. Cần đối chiếu với quy trình chuẩn để xác định có hợp lệ hay không.',
   miningHidden: (activities, edges) =>
     `Bộ lọc đang ẩn ${activities} hoạt động và ${edges} đường đi.`,
   miningInsights: 'Biến thể và điểm nghẽn',
@@ -418,7 +512,7 @@ export const VI: WorkspaceCopy = {
   miningNetworkHint:
     'Luồng bàn giao giữa người thực hiện trong cùng một ca. Kích thước nút thể hiện số lần bàn giao.',
   miningNoResources:
-    'Chưa có cột người thực hiện. Hãy ánh xạ cột nhân sự khi tải event log.',
+    'Chưa có thông tin người thực hiện. Hãy chọn cột nhân sự khi nhập nhật ký.',
   miningShownResources: (shown, total) =>
     `Đang hiển thị ${shown}/${total} nhân sự trên đồ thị.`,
   miningResource: 'Nhân sự',
@@ -428,29 +522,29 @@ export const VI: WorkspaceCopy = {
   miningBetweenness: 'Cầu nối',
   miningCloseness: 'Tiếp cận',
   miningEigenvector: 'Ảnh hưởng',
-  miningPageRank: 'PageRank',
+  miningPageRank: 'Bàn giao đến',
   miningAlpha: 'Alpha / Petri',
   miningAlphaHint:
-    'Các place Petri ứng viên suy ra từ thứ tự hoạt động trong log; đây chưa phải quy trình chuẩn.',
+    'Các vị trí trong mạng Petri được suy ra từ thứ tự hoạt động đã ghi nhận. Đây là cấu trúc đề xuất để tìm hiểu dữ liệu thực tế.',
   miningAlphaLimit:
-    'Alpha Miner cổ điển hiện giới hạn 16 hoạt động. Hãy lọc log nhỏ hơn để xem kết quả đáng tin cậy.',
+    'Phương pháp Alpha Miner hiện hỗ trợ tối đa 16 hoạt động. Hãy chia nhật ký thành một phạm vi quy trình nhỏ hơn để tiếp tục.',
   miningAlphaLoops:
-    'Không replay token: Alpha Miner cổ điển không biểu diễn đúng vòng lặp một hoặc hai bước.',
+    'Chưa kiểm tra được trình tự bằng dấu trạng thái vì Alpha Miner cổ điển không biểu diễn đầy đủ vòng lặp một hoặc hai bước.',
   miningAlphaCausal: 'Cặp nhân quả',
-  miningAlphaParallel: 'Cặp song song',
-  miningPetriPlaces: 'Place Petri ứng viên',
-  miningAlphaReplay: 'Ca replay được',
+  miningAlphaParallel: 'Cặp xuất hiện hai thứ tự',
+  miningPetriPlaces: 'Vị trí Petri được đề xuất',
+  miningAlphaReplay: 'Ca đi hết mạng đề xuất',
   miningAlphaReplayHint:
-    'Replay nội bộ với mô hình khám phá từ chính log này; không phải kiểm định tuân thủ với quy trình đã phê duyệt.',
-  miningAlphaExamples: 'Ca không replay được',
+    'Kiểm tra các ca trên mô hình vừa khai phá để xem mô hình có biểu diễn được dữ liệu hay không. Muốn kiểm tra tuân thủ, hãy dùng quy trình BPMN chuẩn độc lập.',
+  miningAlphaExamples: 'Ca chưa đi hết mạng đề xuất',
   miningConformance: 'Đối chiếu BPMN',
   miningConformanceCheck: 'Kiểm tra với BPMN hiện có',
   miningConformanceHint:
-    'So event log với BPMN hiện có bằng replay token (cần mô hình chuẩn đã xác nhận và tên hoạt động khớp). Sai thứ tự có thể là nhảy bước, lặp hoặc đi sai nhánh; bước kế tiếp hợp lệ chỉ là gợi ý để kiểm tra, chưa khẳng định chính xác bước bị bỏ. Chỉ chấm điểm cấu trúc XOR/AND được hỗ trợ.',
+    'So sánh nhật ký sự kiện với BPMN hiện có bằng cách lần theo dấu trạng thái. Cần mô hình chuẩn đã xác nhận và tên hoạt động khớp. Sai thứ tự có thể là nhảy bước, lặp hoặc rẽ nhánh khác; bước tiếp theo được đề xuất chỉ là gợi ý kiểm tra, chưa khẳng định bước nào bị bỏ. Chỉ các cấu trúc XOR và AND được hỗ trợ mới có điểm số.',
   miningConformanceUnmatched:
     'Không có tên hoạt động nào trong log khớp BPMN hiện có. Hãy đồng bộ tên hoặc mở mô hình chuẩn phù hợp.',
   miningConformanceUnsupported:
-    'Bộ kiểm định chưa replay an toàn cấu trúc BPMN này. Không hiển thị điểm tuân thủ.',
+    'Chưa thể lần theo an toàn cấu trúc BPMN này. Hệ thống không hiển thị điểm tuân thủ.',
   miningConformanceLoading: 'Đang đối chiếu các ca với BPMN hiện có…',
   miningConformanceCases: 'Ca đi đúng mô hình',
   miningConformanceOmitted: (count) => `${count} ca nằm ngoài giới hạn kiểm định.`,
@@ -487,18 +581,17 @@ export const VI: WorkspaceCopy = {
     'Đặt tên quy trình rồi mở bản đồ đã lọc trong tab mới. Cần rà soát ngữ nghĩa suy luận trước khi lưu tệp hoặc xuất.',
   miningCreateTitle: 'Đặt tên quy trình',
   miningCreateHint:
-    'Tên log dùng để nhận diện nguồn dữ liệu. Bạn tự đặt tên quy trình cho tab, tệp xuất và báo cáo. Các tab hiện có vẫn được giữ lại.',
+    'Tên nhật ký dùng để nhận diện nguồn dữ liệu. Bạn tự đặt tên quy trình cho tab, tệp xuất và báo cáo. Các tab hiện có vẫn được giữ lại.',
   miningCreateAction: 'Tạo quy trình',
   miningCreateBusy: 'Đang tạo quy trình…',
   miningCreateStale:
-    'Log hoặc bộ lọc đã thay đổi, hoặc đang khai phá. Hãy hủy, đợi bản đồ hiện tại tải xong rồi thử lại.',
-  miningCreateFailed: 'Chưa tạo được quy trình. Hãy hủy và nạp lại log rồi thử lại.',
+    'Nhật ký hoặc bộ lọc đã thay đổi, hoặc đang phân tích. Hãy hủy, đợi bản đồ hiện tại tải xong rồi thử lại.',
+  miningCreateFailed: 'Chưa tạo được quy trình. Hãy hủy và nạp lại nhật ký rồi thử lại.',
   miningServiceTime: 'Thời gian xử lý',
   miningSkipped: (rows, timestamps, startTimes) =>
-    `Đã bỏ qua ${rows} dòng thiếu mã ca/hoạt động và ${timestamps} dòng có thời điểm hoàn thành không đọc được; ${startTimes} thời điểm bắt đầu sai hoặc muộn hơn lúc hoàn thành không được dùng để tính thời gian chờ/xử lý.`,
+    `Bỏ qua ${rows} dòng không dùng được và ${timestamps} thời điểm hoàn thành không đọc được. Có ${startTimes} giờ bắt đầu không hợp lệ nên không được dùng để tính thời gian.`,
   miningSource: 'Nhật ký sự kiện',
-  miningSourceHint:
-    'Bắt đầu từ nhật ký mẫu hoặc tải lên dữ liệu xuất từ ERP, CRM, Service Desk.',
+  miningSourceHint: 'Mở nhật ký mẫu hoặc tải tệp lịch sử công việc của bạn để phân tích.',
   miningStart: 'Bắt đầu',
   miningSteps: 'bước',
   miningSummary: 'Tóm tắt nhật ký sự kiện',

@@ -13,6 +13,8 @@ import { AlphaPetriPanel } from '@/components/mining/AlphaPetriPanel';
 import { ReferenceConformancePanel } from './ReferenceConformancePanel';
 import type { ProcessModel } from '@flowculus/process-model';
 import type { ConformanceOptions } from '@flowculus/process-mining';
+import { MiningResourceFindings } from './MiningResourceFindings';
+import { getMiningReportCopy } from '@/lib/i18n/mining-report-copy';
 import { ResourceCentralityTable } from '@/components/mining/ResourceCentralityTable';
 import { VariantExplorer } from '@/components/mining/VariantExplorer';
 import { cn } from '@/lib/cn';
@@ -41,6 +43,7 @@ export function MiningInsightsPanel({
   const locale = usePreferencesStore((state) => state.locale);
   const copy = getWorkspaceCopy(locale);
   const conclusionsCopy = getMiningConclusionsCopy(locale);
+  const reportCopy = getMiningReportCopy(locale);
   const status = useMiningStore((state) => state.status);
   const discovery = useMiningStore((state) => state.result?.discovery);
   const socialNetwork = useMiningStore((state) => state.result?.socialNetwork);
@@ -71,7 +74,7 @@ export function MiningInsightsPanel({
   };
 
   return (
-    <aside className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)] lg:w-[var(--mining-insights-width,340px)] lg:overflow-y-auto lg:border-t-0 scrollbar-thin">
+    <aside className="shrink-0 border-t border-[var(--border)] bg-[var(--surface)] lg:w-[var(--mining-insights-width,460px)] lg:overflow-y-auto lg:border-t-0 scrollbar-thin">
       <div
         ref={tabListRef}
         role="tablist"
@@ -120,7 +123,7 @@ export function MiningInsightsPanel({
         id={`mining-tab-${tab}`}
         role="tabpanel"
         aria-labelledby={`mining-tab-button-${tab}`}
-        className="p-3"
+        className="mining-report p-4"
       >
         {discovery && evidence ? (
           tab === 'conclusions' ? (
@@ -140,13 +143,27 @@ export function MiningInsightsPanel({
                   ? ` ${copy.miningNoStartTimes}`
                   : ''}
               </p>
+              <p className="mining-report-status mb-3">{reportCopy.bottleneckScope}</p>
               <BottleneckList bottlenecks={discovery.bottlenecks} />
               <StandardsPanel request={request} />
             </>
           ) : tab === 'resources' && socialNetwork ? (
-            <ResourceCentralityTable network={socialNetwork} />
+            <div className="space-y-5">
+              <ResourceCentralityTable network={socialNetwork} />
+              <MiningResourceFindings network={socialNetwork} locale={locale} />
+            </div>
           ) : tab === 'alpha' && alpha ? (
             <div className="space-y-5">
+              <section className="mining-report-card">
+                <h3>{reportCopy.alphaWhat}</h3>
+                <p>{reportCopy.alphaMeaning}</p>
+                <div className="mining-report-callout">
+                  <p>
+                    <strong>{reportCopy.meaning}: </strong>
+                    {reportCopy.alphaNext}
+                  </p>
+                </div>
+              </section>
               <AlphaPetriPanel result={alpha} />
               <FootprintTable footprint={evidence?.footprint ?? null} />
               {evidence?.petri?.status === 'ready' ? (

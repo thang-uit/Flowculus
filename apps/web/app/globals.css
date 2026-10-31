@@ -3,6 +3,7 @@
 @import './styles/formula.css';
 @import './styles/process-canvas.css';
 @import './styles/mining-map.css';
+@import './styles/mining-report.css';
 @import './styles/theme-switch.css';
 @import './styles/form-controls.css';
 @import './styles/ui-primitives.css';
@@ -16,7 +17,7 @@
 }
 
 :root {
-  --app-font: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', Arial, sans-serif;
+  --app-font: 'Plus Jakarta Sans Variable', sans-serif;
   color-scheme: light;
   --canvas: #f3f5f7;
   --surface: #ffffff;

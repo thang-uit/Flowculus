@@ -12,6 +12,8 @@ import { getMiningEvidenceCopy } from '@/lib/i18n/mining-evidence-copy';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { downloadTextFile } from '@/lib/browser-file-actions';
 import { exportFileName } from '@/lib/file-name';
+import { getMiningReportCopy } from '@/lib/i18n/mining-report-copy';
+import { PetriVerificationSummary } from './PetriVerificationSummary';
 import { PetriDiagram } from './PetriDiagram';
 export function PetriNetView({
   net,
@@ -31,8 +33,6 @@ export function PetriNetView({
     const marking = runtime.fire(current.marking, id);
     if (marking) setState({ net, marking, path: [...current.path, id].slice(-100) });
   };
-  const verdict = (value: boolean | null) =>
-    value == null ? copy.unknown : value ? copy.pass : copy.fail;
   return (
     <section className="space-y-3 text-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -50,6 +50,7 @@ export function PetriNetView({
           {copy.pnml}
         </AppButton>
       </div>
+      <p className="mining-report-muted">{getMiningReportCopy(locale).petriLegend}</p>
       <PetriDiagram net={net} marking={current.marking} />
       <div className="flex flex-wrap gap-2">
         <AppButton
@@ -85,30 +86,7 @@ export function PetriNetView({
         </dl>
       </details>
       {verification ? (
-        <div className="space-y-2 border-t border-[var(--border)] pt-3">
-          <h3 className="font-semibold">{copy.verification}</h3>
-          <p>{verification.status === 'complete' ? copy.complete : copy.limit}</p>
-          <p>
-            {copy.states}: {verification.states}
-          </p>
-          <p>
-            {copy.safe}: {verdict(verification.safe)}
-          </p>
-          <p>
-            {copy.sound}: {verdict(verification.sound)}
-          </p>
-          {verification.deadlocks.length ? (
-            <p>
-              {copy.deadlock}: {verification.deadlocks.length}
-            </p>
-          ) : null}
-          {verification.counterexample ? (
-            <details>
-              <summary>{copy.path}</summary>
-              <p className="break-words">{verification.counterexample.join(' → ')}</p>
-            </details>
-          ) : null}
-        </div>
+        <PetriVerificationSummary verification={verification} locale={locale} />
       ) : null}
     </section>
   );

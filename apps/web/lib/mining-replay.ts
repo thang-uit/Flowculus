@@ -1,4 +1,8 @@
-import type { DiscoveryFilter, TimePolicy } from '@flowculus/process-mining';
+import {
+  DEFAULT_EVENT_IMPORT_SETTINGS,
+  type DiscoveryFilter,
+  type TimePolicy,
+} from '@flowculus/process-mining';
 import type {
   MiningDiscoveryResponse,
   MiningRequest,
@@ -27,11 +31,13 @@ export async function replayMiningLog(
       type: 'inspect-file',
       fileName: replay.fileName,
       source: replay.source,
+      settings: replay.settings ?? DEFAULT_EVENT_IMPORT_SETTINGS,
     });
     if (!isCurrent()) return null;
     response = await request({
       type: 'apply-mapping',
       mapping: replay.mapping,
+      settings: replay.settings,
       name: replay.fileName.replace(/\.(csv|tsv|json|xes|xml|txt|xlsx)$/i, ''),
       filter,
       timePolicy,

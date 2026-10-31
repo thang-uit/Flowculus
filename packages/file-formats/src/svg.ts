@@ -69,7 +69,7 @@ const PALETTES: Record<'light' | 'dark', SvgPalette> = {
   },
 };
 
-const FONT = "'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', Arial, sans-serif";
+const FONT = "'Plus Jakarta Sans Variable', sans-serif";
 
 const escapeText = (value: string): string =>
   value

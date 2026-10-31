@@ -70,6 +70,20 @@ describe('event-log file lifecycle', () => {
     });
     expect(FakeWorker.instances).toHaveLength(0);
   });
+  it('normalizes spreadsheet parser failures for localized UI messages', async () => {
+    const pending = readEventLogFile(xlsx());
+    const failure = expect(pending).rejects.toMatchObject({
+      message: 'xlsx-invalid',
+      cause: "Doesn't look like an .xlsx file",
+    });
+    await Promise.resolve();
+    FakeWorker.instances[0].onmessage?.({
+      data: { ok: false, error: "Doesn't look like an .xlsx file" },
+    });
+    await failure;
+    expect(FakeWorker.instances[0].terminated).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it('discards a text file that finishes reading after cancellation', async () => {
     let finish: (value: string) => void = () => undefined;
     const controller = new AbortController();

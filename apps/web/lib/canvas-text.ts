@@ -4,8 +4,7 @@ export interface ReportLine {
   weight?: string;
 }
 
-export const REPORT_FONT =
-  '"Plus Jakarta Sans Variable", "Plus Jakarta Sans", Arial, sans-serif';
+export const REPORT_FONT = '"Plus Jakarta Sans Variable", sans-serif';
 
 export const wrapText = (
   context: CanvasRenderingContext2D,

@@ -3,6 +3,7 @@ import {
   DEFAULT_WORK_CALENDAR,
   ELAPSED_TIME_POLICY,
   type ColumnMapping,
+  type EventImportSettings,
   type DiscoveryFilter,
   type MiningConversionWarning,
   type MiningPresetId,
@@ -18,7 +19,13 @@ export type MiningStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type DfgEdgeMetric = 'frequency' | 'duration';
 export type MiningReplay =
   | { kind: 'preset'; presetId: MiningPresetId }
-  | { kind: 'file'; fileName: string; source: string; mapping: ColumnMapping };
+  | {
+      kind: 'file';
+      fileName: string;
+      source: string;
+      mapping: ColumnMapping;
+      settings?: EventImportSettings;
+    };
 export type MiningInsight =
   'conclusions' | 'variants' | 'bottlenecks' | 'resources' | 'alpha' | 'conformance';
 

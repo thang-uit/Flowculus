@@ -141,18 +141,23 @@ export const parseEventTable = (fileName: string, source: string): EventTable =>
       : format === 'json'
         ? parseJsonTable(source)
         : { ...parseCsvEventTable(source), format };
+  return validateEventTable(table);
+};
+
+export const validateEventTable = (table: EventTable): EventTable => {
+  if (table.headers.length > 256) throw new Error('import-too-many-columns');
   if (table.rows.length > MAX_EVENT_ROWS) {
-    throw new Error(`The event log has more than ${MAX_EVENT_ROWS} events.`);
+    throw new Error('import-row-limit');
   }
   if (table.headers.length < 3 || table.rows.length === 0) {
-    throw new Error('The event log needs at least case, activity and timestamp columns.');
+    throw new Error('import-empty');
   }
   const headers = table.headers.map((header) => header.trim());
+  if (headers.some((header) => !header)) throw new Error('import-empty-header');
   if (
-    headers.some((header) => !header) ||
     new Set(headers.map((header) => header.toLocaleLowerCase())).size !== headers.length
   ) {
-    throw new Error('The event log has empty or duplicate column names.');
+    throw new Error('import-duplicate-header');
   }
   table.headers = headers;
   return table;

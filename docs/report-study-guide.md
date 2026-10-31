@@ -32,6 +32,12 @@ Lịch chung: **thứ 2–thứ 6, 08:00–12:00 và 13:00–17:00, UTC+07:00**.
 8. Kiểm tra Petri từ BPMN: duyệt hoàn tất 20 marking As-Is và 27 marking To-Be; safe/bounded/sound trong phạm vi mô hình. Khi chạm giới hạn, ứng dụng phải trả chưa xác định.
 9. Đổi **Thời gian lịch liên tục** để giải thích khác biệt với giờ làm việc. Timestamp/thứ tự và conformance giữ nguyên; không gán mọi buổi tối/cuối tuần thành lãng phí.
 
+Ảnh giao diện báo cáo mới nhất nằm ở [`docs/images/mining-report.webp`](images/mining-report.webp)
+và bản xem trên màn hình hẹp ở [`docs/images/mining-report-mobile.webp`](images/mining-report-mobile.webp).
+Ảnh được chụp từ bộ As-Is tổng hợp sau khi xác nhận cột và chọn lịch thứ Hai đến thứ Sáu,
+08:00–12:00 và 13:00–17:00, UTC+07:00. Các số hiển thị trong ảnh là 20 ca, 160 sự kiện,
+101,2 giờ chu trình trung bình, hoạt động dài nhất và chặng bàn giao Backend → Mobile.
+
 ## Demo Image Trace
 
 Mở một tab quy trình trống, chọn **Mở tệp → ảnh** rồi tải `00_image_samples/01_as_is_hours.png` hoặc `02_to_be_hours.png`. OpenCV tìm hình, đường nối và nhãn thời lượng dạng số nguyên có hậu tố `h`. Ở bước **Rà lại hình đã nhận dạng**, trường **Thời gian xử lý (giờ)** được điền sẵn khi độ tin cậy vượt ngưỡng. Hãy kiểm tra hoặc sửa số giờ, loại hình và tên trước khi bấm **Tạo bản nháp có thể sửa**. Bản nháp giữ `processingMinutes` theo phút để công thức CT/TCT dùng cùng đơn vị. Việc nhận dạng số là hỗ trợ có kiểm soát, không thay thế bước rà của người dùng.
@@ -89,3 +95,11 @@ pnpm test
 Lệnh export sinh các tệp trên trong `output/demo/report-study/`, được Git bỏ qua. Có thể chọn thư mục khác bằng `pnpm demo:export /absolute/path/to/demo-kit`. Không xuất vào thư mục đang chứa tài liệu khác. Lệnh không sửa bản nháp trong trình duyệt.
 
 Bộ kiểm thử nhỏ riêng được xuất bằng `pnpm demo:export:small-fixture` vào `output/demo/small-fixture/`. Bộ này có 8 ca, dùng để kiểm tra hành vi ứng dụng, không dùng để trình bày số liệu báo cáo.
+
+### Nhập dữ liệu từ các cấu trúc cột khác nhau
+
+- `15_as_is_jira_style_events.csv` giữ mã ca, hoạt động, giờ bắt đầu, giờ hoàn thành và người thực hiện của kịch bản As-Is, nhưng đổi tên cột theo một bản xuất lịch sử công việc có bổ sung dữ liệu kiểu Jira. Đây là dữ liệu giả lập đã chuẩn hóa lịch sử, không phải CSV danh sách issue xuất trực tiếp từ Jira. Chọn chế độ Sự kiện hoạt động. Sau ánh xạ và xác nhận, kết quả phải khớp `10_as_is_events.csv`.
+- `templates/flowculus_event_log_template.csv` là ví dụ nhỏ để thay bằng dữ liệu riêng.
+- `templates/flowculus_jira_history_template.csv` minh họa lịch sử đổi trạng thái. Chọn chế độ Lịch sử trạng thái Jira, dùng Issue key, To status và Change time. Changed by chỉ là người sửa trạng thái. Không dùng log này để khẳng định thời gian xử lý hoặc trách nhiệm nhân sự.
+
+Với mọi tệp, kiểm tra ánh xạ, thứ tự ngày và múi giờ rồi xem thống kê dữ liệu trước khi khai phá. Độ lệch UTC khi nhập không thay thế lịch làm việc. Bản xuất chỉ có trạng thái hiện tại chưa đủ dựng lịch sử.

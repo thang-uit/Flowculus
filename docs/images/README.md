@@ -16,7 +16,22 @@ noted separately.
   blank for manual review. Updated copy explains manual entry and unit conversion.
   The original sample and the editable candidate review are both visible.
 
-## Refreshed on 2026-10-27 and 2026-10-28
+## Refreshed on 2026-10-31
+
+- `mining-report.webp`: Vietnamese light Mining report for the As-Is study log,
+  1440 × 960. The capture shows 20 cases, 160 events, an average working-time
+  cycle of 101.2 hours, the longest recorded handover, source-period overview and
+  the evidence-based conclusions panel. It is a real browser capture of the local production build
+  using synthetic study data.
+- `mining-report-mobile.webp`: the expanded report at 390 × 960 for the README's
+  narrow-screen preview. The report keeps the metric grid, source overview and findings
+  readable without page-level horizontal overflow.
+- `mining-report-en.webp` and `mining-report-en-dark.webp`: English light/dark
+  captures of the same report and viewport for the English README section.
+- `mining-report-en-mobile.webp` and `mining-report-vi-dark.webp`: narrow English
+  and dark Vietnamese captures used by the responsive README previews.
+
+## Refreshed on 2026-10-27, 2026-10-28 and 2026-10-31
 
 - `empty-workspace.webp`: an actual empty new process tab with Pool/Lane tools, Vietnamese light theme, 1440 × 900, recaptured on 2026-10-28. Earlier QA tabs remain visible. The new process has no starter diagram.
 - `knowledge.webp`: Vietnamese light Knowledge index with search, contents and
@@ -28,10 +43,12 @@ noted separately.
   declared quality variants and coverage are visible. These are illustrative
   results, not measured production outcomes or independent PM4Py validation.
 - `../../apps/web/public/demo/workspace.webp` and `workspace-dark.webp`: the
-  explicitly imported generic request-handling model with direct Pool/Lane palette tools and scenario controls, English light/dark, 1440 × 900. Recaptured on 2026-10-28 using three lanes, CT 60 minutes, TCT 45 minutes and CTE 75%. Refreshed after the connected-file workflow update.
+  explicitly imported synthetic request-handling model with direct Pool/Lane
+  palette tools and scenario controls, English light/dark, 1440 × 900. Recaptured
+  on 2026-10-31 with three lanes, CT 60 minutes, TCT 45 minutes and CTE 75%.
 - `../../apps/web/public/demo/workspace-vi.webp` and `workspace-vi-dark.webp`:
-  equivalent Vietnamese light/dark views with labels translated in the synthetic
-  input. The About page selects the locale/theme image; user labels are never
+  equivalent Vietnamese light/dark captures from the same model and viewport.
+  The About page selects the locale/theme image; user labels are never
   automatically translated.
 
 ## Earlier captures retained

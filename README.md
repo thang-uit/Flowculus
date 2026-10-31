@@ -86,6 +86,14 @@ light/dark themes and keyboard interaction.
 
 _Actual browser capture with synthetic illustrative data. Fresh workspaces start empty._
 
+<picture>
+  <source media="(max-width: 640px)" srcset="docs/images/mining-report-en-mobile.webp" />
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/mining-report-en-dark.webp" />
+  <img src="docs/images/mining-report-en.webp" alt="Flowculus Mining report with evidence-based conclusions from the As-Is event log" />
+</picture>
+
+_Mining report capture from the As-Is study log: 20 cases, 160 events and 101.2 working hours mean cycle time. The values are synthetic study data._
+
 <a id="en-setup"></a>
 
 ### Local development
@@ -157,6 +165,25 @@ packages/
 docs/                  Architecture, decisions and maintainer documentation
 scripts/               Synthetic demo exports and scoped cache cleanup
 ```
+
+Mining imports separate layout inspection, column mapping and a worker-owned review before analysis. `packages/process-mining/src/event-import-*` owns validation and normalization. The dialog composes focused settings, preview and review components. Source interpretation (header, date order, UTC offset and event/status mode) persists per log. Runtime-generated CSV templates use synthetic examples. Jira changelogs never infer performers from editors or task durations from status changes. XLSX continues to read its first worksheet.
+
+Mining result presentation is separated from worker evidence. Focused report components
+render summary metrics, observed routes, personnel tables and findings with an
+observation, interpretation and recommended action. Conformance summaries and missing-step
+examples are shared between the report and BPMN comparison. Calculation details use
+progressive disclosure. The report checks the selected model and mapping before showing
+reference evidence. Localized copy lives in `lib/i18n/mining-report-copy.ts`, with scoped
+styles and reading rules documented in [Mining results](docs/surfaces/mining-results.md).
+Mining can export the same evidence as a readable HTML report or browser print/PDF preview.
+The export includes the source name, observed period, clock, quality counts, routes,
+findings, personnel interpretation and current BPMN comparison. Technical JSON remains
+available for machine-readable review.
+
+The interface uses one locally hosted variable font family, Plus Jakarta Sans. Portable
+Mining reports embed the same font and open without a remote font service. HTML report
+content is bounded to 500 KB before font embedding, with up to 10 routes and 100 steps
+per route. Imported names are escaped as text.
 
 Domain packages are pure TypeScript. They do not depend on React/DOM or import
 from `apps/web`. The engine owns calculations. UI and exporters render its results
@@ -366,6 +393,14 @@ hình tham chiếu. Giao diện hỗ trợ tiếng Việt, tiếng Anh, sáng/t�
 
 _Ảnh chụp ứng dụng với dữ liệu minh họa tổng hợp. Workspace mới bắt đầu trống._
 
+<picture>
+  <source media="(max-width: 640px)" srcset="docs/images/mining-report-mobile.webp" />
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/mining-report-vi-dark.webp" />
+  <img src="docs/images/mining-report.webp" alt="Báo cáo Khai phá Flowculus với kết luận dựa trên nhật ký As-Is" />
+</picture>
+
+_Ảnh chụp báo cáo từ nhật ký As-Is: 20 ca, 160 sự kiện và thời gian chu trình trung bình 101,2 giờ làm việc. Đây là dữ liệu tổng hợp dùng cho bộ demo._
+
 <a id="vi-setup"></a>
 
 ### Chạy dự án
@@ -408,6 +443,25 @@ flowchart LR
   ADAPTERS --> MODEL
   MODEL --> STORAGE["Bản nháp cục bộ"]
 ```
+
+Luồng nhập Mining tách kiểm tra bố cục, ánh xạ cột và rà dữ liệu trong worker trước khi phân tích. Các module `event-import-*` trong `process-mining` xử lý kiểm tra và chuẩn hóa. Mỗi log lưu dòng tiêu đề, thứ tự ngày, độ lệch UTC và chế độ sự kiện/trạng thái. Bản nháp cũ giữ cách diễn giải trước đó. CSV mẫu được tạo khi tải xuống từ dữ liệu giả lập. Changelog Jira không suy người thực hiện từ người sửa trạng thái hay thời gian tác vụ từ lần đổi trạng thái. XLSX tiếp tục đọc trang tính đầu.
+
+Giao diện báo cáo khai phá tách riêng khỏi kết quả tính trong tiến trình nền. Các
+component chuyên trách hiển thị số liệu nổi bật, luồng quan sát, bảng nhân sự và nhận xét
+theo ba phần: số liệu, ý nghĩa và việc nên cải tiến. Báo cáo và Đối chiếu BPMN dùng chung
+phần kết quả đối chiếu cùng ví dụ về bước chưa được ghi nhận. Chi tiết cách tính nằm
+trong các mục mở rộng. Kết quả tham chiếu chỉ được hiển thị khi mô hình và cách ghép
+hoạt động vẫn khớp lựa chọn hiện tại. Nội dung ngôn ngữ nằm trong
+`lib/i18n/mining-report-copy.ts`, quy tắc trình bày tại
+[báo cáo khai phá](docs/surfaces/mining-results.md).
+Có thể tải báo cáo HTML dễ đọc hoặc mở bản in để lưu PDF với cùng nguồn bằng chứng. Báo cáo
+ghi tên nhật ký, kỳ dữ liệu, lịch đo, chất lượng nhập, các luồng, nhận xét, diễn giải mạng
+nhân sự và kết quả đối chiếu BPMN hiện hành. JSON kỹ thuật vẫn được giữ riêng để đối soát.
+
+Giao diện dùng một họ font biến thiên được lưu cùng ứng dụng là Plus Jakarta Sans.
+Báo cáo Mining nhúng cùng font này để mở độc lập, không gọi dịch vụ font bên ngoài.
+Nội dung HTML được giới hạn 500 KB trước khi nhúng font, tối đa 10 luồng và 100 bước
+mỗi luồng. Tên nhập từ tệp được mã hóa an toàn dưới dạng văn bản.
 
 Tab BPMN và tab nhật ký có trạng thái, lưu trữ và vòng đời riêng. Mỗi log giữ nguồn,
 mapping, lịch, bộ lọc và kết quả riêng. Chuyển tab dựng lại phiên worker từ nguồn

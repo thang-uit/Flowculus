@@ -2,6 +2,100 @@ import { QUALITY_COPY_EN, RESILIENCE_COPY_EN, SEMANTIC_COPY_EN } from './feature
 import type { WorkspaceCopy } from './types';
 
 export const EN: WorkspaceCopy = {
+  miningImport: {
+    statusActivity: 'Destination status',
+    statusTimestamp: 'Status change time',
+    mode: 'Data meaning',
+    modes: {
+      events: 'Activity events',
+      'jira-status': 'Jira status history',
+      snapshot: 'Current issue snapshot',
+    },
+    modeHints: {
+      events:
+        'Each row records an activity occurrence. Start times or start/complete lifecycle pairs enable processing-time measurement.',
+      'jira-status':
+        'Each row records entry into a status, not completion of a task. Time gaps measure intervals between changes, not proven waiting or processing time. Changed by identifies the editor, so no performer or cost is inferred. A standard Jira issue export does not contain this history.',
+      snapshot:
+        'A list of current statuses is not an event history. Export the changelog or provide activity events with case IDs and timestamps before mining.',
+    },
+    caseHint:
+      'One case must identify one process execution. For Jira, choose Issue key for one issue or Parent key only when its child issues belong to the same execution.',
+    dateOrder: 'Numeric date order',
+    dateOrders: {
+      auto: 'Detect from data',
+      'day-first': 'Day / month / year',
+      'month-first': 'Month / day / year',
+    },
+    timezone: 'Unzoned timestamps',
+    timezoneHint:
+      'Choose the source UTC offset. Explicit offsets and epoch timestamps stay unchanged. This setting does not define working hours.',
+    header: 'Header record',
+    headerOption: (row, label) => `Record ${row}: ${label}`,
+    firstSheet:
+      'XLSX uses the first worksheet. Header records exclude empty rows and comments.',
+    review: 'Review import',
+    reviewing: 'Checking data…',
+    reviewTitle: 'Import review',
+    edit: 'Edit mapping',
+    accepted: (events, cases) =>
+      `${events} accepted ${events === 1 ? 'event' : 'events'} across ${cases} ${cases === 1 ? 'case' : 'cases'}.`,
+    rejected: (count) =>
+      `${count} rows omitted because required data, row shape, timestamps or lifecycle states cannot be used.`,
+    duplicates: (count) =>
+      `${count} duplicate rows detected. They are retained because identical records can be separate occurrences. Remove unintended duplicates in the source file.`,
+    starts: (count) =>
+      `${count} events lack a valid start time. Their processing time cannot be measured. A transition to one of these events uses completion-to-completion time.`,
+    unpaired: (count) =>
+      `${count} lifecycle starts have no matching completion and will not become events.`,
+    coverage: (resources, costs, total) =>
+      `Named performer: ${resources}/${total} events. Cost value: ${costs}/${total} events.`,
+    ambiguous:
+      'These numeric dates are ambiguous or use conflicting orders. Choose day/month or month/day explicitly, then review again.',
+    noEvents: 'No usable events. Edit the mapping or correct the source file.',
+    issueHeading: 'Records to check',
+    issueRow: (row, reason) => `Data record ${row}: ${reason}`,
+    issues: {
+      shape: 'Column count differs from the header.',
+      required: 'Case ID or activity is empty.',
+      timestamp: 'Timestamp is unreadable.',
+      start:
+        'Start time is invalid or after completion. The event is kept without this start.',
+      lifecycle: 'Lifecycle is not start, complete or completed. The row is omitted.',
+    },
+    issueLimit:
+      'At most 50 diagnostics are shown. Record numbers exclude empty rows and comments.',
+    acknowledge: 'I have checked the data meaning and the limitations above.',
+    templates: 'CSV templates',
+    templateHint:
+      'Download a small synthetic example, replace its rows with your data, then upload it. Jira history requires a changelog export, not a current-issues list.',
+    canonicalTemplate: 'Flowculus event template',
+    jiraTemplate: 'Jira history template',
+    error:
+      'Could not review this data. Check the header and mapping, or close and reopen the file to retry.',
+    errors: {
+      'import-empty-header':
+        'Some column names are empty. Choose the header record containing distinct names.',
+      'import-empty': 'The table needs at least three columns and one event row.',
+      'import-duplicate-header':
+        'Column names must be nonempty and distinct. Choose another header or correct the file.',
+      'import-snapshot':
+        'A current snapshot cannot reconstruct event history. Export a changelog first.',
+      'import-mapping': 'Choose distinct existing columns for every mapped field.',
+      'import-invalid-settings': 'Check the date, timezone and header settings.',
+      'import-invalid-header':
+        'This record cannot be used as the header. Choose the record containing column names.',
+      'import-too-many-columns':
+        'The file exceeds 256 columns. Keep only the fields needed for analysis.',
+      'import-row-limit':
+        'The file exceeds 500,000 event rows. Split it before importing.',
+      'import-status-fields':
+        'Status history does not establish task intervals, performers or costs. Use only case, status and change time.',
+      'import-ambiguous-dates':
+        'Choose an explicit numeric date order, then review again.',
+    },
+  },
+
   brandTooltip: 'Flowculus: draw the flow, let the math do the sweating',
   nextLanguageName: 'Tiếng Việt',
   workspace: 'Workspace',

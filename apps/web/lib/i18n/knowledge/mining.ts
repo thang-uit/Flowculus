@@ -34,7 +34,7 @@ export const MINING: KnowledgeEntry[] = [
         ],
       },
       vi: {
-        title: 'Chọn lịch đo thời gian Mining',
+        title: 'Chọn cách đo thời gian khi khai phá',
         summary: 'Phân biệt thời gian trôi qua với giờ làm việc trước khi so sánh.',
         keywords: [
           'lịch',
@@ -48,16 +48,16 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Thời gian lịch liên tục gồm cả buổi tối và cuối tuần. Giờ làm việc chỉ tính phần giao với các thứ, ca làm và ngày nghỉ đã cấu hình. Chọn lịch trong bảng nguồn log. Timestamp, thứ tự trace và kết quả conformance giữ nguyên.',
+            text: 'Thời gian lịch liên tục tính cả buổi tối và cuối tuần. Giờ làm việc chỉ tính những khoảng nằm trong ngày và ca làm đã chọn, đồng thời loại trừ ngày nghỉ đã khai báo. Bạn chọn cách đo trong vùng Nhật ký sự kiện. Lựa chọn này không đổi thời điểm gốc, thứ tự hoạt động hay kết quả đối chiếu quy trình.',
           },
           {
             kind: 'example',
             title: 'Từ thứ 6 đến thứ 2',
-            text: 'Với lịch thứ 2–thứ 6, 08:00–12:00 và 13:00–17:00, UTC+07:00, từ thứ 6 lúc 16:00 đến thứ 2 lúc 09:00 là 65 giờ liên tục nhưng chỉ 2 giờ làm việc. Sprint hai tuần có 10 ngày làm việc, 80 giờ danh nghĩa/người; không tự xác định CT tính năng.',
+            text: 'Với lịch thứ Hai đến thứ Sáu, 08:00–12:00 và 13:00–17:00, múi giờ UTC+07:00, từ thứ Sáu lúc 16:00 đến thứ Hai lúc 09:00 là 65 giờ theo lịch nhưng chỉ có 2 giờ làm việc. Một đợt phát triển hai tuần có 10 ngày làm việc, tương đương 80 giờ theo lịch làm việc của mỗi người. Con số đó không có nghĩa mỗi tính năng đều mất 80 giờ để hoàn thành.',
           },
           {
             kind: 'notice',
-            text: 'Lead time, thời lượng xử lý, bàn giao, biến thể và định mức dùng chung lịch đang chọn. Khoảng start/end chưa chứng minh toàn bộ là giờ công. Nhập thời gian mô hình theo cùng cơ sở đo. Lịch dùng UTC cố định, chưa có lịch riêng từng người hay tự đổi giờ mùa; cấu hình được lưu cục bộ cùng bản nháp Mining.',
+            text: 'Thời gian chu trình, thời lượng hoạt động, khoảng bàn giao, các luồng thực hiện và kết quả so định mức đều dùng chung lịch đã chọn. Khoảng từ lúc bắt đầu đến khi kết thúc chưa phải toàn bộ giờ công thao tác. Khi so với mô hình, hãy dùng cùng cách đo thời gian. Lịch hiện dùng độ lệch UTC cố định, chưa có lịch riêng từng nhân sự hay tự đổi giờ theo mùa. Cấu hình được lưu trong trình duyệt cùng từng nhật ký.',
           },
         ],
       },
@@ -124,7 +124,11 @@ export const MINING: KnowledgeEntry[] = [
           { kind: 'heading', text: 'Read the Conclusions tab' },
           {
             kind: 'paragraph',
-            text: 'After discovery, Conclusions explains the accepted case and event counts, the selected clock, frequent routes, long handover intervals and measured activity durations. It also identifies prominent resources in the handover network and explains what their centrality scores measure. These observations use the full accepted log, before graph filters.',
+            text: 'Conclusions begins with four highlights: mean case duration, the longest measured activity, the longest handover interval and a key coordination bridge. The report then shows the frequent route, personnel metrics and findings organised as recorded evidence, meaning and recommended action. Each finding uses names and values from the active log. Open full report provides a wider reading view. Observations use all accepted events before graph filters.',
+          },
+          {
+            kind: 'notice',
+            text: 'Export readable report creates an HTML report with the source name, observed period, selected clock, data-quality counts, routes, findings, personnel interpretation and BPMN comparison when a current reference exists. Print / save as PDF opens the same report in the browser print preview. Technical JSON remains available for reproducible machine-readable evidence.',
           },
           {
             kind: 'example',
@@ -138,17 +142,21 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'paragraph',
-            text: 'Each selected mapping uses a different column. The parser reports skipped required data, unreadable completion timestamps and invalid start times. Lifecycle start/complete events are paired by case and activity. Ties in timestamps use stable file order.',
+            text: 'Download a Flowculus event template or a Jira history template from CSV templates in Mining. Confirm the header record, column mapping, numeric date order and UTC offset, then choose Review import. Check accepted events, rejected records, duplicates and missing starts before confirming. Duplicate rows are kept. Lifecycle start/complete rows are paired by case and activity in time order, with stable source order for ties.',
+          },
+          {
+            kind: 'paragraph',
+            text: 'For Jira status history, map Issue key (or an intentional Parent key), To status and Change time. This reconstructs status changes, not task completions. Changed by is the status editor, not necessarily the performer. Processing time and personnel conclusions are withheld. Current-issue snapshots cannot reconstruct history.',
           },
           {
             kind: 'notice',
-            text: 'XLSX reads the first worksheet, up to 10 MB; other log files are capped at 50 MB, and logs at 500,000 rows. Prefer ISO timestamps with a zone; naive supported formats use UTC. Ambiguous numeric dates default to day-first unless the data proves month-first.',
+            text: 'XLSX reads the first worksheet, up to 10 MB. Other log files are capped at 50 MB and 500,000 records. Prefer ISO timestamps with an offset. For unzoned timestamps choose the source UTC offset, which is separate from the work calendar. Ambiguous numeric dates block confirmation until an explicit day/month order is selected.',
           },
         ],
       },
       vi: {
         title: 'Chuẩn bị nhật ký sự kiện',
-        summary: 'Mã ca, hoạt động và thời gian: dữ liệu tối thiểu để dựng trace.',
+        summary: 'Mã ca, tên hoạt động và thời điểm giúp dựng lại trình tự thực hiện.',
         keywords: [
           'CSV',
           'TSV',
@@ -169,14 +177,14 @@ export const MINING: KnowledgeEntry[] = [
                 'activity',
                 'Tên hoạt động quan sát được. Cần khớp nhãn BPMN khi đối chiếu.',
               ],
-              ['timestamp', 'Thời điểm hoàn thành; bắt buộc để sắp thứ tự.'],
+              ['timestamp', 'Thời điểm hoàn thành hoạt động, dùng để sắp xếp thứ tự.'],
               [
                 'startTimestamp',
                 'Thời điểm bắt đầu tùy chọn, phân biệt xử lý với độ trễ bàn giao.',
               ],
               [
                 'resource / lifecycle / cost',
-                'Người thực hiện, vòng đời start/complete và chi phí dạng số, đều tùy chọn.',
+                'Các cột tùy chọn cho người thực hiện, trạng thái bắt đầu hoặc hoàn thành và chi phí dạng số.',
               ],
             ],
           },
@@ -197,12 +205,16 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Đóng hoặc xóa nhật ký đều có xác nhận và chỉ xóa tab Khai phá đó. Tệp gốc và tài liệu BPMN vẫn được giữ. Có thể mở tối đa 10 nhật ký trong tổng giới hạn 30 triệu ký tự nguồn. Dữ liệu nguồn, ánh xạ cột và cấu hình riêng được lưu cục bộ. Tải lại trang khôi phục các tab và tính lại nhật ký đang chọn bằng một worker. Bằng chứng đối chiếu cần chạy lại sau reload. Xóa dữ liệu website sẽ xóa các phiên này, vì vậy hãy giữ tệp nguồn.',
+            text: 'Đóng hoặc xóa nhật ký đều có bước xác nhận và chỉ bỏ tab Khai phá đó. Tệp trên thiết bị và tài liệu BPMN không bị xóa. Có thể mở tối đa 10 nhật ký với tổng 30 triệu ký tự dữ liệu nguồn. Trình duyệt lưu dữ liệu, cách ghép cột và cấu hình riêng của từng nhật ký. Khi tải lại trang, các tab được khôi phục và nhật ký đang chọn được tính lại trong một tiến trình xử lý nền. Kết quả đối chiếu cần chạy lại. Hãy giữ tệp nguồn vì việc xóa dữ liệu trang web cũng xóa bản lưu trong trình duyệt.',
           },
           { kind: 'heading', text: 'Đọc tab Kết luận' },
           {
             kind: 'paragraph',
-            text: 'Sau khi khai phá, tab Kết luận giải thích số ca và sự kiện hợp lệ, lịch đo đang dùng, luồng phổ biến, các khoảng bàn giao dài và thời lượng hoạt động đo được. Phần nhân sự chỉ ra những người có vị trí đáng chú ý trong mạng bàn giao và giải thích ý nghĩa của các độ đo trung tâm. Nhận xét dựa trên toàn bộ nhật ký hợp lệ, trước khi lọc đồ thị.',
+            text: 'Tab Kết luận mở đầu bằng bốn kết quả nổi bật: thời gian chu trình trung bình, hoạt động kéo dài nhất, chặng bàn giao lâu nhất và nhân sự có vai trò cầu nối. Bên dưới là luồng công việc phổ biến, bảng chỉ số nhân sự và các thẻ nhận xét theo thứ tự Số liệu ghi nhận, Ý nghĩa, Đề xuất cải tiến. Mỗi nhận xét dùng tên và số liệu của nhật ký đang mở. Bạn có thể chọn Mở rộng báo cáo để đọc hoặc trình bày trên vùng rộng hơn. Các kết quả dựa trên toàn bộ sự kiện hợp lệ, trước khi lọc đồ thị.',
+          },
+          {
+            kind: 'notice',
+            text: 'Tải báo cáo dễ đọc tạo tệp HTML có tên nguồn, kỳ dữ liệu, cơ sở đo thời gian, chất lượng dữ liệu, các luồng, nhận xét, diễn giải mạng nhân sự và kết quả đối chiếu BPMN nếu đang có mô hình chuẩn hợp lệ. In / lưu báo cáo PDF mở cùng nội dung trong bản xem trước của trình duyệt. JSON kỹ thuật vẫn có để đối soát bằng máy.',
           },
           {
             kind: 'example',
@@ -216,11 +228,15 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'paragraph',
-            text: 'Mỗi trường ánh xạ phải dùng cột riêng. Parser thống kê dòng thiếu dữ liệu bắt buộc, thời điểm hoàn thành không đọc được và giờ bắt đầu không hợp lệ. Lifecycle start/complete được ghép theo mã ca và hoạt động. Trùng thời gian thì giữ thứ tự ổn định trong tệp.',
+            text: 'Tại Tệp CSV mẫu trong Khai phá, tải mẫu sự kiện Flowculus hoặc mẫu lịch sử Jira rồi thay các dòng bằng dữ liệu của bạn. Chọn dòng tiêu đề, ghép các cột, xác định thứ tự ngày và độ lệch UTC rồi chọn Kiểm tra trước khi nhập. Xem số sự kiện dùng được, dòng bị bỏ, dòng trùng và giờ bắt đầu còn thiếu trước khi xác nhận. Dòng trùng không tự bị xóa. Nếu dữ liệu tách riêng dòng bắt đầu và hoàn thành, hai dòng có giá trị start và complete được ghép theo mã ca, tên hoạt động và thứ tự thời gian. Khi trùng thời điểm, thứ tự nguồn được giữ nguyên.',
+          },
+          {
+            kind: 'paragraph',
+            text: 'Với lịch sử trạng thái Jira, chọn Issue key làm mã ca nếu mỗi công việc là một ca. Chỉ chọn Parent key khi các công việc con thực sự thuộc cùng một lần chạy quy trình. To status là trạng thái mới, Change time là thời điểm đổi trạng thái. Dữ liệu này dựng lại việc chuyển trạng thái, chưa cho biết tác vụ được hoàn thành lúc nào. Changed by chỉ là người sửa trạng thái nên không tự được xem là người thực hiện. Bản xuất danh sách công việc với trạng thái hiện tại chưa đủ dựng lại lịch sử.',
           },
           {
             kind: 'notice',
-            text: 'XLSX đọc trang tính đầu, tối đa 10 MB; log khác tối đa 50 MB và 500.000 dòng. Nên dùng ISO có múi giờ; định dạng được hỗ trợ không ghi múi giờ dùng UTC. Ngày số mơ hồ mặc định ngày trước, trừ khi dữ liệu xác định tháng trước.',
+            text: 'Tệp XLSX được đọc từ trang tính đầu tiên và có giới hạn 10 MB. Các loại nhật ký khác có giới hạn 50 MB, tối đa 500.000 dòng. Nên dùng thời điểm theo chuẩn ISO có kèm múi giờ. Nếu dữ liệu chưa ghi múi giờ, hãy chọn độ lệch UTC của nguồn. Thiết lập này độc lập với lịch làm việc. Khi ngày dạng số có thể hiểu theo nhiều cách, cần chọn rõ ngày trước hay tháng trước trước khi xác nhận.',
           },
         ],
       },
@@ -265,7 +281,7 @@ export const MINING: KnowledgeEntry[] = [
       },
       vi: {
         title: 'Đồ thị luồng trực tiếp và biến thể',
-        summary: 'Quan sát tuyến phổ biến, lặp và ảnh hưởng của bộ lọc.',
+        summary: 'Xem các luồng thường gặp, bước lặp lại và ảnh hưởng của bộ lọc.',
         keywords: ['DFG', 'happy path', 'trace', 'tần suất', 'projection'],
         blocks: [
           {
@@ -274,24 +290,25 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Tần suất quan sát',
             expression:
               'f(A→B) = số cặp A,B liên tiếp trong từng ca; tỷ trọng(V) = số ca(V) / tổng số ca',
-            note: 'f(A→B) đếm số lần A rồi đến ngay B trong cùng một ca; nV là số ca thuộc biến thể V, n là tổng số ca. Trace được sắp theo lúc hoàn thành, rồi lúc bắt đầu, rồi thứ tự tệp. Thứ tự đó không tự chứng minh quan hệ nhân quả.',
+            note: 'f(A→B) đếm số lần A được theo ngay bởi B trong cùng một ca. nV là số ca thuộc luồng V, n là tổng số ca. Chuỗi hoạt động được sắp theo lúc hoàn thành, rồi lúc bắt đầu, rồi thứ tự trong tệp. Thứ tự quan sát này chưa chứng minh A là nguyên nhân khiến B xảy ra.',
           },
           {
             kind: 'diagram',
             diagram: 'mining',
-            caption: 'Khám phá hành vi từ log; đối chiếu riêng với mô hình chuẩn.',
+            caption:
+              'Dựng lại cách thực hiện từ nhật ký rồi đối chiếu riêng với quy trình chuẩn.',
           },
           {
             kind: 'paragraph',
-            text: 'Một biến thể gom các ca có cùng chuỗi hoạt động. Huy hiệu Luồng phổ biến đánh dấu biến thể không lặp xuất hiện nhiều nhất, nếu có. Đây là hành vi quan sát từ log; quy trình chuẩn phải được xác định bằng mô hình tham chiếu riêng. Hoạt động lặp có thể do làm lại, vòng lặp nghiệp vụ hoặc ghi log trùng.',
+            text: 'Một biến thể là một thứ tự thực hiện công việc riêng. Các ca có cùng thứ tự được xếp chung vào biến thể đó. Huy hiệu Luồng phổ biến đánh dấu luồng không lặp xuất hiện nhiều nhất, nếu có. Luồng thường gặp chưa chắc là luồng đã được phê duyệt. Một bước xuất hiện lại có thể là làm lại công việc, vòng lặp hợp lệ hoặc dữ liệu bị ghi trùng.',
           },
           {
             kind: 'notice',
-            text: 'Ẩn hoạt động làm phép chiếu trace, có thể tạo cạnh A→C khi B bị ẩn. Cạnh này không chứng minh ca đã bỏ B. Bộ lọc tần suất/thời gian chỉ đổi phần hiển thị. Số liệu tổng quan vẫn dựa trên toàn bộ log. File kết quả Mining ghi cả bộ lọc và số hoạt động, cạnh bị ẩn để người đọc phân biệt đồ thị đã lọc với quy trình quan sát đầy đủ.',
+            text: 'Khi ẩn bước B trong luồng A → B → C, sơ đồ có thể nối trực tiếp A → C để thu gọn cách xem. Đường nối đó không có nghĩa một ca đã bỏ B. Bộ lọc tần suất và thời gian chỉ đổi phần hiển thị. Số liệu tổng quan vẫn dựa trên toàn bộ nhật ký. Tệp báo cáo khai phá ghi rõ bộ lọc cùng số hoạt động và đường nối đang bị ẩn.',
           },
           {
             kind: 'paragraph',
-            text: 'Chuyển sang canvas BPMN yêu cầu bạn đặt tên cho tab quy trình mới. Chức năng này chuyển bản đồ luồng trực tiếp đã lọc, không chuyển mạng Alpha/Petri ứng viên. Tần suất nhánh gợi ý định tuyến XOR, nhưng dữ liệu quan sát chưa xác định được ngữ nghĩa BPMN mong muốn. Hãy rà soát các lựa chọn suy luận trước khi lưu tệp hoặc xuất.',
+            text: 'Chuyển sang canvas BPMN tạo một tab quy trình mới theo tên bạn đặt. Chức năng chuyển sơ đồ luồng trực tiếp đang lọc, không chuyển mạng Petri do Alpha Miner đề xuất. Tần suất nhánh có thể gợi ý cách rẽ nhánh XOR, nhưng dữ liệu quan sát chưa đủ xác định ý nghĩa nghiệp vụ. Hãy kiểm tra và xác nhận các loại bước, cổng rẽ nhánh trước khi lưu hoặc xuất mô hình.',
           },
         ],
       },
@@ -339,7 +356,7 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Số đo thời gian',
             expression:
               'Bàn giao(A→B) = max(0, bắt đầu(B) − hoàn thành(A)); Xử lý(B) = hoàn thành(B) − bắt đầu(B)',
-            note: 'H là độ trễ bàn giao, S là thời gian xử lý, t là mốc thời gian của sự kiện. Thiếu lúc B bắt đầu thì dùng lúc B hoàn thành; số đo bàn giao chứa cả công việc của B. Các hoạt động chồng thời gian cho độ trễ bàn giao bằng 0. Công thức trừ timestamp mô tả thời gian liên tục; chế độ giờ làm việc đo phần giao của từng khoảng với lịch đã cấu hình.',
+            note: 'H là khoảng bàn giao, S là thời gian xử lý, t là thời điểm ghi nhận. Khi thiếu giờ bắt đầu của B, hệ thống dùng giờ hoàn thành của B nên khoảng này có thể gồm cả công việc của B. Nếu hai hoạt động chồng thời gian, khoảng bàn giao được tính bằng 0. Phép trừ thời điểm cho thời gian lịch liên tục. Khi chọn Giờ làm việc, hệ thống chỉ tính phần nằm trong lịch đã cấu hình.',
           },
           {
             kind: 'formula',
@@ -351,7 +368,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Chặng bàn giao chậm là ứng viên cần điều tra. Có thể do ngày nghỉ, xử lý theo lô hoặc log thiếu, chưa chắc thiếu nhân sự. Điểm nghẽn công suất và độ trễ đo trong log trả lời hai câu hỏi khác nhau.',
+            text: 'Một chặng kéo dài là nơi nên xem lại cách bàn giao. Hãy kiểm tra điều kiện đầu vào, người nhận việc, lịch làm việc và cách ghi dữ liệu trước khi kết luận nguyên nhân. Màu đỏ chỉ làm nổi bật thời gian dài. Muốn biết một hoạt động có vượt mức cho phép hay không, cần tải định mức đã thống nhất. Độ trễ thực tế và giới hạn năng lực xử lý là hai vấn đề khác nhau.',
           },
         ],
       },
@@ -380,14 +397,20 @@ export const MINING: KnowledgeEntry[] = [
             text: 'A Petri net contains places, transitions and tokens. A transition consumes input tokens and produces output tokens. Alpha groups compatible causal relations into candidate places. Replay tests whether observed cases can execute in the discovered candidate.',
           },
           {
+            kind: 'example',
+            title: 'What a Petri check establishes',
+            text: 'The Petri view shows a number inside each place for its token count. Enabled transitions can be executed to inspect how a case moves. A completed reachability check can establish one-token safety and workflow completion for this model. If exploration stops at a bound, the result remains inconclusive. These structural checks do not establish whether people followed an approved business process.',
+          },
+          {
             kind: 'notice',
             text: 'Classical Alpha has short-loop and noise limitations. Flowculus bounds it to 16 activities and 2,000 candidates; short loops can disable replay. A good replay score against a model mined from the same log is not compliance with an approved BPMN process.',
           },
         ],
       },
       vi: {
-        title: 'Alpha Miner và mạng Petri ứng viên',
-        summary: 'Khám phá quan hệ cấu trúc, không lấy log làm chuẩn cho chính nó.',
+        title: 'Alpha Miner và ý nghĩa của mạng Petri',
+        summary:
+          'Dùng lịch sử hoạt động để đề xuất cấu trúc và hiểu cách quy trình vận hành.',
         keywords: ['nhân quả', 'song song', 'place', 'transition', 'token', 'replay'],
         blocks: [
           {
@@ -396,15 +419,20 @@ export const MINING: KnowledgeEntry[] = [
             label: 'Quan hệ Alpha cổ điển',
             expression:
               'A→B nếu A>B và không B>A; A∥B nếu A>B và B>A; A#B nếu không thấy cả hai chiều',
-            note: 'A>B nghĩa là B theo ngay A trong ít nhất một trace. Đây là quan hệ khám phá cổ điển, không chứng minh nhân quả hay đồng thời ngoài thực tế.',
+            note: 'A>B nghĩa là B xuất hiện ngay sau A trong ít nhất một ca. Nếu thấy cả A rồi B và B rồi A, phương pháp xem đó là dấu hiệu có thể cần cấu trúc song song. Dấu hiệu này chưa chứng minh hai công việc diễn ra đồng thời ngoài thực tế.',
           },
           {
             kind: 'paragraph',
-            text: 'Mạng Petri gồm place, transition và token. Transition tiêu thụ token đầu vào rồi sinh token đầu ra. Alpha gom quan hệ nhân quả tương thích thành place ứng viên. Replay kiểm tra ca quan sát có chạy được trong mô hình ứng viên đó hay không.',
+            text: 'Alpha Miner đọc thứ tự các hoạt động để đề xuất một cấu trúc quy trình. Mạng Petri biểu diễn cấu trúc đó bằng vị trí, chuyển tiếp và dấu trạng thái. Vị trí được vẽ bằng vòng tròn. Chuyển tiếp được vẽ bằng hình chữ nhật và thường biểu diễn một hoạt động. Dấu trạng thái, còn gọi là token, cho biết một ca đang có điều kiện đi tiếp ở đâu. Khi một chuyển tiếp được thực hiện, dấu ở đầu vào bị lấy đi và dấu ở đầu ra được tạo ra.',
+          },
+          {
+            kind: 'example',
+            title: 'Mạng Petri kiểm tra được điều gì',
+            text: 'Trong sơ đồ, số bên trong vòng tròn là số dấu trạng thái tại vị trí đó. Bạn có thể thực hiện các chuyển tiếp đang được phép để theo dõi ca đi qua quy trình. Khi đã xét hết các trạng thái có thể đạt tới, kết quả cho biết mỗi vị trí có tối đa một dấu hay không và luồng có thể hoàn tất đúng cách hay không. Nếu chạm giới hạn phân tích, kết quả vẫn là chưa kết luận. Đây là kiểm tra cấu trúc mô hình, chưa xác định nhân sự có làm đúng quy trình đã phê duyệt.',
           },
           {
             kind: 'notice',
-            text: 'Alpha cổ điển có hạn chế với vòng lặp ngắn và nhiễu. Flowculus giới hạn 16 hoạt động, 2.000 ứng viên; vòng lặp ngắn có thể khiến replay không khả dụng. Replay tốt với mô hình khám phá từ chính log chưa chứng minh tuân thủ BPMN đã phê duyệt.',
+            text: 'Alpha Miner cổ điển có hạn chế với vòng lặp ngắn và dữ liệu nhiễu. Flowculus giới hạn phương pháp này ở 16 hoạt động và 2.000 cấu trúc vị trí được xem xét. Vòng lặp một hoặc hai bước có thể khiến việc kiểm tra trình tự trên mạng đề xuất không thực hiện được. Một mô hình biểu diễn tốt chính nhật ký đã dùng để tạo nó chưa chứng minh nhân sự làm đúng quy trình đã phê duyệt.',
           },
         ],
       },
@@ -442,7 +470,7 @@ export const MINING: KnowledgeEntry[] = [
           },
           {
             kind: 'notice',
-            text: 'Alignment fitness measures deviation cost. It is not the percentage of completely matching cases. Read both the matching-case count and the coverage before drawing a conclusion. Limits or unsupported semantics withhold fitness. Missing events can also reflect incomplete logging, so discovery alone cannot establish a business violation.',
+            text: 'Sequence matching measures how many steps must be added or removed to fit the reference. It differs from the share of fully matching cases. Read the matching, differing and unchecked case counts separately. Required steps not recorded and events that do not match here identify what to investigate. Verify source histories before attributing a business violation. Limits or unsupported semantics withhold the overall score. Additional indicators and calculation details are available in expandable sections.',
           },
         ],
       },
@@ -461,7 +489,7 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Mở BPMN chuẩn trong Mô hình, xác nhận các ngữ nghĩa suy luận, rồi chọn tài liệu đó trong Khai phá. Phần đối chiếu ghi rõ nhật ký đang phân tích và mô hình tham chiếu. Mỗi tab nhật ký nhớ riêng mô hình chuẩn, pool và ánh xạ hoạt động. Nhãn task giống hoàn toàn và duy nhất được gán tự động. Nhãn trùng hoặc khác tên cần chọn rõ. Alignment đối chiếu chuỗi sự kiện với một cách thực hiện hợp lệ trong mô hình. Chức năng chờ khi nhật ký đang tải hoặc worker đang khôi phục. Hết thời gian xử lý sẽ xóa kết quả phụ thuộc worker, nhưng giữ nguồn để dùng Khôi phục nhật ký này. Sửa hoặc đóng mô hình chuẩn làm bằng chứng cũ hết hiệu lực. Hãy chạy lại đối chiếu với mô hình hiện tại trước khi trình bày.',
+            text: 'Mở quy trình BPMN đã được thống nhất làm chuẩn trong Mô hình, kiểm tra các nội dung suy luận từ tệp nhập rồi xác nhận. Trong Khai phá, chọn quy trình đó và ghép từng tên hoạt động thực tế với tác vụ tương ứng. Tên trùng hoàn toàn và chỉ xuất hiện một lần trong mô hình được ghép tự động. Tên khác hoặc trùng nhau cần chọn rõ. Hệ thống đối chiếu chuỗi sự kiện với một luồng hợp lệ của mô hình bằng cách tìm số bước chỉnh sửa ít nhất. Mỗi nhật ký giữ riêng quy trình chuẩn, phạm vi bên tham gia và cách ghép hoạt động. Kết quả cần chạy lại khi tải lại trang, sửa hoặc đóng quy trình chuẩn, hay đổi cách ghép tên.',
           },
           {
             kind: 'table',
@@ -470,19 +498,22 @@ export const MINING: KnowledgeEntry[] = [
               ['Hoạt động không có', 'Tên hoạt động vắng trong mô hình chuẩn.'],
               [
                 'Sai thứ tự',
-                'Hoạt động chưa được phép chạy tại đây; có thể đã bỏ bước, lặp hoặc rẽ nhánh khác.',
+                'Hoạt động chưa được phép thực hiện tại vị trí này. Có thể đã bỏ bước, lặp hoặc đi theo nhánh khác.',
               ],
-              ['Ca chưa hoàn tất', 'Trace dừng trước khi mô hình chuẩn có thể kết thúc.'],
+              [
+                'Ca chưa hoàn tất',
+                'Chuỗi hoạt động dừng trước khi quy trình chuẩn có thể kết thúc.',
+              ],
             ],
           },
           {
             kind: 'example',
-            title: 'Chuẩn A → B → C; log A → C',
-            text: 'Ngay sau A, C chưa được phép chạy; B mới là bước hợp lệ. Đây là bằng chứng lệch mô hình, phù hợp với khả năng bỏ B. Cần kiểm tra độ đầy đủ của log và phiên bản mô hình trước khi kết luận nguyên nhân nghiệp vụ.',
+            title: 'Quy trình chuẩn A → B → C, thực tế A → C',
+            text: 'Quy trình chuẩn yêu cầu thực hiện B trước khi đến C, nhưng ca thực tế chỉ ghi nhận A rồi C. Báo cáo sẽ nêu B trong nhóm Bước chuẩn chưa được ghi nhận. Đây là dấu hiệu phù hợp với khả năng bỏ bước B. Hãy mở lịch sử gốc để kiểm tra xem B thực sự bị bỏ hay chỉ chưa được ghi vào nhật ký.',
           },
           {
             kind: 'notice',
-            text: 'Fitness alignment đo mức lệch theo chi phí, không phải tỷ lệ ca khớp hoàn toàn. Cần đọc cả số ca khớp và phạm vi đã xét trước khi kết luận. Vượt giới hạn hoặc ngữ nghĩa chưa hỗ trợ thì không có fitness. Thiếu sự kiện còn có thể do log chưa đầy đủ, nên chỉ khám phá từ log chưa xác định được vi phạm nghiệp vụ.',
+            text: 'Mức khớp trình tự phản ánh số bước cần thêm hoặc bỏ để phù hợp với quy trình chuẩn, không phải tỷ lệ ca khớp hoàn toàn. Hãy đọc riêng số ca khớp, số ca có sai khác và số ca chưa kiểm tra. Các mục Bước chuẩn chưa được ghi nhận và Hoạt động không khớp tại vị trí này giúp xác định cần xem lại điều gì. Khi mô hình chưa được hỗ trợ hoặc chạm giới hạn xử lý, hệ thống không đưa ra điểm khớp tổng thể. Công thức và các chỉ số bổ sung nằm trong mục mở rộng để xem khi cần.',
           },
         ],
       },
@@ -541,8 +572,9 @@ export const MINING: KnowledgeEntry[] = [
         ],
       },
       vi: {
-        title: 'Mạng nhân sự và độ đo trung tâm',
-        summary: 'Ai kết nối các lần bàn giao quan sát được và ý nghĩa từng chỉ số.',
+        title: 'Mạng nhân sự và ý nghĩa các chỉ số',
+        summary:
+          'Nhìn cách công việc được chuyển giữa các nhân sự và những đầu mối cần chú ý.',
         keywords: [
           'degree',
           'betweenness',
@@ -555,34 +587,37 @@ export const MINING: KnowledgeEntry[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Nút biểu diễn người thực hiện; cạnh có hướng đếm bàn giao giữa hai người khác nhau liên tiếp trong cùng ca. Không đếm tự bàn giao. Flowculus tính mạng cho tối đa 80 nhân sự chọn theo số sự kiện quan sát.',
+            text: 'Mỗi nút là một người thực hiện. Mũi tên A → B đếm số lần công việc chuyển từ A sang B liên tiếp trong cùng một ca. Không tính việc một người tiếp tục thực hiện công việc của chính mình là một lần bàn giao cho người khác. Flowculus hiển thị tối đa 80 nhân sự, ưu tiên những người có nhiều lần thực hiện được ghi nhận.',
           },
           {
             kind: 'table',
             headers: ['Độ đo', 'Diễn giải'],
             rows: [
-              ['Bậc vào/ra', 'Số hàng xóm bàn giao khác nhau đi vào/đi ra.'],
               [
-                'Betweenness',
-                'Tỷ phần đường đi ngắn nhất có hướng đi qua nhân sự; gợi ý vai trò cầu nối.',
+                'Số người gửi và nhận việc',
+                'Số đầu mối khác nhau gửi việc đến và nhận việc từ một người. Tính riêng hai chiều, không phải số lượt chuyển việc.',
               ],
               [
-                'Closeness',
-                'Nghịch đảo khoảng cách có hướng trung bình, điều chỉnh theo khả năng tiếp cận.',
+                'Vai trò cầu nối',
+                'Nhiều đường bàn giao ngắn nhất đi qua người này. Điểm cao gợi ý nên kiểm tra đầu mối thay thế và cách bàn giao dự phòng.',
               ],
               [
-                'Eigenvector',
-                'Ảnh hưởng theo quan hệ hàng xóm vô hướng trong triển khai hiện tại.',
+                'Khả năng tiếp cận',
+                'Từ người này có thể đi đến các đồng nghiệp liên quan qua ít chặng bàn giao hơn. Chỉ số chưa đo tốc độ trao đổi thực tế.',
               ],
               [
-                'PageRank',
-                'Tầm quan trọng theo bàn giao có hướng, hệ số 0,85 và phân phối lại tại nút cụt.',
+                'Liên kết với người chủ chốt',
+                'Người này kết nối với những người cũng có nhiều liên kết. Chỉ số phản ánh vị trí phối hợp, không thể hiện chức vụ.',
+              ],
+              [
+                'Mức tập trung bàn giao đến',
+                'Người này nhận việc từ các đầu mối có ảnh hưởng trong mạng. Điểm cao chưa chứng minh công việc đang tồn đọng hoặc người đó bị quá tải.',
               ],
             ],
           },
           {
             kind: 'notice',
-            text: 'Tần suất và độ đo mô tả mạng được chọn đã quan sát, không xác định trách nhiệm, năng suất cá nhân hay nguyên nhân. Thiếu nhân sự hoặc bỏ nút làm thay đổi chỉ số; giao diện báo số người chưa hiển thị.',
+            text: 'Bảng nhân sự phân biệt số người gửi hoặc nhận việc, số lượt bàn giao và số lần thực hiện hoạt động. Nhận xét cho biết ai có điểm cao, điểm đó có ý nghĩa gì và nên kiểm tra cách phối hợp nào. Các chỉ số không chấm năng suất và không tự chỉ ra người gây chậm. Thứ hạng chỉ áp dụng cho nhóm đang hiển thị. Nếu có nhân sự nằm ngoài giới hạn, giao diện sẽ báo số người chưa được đưa vào mạng.',
           },
         ],
       },

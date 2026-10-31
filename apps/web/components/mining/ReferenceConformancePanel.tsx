@@ -14,6 +14,7 @@ import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { useWorkspaceStore } from '@/lib/workspace-store';
 import { getWorkspaceDocuments } from '@/lib/documents/document-types';
 import { useMiningStore } from '@/lib/mining-store';
+import { MiningConformanceResults } from './MiningConformanceResults';
 import { PetriNetView } from './PetriNetView';
 import { ActivityMappingEditor } from './ActivityMappingEditor';
 import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
@@ -60,7 +61,7 @@ export function ReferenceConformancePanel({
     (node) => node.kind === 'task' || node.kind === 'subprocess',
   );
   return (
-    <section className="space-y-4 text-xs">
+    <section className="mining-report space-y-4">
       <div className="space-y-1 break-words rounded-lg bg-[var(--surface-raised)] p-3">
         <p className="font-semibold">{getMiningDataCopy(locale).current}</p>
         <p>{replay?.kind === 'file' ? replay.fileName : result?.logName}</p>
@@ -125,85 +126,7 @@ export function ReferenceConformancePanel({
       {evidence ? (
         <>
           <p className="text-[var(--muted)]">{copy.resultVersion}</p>
-          <div className="space-y-2 rounded-xl border border-[var(--border)] p-3">
-            <h3 className="font-semibold">{copy.alignment}</h3>
-            <p>
-              {copy.coverage}: {evidence.alignment.examinedCases} /{' '}
-              {evidence.alignment.omittedCases}
-            </p>
-            <p>
-              {copy.fitness}:{' '}
-              {evidence.alignment.fitness == null
-                ? copy.unknown
-                : new Intl.NumberFormat(locale, {
-                    style: 'percent',
-                    maximumFractionDigits: 2,
-                  }).format(evidence.alignment.fitness)}
-            </p>
-            <p className="leading-5 text-[var(--muted)]">{copy.method}</p>
-            <p>
-              {copy.compatible}: {evidence.alignment.compatibleCases} /{' '}
-              {evidence.alignment.examinedCases}
-            </p>
-            <p className="leading-5 text-[var(--muted)]">{copy.fitnessHint}</p>
-            {evidence.alignment.quality ? (
-              <div className="space-y-2 border-t border-[var(--border)] pt-2">
-                {[
-                  { label: copy.precision, value: evidence.alignment.quality.precision },
-                  {
-                    label: copy.generalization,
-                    value: evidence.alignment.quality.generalization,
-                  },
-                  {
-                    label: copy.simplicity,
-                    value: evidence.alignment.quality.simplicity,
-                  },
-                ].map((metric) => (
-                  <p key={metric.label}>
-                    {metric.label}:{' '}
-                    {metric.value == null
-                      ? copy.unknown
-                      : new Intl.NumberFormat(locale, {
-                          style: 'percent',
-                          maximumFractionDigits: 2,
-                        }).format(metric.value)}
-                  </p>
-                ))}
-                <p>
-                  {copy.qualityCoverage}: {evidence.alignment.quality.compatibleCases} /{' '}
-                  {evidence.alignment.examinedCases}
-                </p>
-                <p className="leading-5 text-[var(--muted)]">{copy.qualityScope}</p>
-              </div>
-            ) : null}
-            {evidence.alignment.status !== 'ready' ? <p>{copy.unsupported}</p> : null}
-            {evidence.alignment.examples.map((example) => (
-              <details key={example.caseId}>
-                <summary className="cursor-pointer font-semibold">
-                  {example.caseId} · {copy.cost}: {example.cost}
-                </summary>
-                <ol className="mt-2 space-y-1">
-                  {example.moves.map((move, index) => (
-                    <li
-                      key={index}
-                      className={
-                        move.kind === 'sync'
-                          ? 'text-[var(--muted)]'
-                          : 'text-[var(--danger)]'
-                      }
-                    >
-                      {move.kind === 'model'
-                        ? copy.modelMove
-                        : move.kind === 'log'
-                          ? copy.logMove
-                          : copy.syncMove}
-                      : {move.activity}
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            ))}
-          </div>
+          <MiningConformanceResults alignment={evidence.alignment} locale={locale} />
           {evidence.referencePetri.status === 'ready' ? (
             <PetriNetView
               net={evidence.referencePetri.net}

@@ -1,4 +1,8 @@
-import { isTimePolicy, MINING_PRESETS } from '@flowculus/process-mining';
+import {
+  isTimePolicy,
+  isEventImportSettings,
+  MINING_PRESETS,
+} from '@flowculus/process-mining';
 import {
   emptyMiningSnapshot,
   miningTabs,
@@ -50,7 +54,8 @@ export function parseMiningDraft(value: unknown): MiningDraft | null {
       if (
         !text(replay.fileName) ||
         !text(replay.source, MAX_MINING_SOURCE_LENGTH) ||
-        !record(replay.mapping)
+        !record(replay.mapping) ||
+        (replay.settings !== undefined && !isEventImportSettings(replay.settings))
       )
         return null;
       const required = ['caseId', 'activity', 'timestamp'];

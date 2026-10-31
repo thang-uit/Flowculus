@@ -66,7 +66,9 @@ describe('deferred Mining rediscovery', () => {
       source,
     });
     if (table.type !== 'table') throw new Error('Expected table');
-    useMiningStore.getState().setMappingTable({ ...table, source });
+    useMiningStore
+      .getState()
+      .setMappingTable({ ...table, source, importId: 'pending-test' });
     expect(getMiningRediscoveryRequest(useMiningStore.getState())).toBeNull();
     useMiningStore.getState().setMappingTable(null);
     expect(

@@ -1,4 +1,8 @@
-import type { MiningPresetId } from '@flowculus/process-mining';
+import type {
+  EventImportSettings,
+  ImportIssueCode,
+  MiningPresetId,
+} from '@flowculus/process-mining';
 import type { ConformanceIssueKind } from '@flowculus/process-mining';
 
 import type { SemanticShapeTool } from '@/lib/shape-tools';
@@ -7,7 +11,47 @@ import type { QualityCopy, ResilienceCopy, SemanticCopy } from './feature-copy';
 
 export type Locale = 'en' | 'vi';
 
+export interface MiningImportCopy {
+  statusActivity: string;
+  statusTimestamp: string;
+  mode: string;
+  modes: Record<EventImportSettings['mode'], string>;
+  modeHints: Record<EventImportSettings['mode'], string>;
+  caseHint: string;
+  dateOrder: string;
+  dateOrders: Record<EventImportSettings['dateOrder'], string>;
+  timezone: string;
+  timezoneHint: string;
+  header: string;
+  headerOption: (row: number, label: string) => string;
+  firstSheet: string;
+  review: string;
+  reviewing: string;
+  reviewTitle: string;
+  edit: string;
+  accepted: (events: number, cases: number) => string;
+  rejected: (count: number) => string;
+  duplicates: (count: number) => string;
+  starts: (count: number) => string;
+  unpaired: (count: number) => string;
+  coverage: (resources: number, costs: number, total: number) => string;
+  ambiguous: string;
+  noEvents: string;
+  issueHeading: string;
+  issueRow: (row: number, reason: string) => string;
+  issues: Record<ImportIssueCode, string>;
+  issueLimit: string;
+  acknowledge: string;
+  templates: string;
+  templateHint: string;
+  canonicalTemplate: string;
+  jiraTemplate: string;
+  error: string;
+  errors: Record<string, string>;
+}
+
 export interface WorkspaceCopy {
+  miningImport: MiningImportCopy;
   brandTooltip: string;
   nextLanguageName: string;
   workspace: string;

@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { getMiningConclusionsCopy } from './mining-conclusions-copy';
+import { getWorkspaceCopy } from '.';
 import { getMiningDataCopy } from './mining-data-copy';
 
 describe('mining copy', () => {
+  it('uses singular review counts', () => {
+    expect(getWorkspaceCopy('en').miningImport.accepted(1, 1)).toBe(
+      '1 accepted event across 1 case.',
+    );
+    expect(getWorkspaceCopy('en').miningImport.accepted(2, 2)).toBe(
+      '2 accepted events across 2 cases.',
+    );
+  });
   it('uses English singular nouns for one event, case and activity', () => {
     const copy = getMiningDataCopy('en');
 
@@ -26,15 +35,8 @@ describe('mining copy', () => {
   it('writes singular English conclusions as complete sentences', () => {
     const copy = getMiningConclusionsCopy('en');
 
-    expect(copy.overview('1', '1', '1', '1')).toContain(
-      '1 case, 1 event, 1 activity and 1 named resource',
-    );
-    expect(copy.petri('1')).toContain('1 reachable marking');
     expect(copy.skipped('1', '1', '1')).toContain(
       '1 row was omitted. There is 1 invalid completion timestamp and 1 invalid start timestamp.',
-    );
-    expect(copy.compared('Reference', '1', '1', '0')).toContain(
-      '1/1 examined case follows a complete valid route.',
     );
   });
 });

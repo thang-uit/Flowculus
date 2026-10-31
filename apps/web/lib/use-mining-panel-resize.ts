@@ -16,7 +16,7 @@ const MIN_SOURCE = 240;
 const MIN_MAP = 320;
 const MIN_INSIGHTS = 280;
 const DEFAULT_SOURCE = 288;
-const DEFAULT_INSIGHTS = 340;
+const DEFAULT_INSIGHTS = 460;
 
 interface Widths {
   source: number;

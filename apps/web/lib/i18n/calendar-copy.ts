@@ -27,7 +27,7 @@ const VI: typeof EN = {
   basis: 'Lịch dùng tính thời lượng',
   elapsed: 'Thời gian lịch liên tục',
   working: 'Giờ làm việc',
-  hint: 'Giờ làm việc loại trừ ngoài ca, cuối tuần và ngày nghỉ đã khai báo. Timestamp và thứ tự trace được giữ nguyên. Dùng độ lệch UTC cố định; lịch đổi giờ mùa cần cấu hình riêng.',
+  hint: 'Giờ làm việc loại trừ ngoài ca, cuối tuần và ngày nghỉ đã khai báo. Thời điểm và thứ tự hoạt động được giữ nguyên. Lịch dùng độ lệch UTC cố định, chưa tự đổi giờ theo mùa.',
   configure: 'Cấu hình lịch làm việc',
   close: 'Đóng',
   apply: 'Áp dụng lịch',
@@ -44,6 +44,6 @@ const VI: typeof EN = {
   summary:
     'Mặc định: thứ 2–thứ 6, 08:00–12:00 và 13:00–17:00, UTC+07:00. Có thể đổi theo đơn vị của bạn.',
   standards:
-    'Ngưỡng dùng lịch đo đang chọn. Khoảng start/end là thời lượng hoạt động, chưa chứng minh toàn bộ là giờ công thao tác.',
+    'Định mức dùng lịch đo đang chọn. Khoảng từ bắt đầu đến kết thúc là thời lượng hoạt động, chưa phải toàn bộ giờ công thao tác.',
 };
 export const getCalendarCopy = (locale: Locale) => (locale === 'vi' ? VI : EN);

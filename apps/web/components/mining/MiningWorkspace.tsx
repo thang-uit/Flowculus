@@ -123,7 +123,10 @@ export function MiningWorkspace() {
 
       {mappingTable ? (
         <ColumnMappingDialog
+          key={mappingTable.importId}
           table={mappingTable}
+          source={mappingTable.source}
+          request={session.request}
           onConfirm={session.applyMapping}
           onCancel={() => useMiningStore.getState().reloadTab()}
         />

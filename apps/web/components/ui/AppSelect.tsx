@@ -94,19 +94,22 @@ export function AppSelect({
           position="popper"
           sideOffset={5}
           collisionPadding={8}
+          collisionBoundary={
+            trigger?.closest<HTMLElement>('[role="dialog"]') ?? undefined
+          }
           className="z-[100] max-h-[min(20rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] max-w-[min(28rem,var(--radix-select-content-available-width))] app-menu overflow-hidden"
         >
-          <Select.Viewport className="max-h-[19rem] overflow-y-auto scrollbar-thin">
+          <Select.Viewport className="max-h-[min(19rem,calc(var(--radix-select-content-available-height)-12px))] overflow-y-auto scrollbar-thin">
             {options.map((option, index) => (
               <Select.Item
                 key={`${index}:${option.value}`}
                 value={`option-${index}`}
-                className="app-menu__item app-select-item relative min-w-0 select-none pr-8 outline-none data-[state=checked]:font-semibold"
+                className="app-menu__item app-select-item relative min-w-0 select-none outline-none data-[state=checked]:font-semibold"
               >
                 <span className="min-w-0 whitespace-normal [overflow-wrap:anywhere]">
                   <Select.ItemText>{option.label}</Select.ItemText>
                 </span>
-                <Select.ItemIndicator className="absolute right-2 text-[var(--accent-strong)]">
+                <Select.ItemIndicator className="app-select-item__indicator text-[var(--accent-strong)]">
                   <Check size={15} weight="bold" aria-hidden="true" />
                 </Select.ItemIndicator>
               </Select.Item>

@@ -131,6 +131,18 @@
   font-size: 10px;
   color: var(--muted);
 }
+.app-select-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px;
+  column-gap: 10px;
+}
+.app-select-item__indicator {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .app-select-item[data-highlighted] {
   background: var(--accent-soft);
   color: var(--accent-strong);

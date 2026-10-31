@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, type ChangeEvent } from 'react';
 
-import type { ColumnMapping, MiningPresetId } from '@flowculus/process-mining';
+import type {
+  ColumnMapping,
+  EventImportSettings,
+  MiningPresetId,
+} from '@flowculus/process-mining';
 
 import { downloadTextFile } from '@/lib/browser-file-actions';
 import { exportFileName } from '@/lib/file-name';
@@ -106,7 +110,7 @@ export function useMiningSession() {
                   : reason instanceof Error && reason.message.startsWith('xlsx-')
                     ? copy.fileError
                     : reason instanceof Error
-                      ? reason.message
+                      ? (copy.miningImport.errors[reason.message] ?? reason.message)
                       : copy.fileError;
       useMiningStore.getState().setStatus('error', message);
     },
@@ -167,7 +171,11 @@ export function useMiningSession() {
         const response = await request({ type: 'inspect-file', ...upload });
         if (sequence !== sequenceRef.current || !isOwner()) return;
         if (response.type !== 'table') throw new Error('Unexpected mining response.');
-        useMiningStore.getState().setMappingTable({ ...response, source: upload.source });
+        useMiningStore.getState().setMappingTable({
+          ...response,
+          source: upload.source,
+          importId: crypto.randomUUID(),
+        });
         useMiningStore
           .getState()
           .setStatus(useMiningStore.getState().result ? 'ready' : 'idle');
@@ -179,7 +187,7 @@ export function useMiningSession() {
   );
 
   const applyMapping = useCallback(
-    (mapping: ColumnMapping) => {
+    (mapping: ColumnMapping, settings: EventImportSettings) => {
       const table = useMiningStore.getState().mappingTable;
       if (!table) return;
       useMiningStore.getState().setMappingTable(null);
@@ -189,12 +197,19 @@ export function useMiningSession() {
             await request({
               type: 'apply-mapping',
               mapping,
+              settings,
               name: table.fileName.replace(LOG_EXTENSION, ''),
               filter: useMiningStore.getState().filter,
               timePolicy: useMiningStore.getState().timePolicy,
             }),
           ),
-        { kind: 'file', fileName: table.fileName, source: table.source, mapping },
+        {
+          kind: 'file',
+          fileName: table.fileName,
+          source: table.source,
+          mapping,
+          settings,
+        },
       );
     },
     [request, run],

@@ -14,7 +14,8 @@ const {
 } = await import('../packages/process-mining/src/__fixtures__/report-study.ts');
 const { analyzeProcess } = await import('../packages/analysis-engine/src/index.ts');
 const { exportBpmnXml } = await import('../packages/bpmn-adapter/src/index.ts');
-const { serializeFlowculusFile } = await import('../packages/file-formats/src/index.ts');
+const { serializeFlowculusFile, escapeCsvValue } =
+  await import('../packages/file-formats/src/index.ts');
 const { checkSemanticGate } = await import('../packages/validation/src/index.ts');
 const {
   discoverProcess,
@@ -26,6 +27,7 @@ const {
   verifyPetri,
   petriToPnml,
   mineAlpha,
+  createEventLogTemplate,
 } = await import('../packages/process-mining/src/index.ts');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const target = resolve(process.argv[2] ?? resolve(root, 'output/demo/report-study'));
@@ -52,6 +54,23 @@ for (const variant of ['as-is', 'to-be']) {
     analysisOptions: { processPoolId: 'scope' },
   });
   files[prefix + '_events.csv'] = eventLogToCsv(log);
+  if (variant === 'as-is') {
+    // A synthetic enriched history export, not Jira's current-issue CSV.
+    const rows = [
+      ['Issue key', 'Activity name', 'Started at', 'Completed at', 'Assignee'],
+      ...log.events.map((event) => [
+        event.caseId,
+        event.activity,
+        event.startTime == null ? '' : new Date(event.startTime).toISOString(),
+        new Date(event.completeTime).toISOString(),
+        event.resource ?? '',
+      ]),
+    ];
+    files['15_as_is_jira_style_events.csv'] =
+      rows.map((row) => row.map((value) => escapeCsvValue(value)).join(',')).join('\n') +
+      '\n';
+  }
+
   const report = analyzeProcess(model),
     discovery = discoverProcess(log, undefined, STUDY_CALENDAR),
     elapsed = discoverProcess(log),
@@ -100,6 +119,10 @@ files['13_service_standards.csv'] =
   ',240\n' +
   STUDY_LABELS.uat +
   ',240\n';
+for (const kind of ['events', 'jira-status']) {
+  const template = createEventLogTemplate(kind);
+  files['templates/' + template.fileName] = template.csv;
+}
 files['14_work_calendar.json'] = JSON.stringify(STUDY_CALENDAR, null, 2);
 files['expected/study_metrics.json'] = JSON.stringify(metrics, null, 2);
 files['HUONG_DAN_DEMO_BAO_CAO.md'] = readFileSync(

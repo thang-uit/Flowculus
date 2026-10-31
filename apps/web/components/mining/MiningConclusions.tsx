@@ -1,56 +1,60 @@
 'use client';
-
-import { miningConclusions } from '@/lib/mining-conclusions';
-import { getMiningConclusionsCopy } from '@/lib/i18n/mining-conclusions-copy';
+import { ArrowsOut, ChartBar } from '@phosphor-icons/react';
+import { useState } from 'react';
+import { AppButton } from '@/components/ui/AppButton';
+import { AppDialog } from '@/components/ui/AppDialog';
+import { getMiningReportCopy } from '@/lib/i18n/mining-report-copy';
 import { useMiningStore } from '@/lib/mining-store';
-import { useMiningDuration } from '@/lib/use-mining-duration';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
-import { useWorkspaceStore } from '@/lib/workspace-store';
-import { getWorkspaceDocuments } from '@/lib/documents/document-types';
 import type { MiningDiscoveryResponse } from '@/lib/mining-engine';
+import { MiningReportContent } from './MiningReportContent';
 
 export function MiningConclusions({
   result,
 }: Readonly<{ result: MiningDiscoveryResponse }>) {
   const locale = usePreferencesStore((state) => state.locale);
-  const duration = useMiningDuration();
-  const stored = useMiningStore((state) => state.conformance);
-  const workspace = useWorkspaceStore();
-  const reference =
-    stored &&
-    getWorkspaceDocuments(workspace).some(
-      (document) => document.processModel === stored.model,
-    )
-      ? stored
-      : null;
-  const copy = getMiningConclusionsCopy(locale);
-  const sections = miningConclusions(
-    result,
-    locale,
-    duration,
-    reference ? { name: reference.model.name, evidence: reference.evidence } : undefined,
-  );
+  const copy = getMiningReportCopy(locale);
+  const [expanded, setExpanded] = useState(false);
+  const goToReference = () => {
+    setExpanded(false);
+    useMiningStore.getState().setInsight('conformance');
+  };
   return (
-    <section
-      className="space-y-5 text-xs leading-5 text-[var(--text)]"
-      aria-label={copy.title}
-    >
-      <div>
-        <h2 className="break-words text-sm font-semibold">
-          {copy.source(result.logName)}
-        </h2>
-        <p className="mt-2 text-[var(--muted-strong)]">{copy.scope}</p>
-      </div>
-      {sections.map((section) => (
-        <section key={section.title} className="border-t border-[var(--border)] pt-4">
-          <h3 className="font-semibold">{section.title}</h3>
-          <ul className="mt-2 list-disc space-y-3 break-words pl-4">
-            {section.paragraphs.map((paragraph, index) => (
-              <li key={index}>{paragraph}</li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </section>
+    <>
+      <section className="mining-report space-y-5" aria-label={copy.title}>
+        <div className="mining-report-head">
+          <div className="min-w-0">
+            <h2 className="flex items-start gap-2">
+              <ChartBar size={20} className="mt-0.5 shrink-0" aria-hidden="true" />
+              {copy.title}
+            </h2>
+            <p className="mt-1 mining-report-muted">{copy.source(result.logName)}</p>
+          </div>
+          <AppButton
+            size="sm"
+            onClick={() => setExpanded(true)}
+            title={copy.expand}
+            aria-label={copy.expand}
+          >
+            <ArrowsOut size={16} aria-hidden="true" />
+          </AppButton>
+        </div>
+        <MiningReportContent result={result} onReference={goToReference} />
+      </section>
+      {expanded ? (
+        <AppDialog
+          open
+          onOpenChange={setExpanded}
+          title={copy.title}
+          description={copy.source(result.logName)}
+          closeLabel={copy.close}
+          size="large"
+        >
+          <div className="mining-report mt-5">
+            <MiningReportContent result={result} onReference={goToReference} />
+          </div>
+        </AppDialog>
+      ) : null}
+    </>
   );
 }

@@ -1,0 +1,264 @@
+.mining-report {
+  --report-heading: #1e3a8a;
+  --report-attention: #b45309;
+  --report-soft: #fff7ed;
+  container-type: inline-size;
+  min-width: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.dark .mining-report {
+  --report-heading: #a9c5ff;
+  --report-attention: #ffbb78;
+  --report-soft: #30261c;
+}
+.mining-report h2,
+.mining-report h3,
+.mining-report h4 {
+  color: var(--report-heading);
+  font-weight: 700;
+  line-height: 1.45;
+}
+.mining-report h2 {
+  font-size: 17px;
+}
+.mining-report h3 {
+  font-size: 14px;
+}
+.mining-report h4 {
+  font-size: 13px;
+}
+.mining-report p + p {
+  margin-top: 8px;
+}
+.mining-report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.mining-report-muted {
+  color: var(--muted-strong);
+  font-size: 12px;
+}
+.mining-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.mining-report-metric {
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.mining-report-metric dt {
+  color: var(--muted-strong);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.mining-report-metric dd {
+  margin-top: 5px;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+.mining-report-metric dd.mining-report-metric-detail {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--muted-strong);
+}
+.mining-report-metric[data-tone='attention'] > dd:not(.mining-report-metric-detail) {
+  color: var(--report-attention);
+}
+.mining-report-metric[data-tone='positive'] > dd:not(.mining-report-metric-detail) {
+  color: var(--success);
+}
+.mining-report-metric[data-tone='danger'] > dd:not(.mining-report-metric-detail) {
+  color: var(--danger);
+}
+.mining-report-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.mining-report-card > h3 + p {
+  margin-top: 8px;
+}
+.mining-report-card[data-tone='attention'] {
+  border-inline-start: 1px solid var(--report-attention);
+}
+.mining-report-card[data-tone='positive'] {
+  border-inline-start: 1px solid var(--success);
+}
+.mining-report-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--report-soft);
+}
+.mining-report-callout > svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--report-attention);
+}
+.mining-report-callout p {
+  min-width: 0;
+}
+.mining-report-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+.mining-report-action > svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--success);
+}
+.mining-report-table-wrap {
+  overflow: auto;
+  max-height: 340px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  scrollbar-width: thin;
+}
+.mining-report-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.mining-report-table th,
+.mining-report-table td {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.mining-report-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+  font-weight: 600;
+  z-index: 1;
+}
+.mining-report-table tbody tr:nth-child(even) {
+  background: var(--surface-raised);
+}
+.mining-report-table tbody tr:hover {
+  background: var(--accent-soft);
+}
+.mining-report-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.mining-report-table tbody th {
+  color: var(--text);
+  font-weight: 650;
+}
+.mining-report-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  margin-inline-start: 5px;
+  background: var(--report-soft);
+  color: var(--report-attention);
+  font-size: 10px;
+  font-weight: 650;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.mining-report-route {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 0;
+  list-style: none;
+  margin-top: 10px;
+}
+.mining-report-route li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.mining-report-route li > span {
+  background: var(--surface-soft);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.mining-report-route svg {
+  flex: none;
+  color: var(--muted);
+}
+.mining-report details > summary {
+  cursor: pointer;
+  color: var(--report-heading);
+  font-weight: 650;
+  border-radius: 4px;
+}
+.mining-report details > summary:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 3px;
+}
+.mining-report details[open] > summary {
+  margin-bottom: 10px;
+}
+.mining-report-deviation {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.mining-report-deviation h4 {
+  color: var(--danger);
+}
+.mining-report-deviation ul {
+  list-style: disc;
+  padding-inline-start: 17px;
+}
+.mining-report-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px 12px;
+  background: var(--surface-soft);
+  border-radius: 8px;
+}
+.mining-report-status svg {
+  flex: none;
+  margin-top: 3px;
+}
+.mining-report-status[data-tone='positive'] {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, var(--surface));
+}
+.mining-report-status[data-tone='attention'] {
+  color: var(--report-attention);
+  background: var(--report-soft);
+}
+@container (max-width: 300px) {
+  .mining-report-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mining-report-card {
+    padding: 12px;
+  }
+}
+@container (min-width: 680px) {
+  .mining-report-metric dd {
+    font-size: 20px;
+  }
+}

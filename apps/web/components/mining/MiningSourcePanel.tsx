@@ -18,6 +18,7 @@ import { getWorkspaceCopy } from '@/lib/i18n';
 import { useMiningStore } from '@/lib/mining-store';
 import { usePreferencesStore } from '@/lib/use-preferences-store';
 import { getMiningDataCopy } from '@/lib/i18n/mining-data-copy';
+import { MiningTemplateDownloads } from './MiningTemplateDownloads';
 import { MiningCurrentSource } from './MiningCurrentSource';
 import { getMiningTabsCopy } from '@/lib/i18n/mining-tabs-copy';
 
@@ -71,6 +72,11 @@ export function MiningSourcePanel({
           {copy.miningSourceHint}
         </p>
       </div>
+      {result?.importReview?.statusEvents ? (
+        <p className="rounded-lg bg-[var(--surface-raised)] p-3 text-xs leading-5 text-[var(--muted-strong)]">
+          {copy.miningImport.modeHints['jira-status']}
+        </p>
+      ) : null}
       <MiningCurrentSource onView={onViewLog} onClear={onClearLog} />
       <details open={!result || activePreset != null}>
         <summary className="focus-ring mb-2 cursor-pointer rounded text-xs font-medium text-[var(--muted-strong)]">
@@ -138,6 +144,7 @@ export function MiningSourcePanel({
       <p className="text-[10.5px] leading-4 text-[var(--muted)]">
         {copy.miningUploadHint}
       </p>
+      <MiningTemplateDownloads />
       <input
         ref={fileInputRef}
         type="file"
