@@ -84,7 +84,7 @@ Hai mô hình là **phép chiếu phân tích một process** có vai trò UAT. 
 
 ## Tái tạo
 
-Trong thư mục Flowculus, Node 22.23.1 trở lên trong dòng 22, pnpm theo `packageManager`:
+Trong thư mục Flowculus, Node 24.22.2, pnpm theo `packageManager`:
 
 ```bash
 pnpm install --frozen-lockfile

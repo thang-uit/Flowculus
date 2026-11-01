@@ -204,7 +204,7 @@ path, params }`. Packages never return user-facing sentences; the web app
 ## 10. Vercel and release hygiene
 
 - The Vercel project uses Root Directory `apps/web` (config in
-  `apps/web/vercel.json`), Node 22 (`.nvmrc`, `engines`) and pnpm from
+  `apps/web/vercel.json`), Node 24.22.2 (`.nvmrc`, `engines`) and pnpm from
   `packageManager`. The app needs no environment variables.
 - Do not deploy to production, create Vercel projects or change domains
   unless explicitly asked. Never commit `.next`, `.vercel`, `.turbo`, drafts

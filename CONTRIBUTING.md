@@ -39,8 +39,8 @@ or propose a pull request (PR).
 
 ### 2. Set up locally
 
-You need Git, **Node.js 22.23+ within 22.x** and **pnpm 11.22.0**, as declared in
-`packageManager`. pnpm 11 requires Node.js 22.13 or newer. Flowculus uses 22.23+
+You need Git, **Node.js 24.22.2** and **pnpm 11.22.0**, as declared in
+`packageManager`. pnpm 11 requires Node.js 22.13 or newer. Flowculus uses 24.22.2
 so the demo export tools run on the same supported runtime. No backend, service
 account or `.env` file is required.
 
@@ -229,8 +229,8 @@ repo để mở Issue hoặc gửi Pull Request (PR).
 
 ### 2. Chuẩn bị môi trường
 
-Cần Git, **Node.js 22.23 trở lên trong nhánh 22.x** và **pnpm 11.22.0**, đúng trường
-`packageManager`. pnpm 11 cần Node.js từ 22.13. Dự án dùng 22.23 trở lên để chạy
+Cần Git, **Node.js 24.22.2** và **pnpm 11.22.0**, đúng trường
+`packageManager`. pnpm 11 cần Node.js từ 22.13. Dự án dùng 24.22.2 để chạy
 cả công cụ xuất demo trên cùng runtime được hỗ trợ. Không cần backend, tài khoản
 dịch vụ hoặc file `.env`.
 

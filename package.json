@@ -5,7 +5,7 @@
   "description": "A fast cycle-time workspace for process models.",
   "packageManager": "pnpm@11.22.0",
   "engines": {
-    "node": "22.x"
+    "node": ">=24.22.2 <25"
   },
   "scripts": {
     "dev": "turbo run dev --filter=@flowculus/web",

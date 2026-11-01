@@ -27,7 +27,7 @@
   <a href="apps/web/package.json"><img src="docs/badges/nextjs.svg" alt="Next.js 16" /></a>
   <a href="apps/web/package.json"><img src="docs/badges/react.svg" alt="React 19" /></a>
   <a href="package.json"><img src="docs/badges/typescript.svg" alt="TypeScript 5.9" /></a>
-  <a href=".nvmrc"><img src="docs/badges/nodejs.svg" alt="Node.js 22" /></a>
+  <a href=".nvmrc"><img src="docs/badges/nodejs.svg" alt="Node.js 24.22.2" /></a>
   <a href="package.json"><img src="docs/badges/pnpm.svg" alt="pnpm 11.22.0" /></a>
 </p>
 
@@ -98,7 +98,7 @@ _Mining report capture from the As-Is study log: 20 cases, 160 events and 101.2 
 
 ### Local development
 
-Requirements: Git, **Node.js 22.23+ within 22.x**, and **pnpm 11.22.0**. The runtime
+Requirements: Git, **Node.js 24.22.2**, and **pnpm 11.22.0**. The runtime
 is declared in `.nvmrc` and the package manager in `package.json`. No `.env` file is needed.
 
 ```bash
@@ -254,7 +254,7 @@ pnpm build
 pnpm start
 ```
 
-Vercel uses **`apps/web`** as its Root Directory, Node.js 22 and the declared pnpm
+Vercel uses **`apps/web`** as its Root Directory, Node.js 24.22.2 and the declared pnpm
 version. Configuration lives in [apps/web/vercel.json](apps/web/vercel.json).
 No environment variables or database are required. CI does not deploy or use a
 Vercel token. The existing Vercel integration is separate. Verify the build and
@@ -562,7 +562,7 @@ pnpm build
 pnpm start
 ```
 
-Vercel dùng Root Directory **`apps/web`**, Node.js 22 và pnpm theo `packageManager`.
+Vercel dùng Root Directory **`apps/web`**, Node.js 24.22.2 và pnpm theo `packageManager`.
 Cấu hình tại [apps/web/vercel.json](apps/web/vercel.json). Không cần biến môi trường
 hoặc database. CI không tự deploy, không dùng Vercel token. Tích hợp Vercel hiện có
 là luồng riêng. Trước phát hành cần xác minh build và chức năng trên đúng revision.
