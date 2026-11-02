@@ -88,8 +88,8 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
       read-excel-file:
-        specifier: ^9.3.12
-        version: 9.3.12
+        specifier: ^9.3.14
+        version: 9.3.14
       zustand:
         specifier: ^5.0.16
         version: 5.0.16(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.7.0(react@19.2.8))
@@ -2806,8 +2806,8 @@ packages:
     resolution: {integrity: sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw==}
     engines: {node: '>=0.10.0'}
 
-  read-excel-file@9.3.12:
-    resolution: {integrity: sha512-benNAoQbe5HqoTi3qrQkR8wMeHq0gVWLt2Br73hVvmBPGdzMf9OLGsps/812AfZ+bvzVYsUyhF77Y3o4B51yCA==}
+  read-excel-file@9.3.14:
+    resolution: {integrity: sha512-rfEpNMthm/REIpSCLnGTrQD5aW+U9rrhFuGYF+XRO8Soz+7b+rAOW1z2vJbNiEINbFPbjRW16vz0KnX41Si9qw==}
     engines: {node: '>=18'}
 
   reflect.getprototypeof@1.0.10:
@@ -3226,8 +3226,8 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
-  worker-f@0.1.20:
-    resolution: {integrity: sha512-7z5K5z4x++FykhpDTfriT/dOu7CmSap9BBv38DVFU3CD38obopq+DoFH75yBV3butpGm+OeqR9BKdSvYJSnUfQ==}
+  worker-f@0.1.21:
+    resolution: {integrity: sha512-pMi7wCz3uZVxRvRSphyaIYoN7rm9bV0usifTib7u01kKU+hOo+/hFwhajYnpOCHyr0Xp3/2ulc4F+Jm2a3YIfg==}
     engines: {node: '>=12'}
 
   yallist@3.1.1:
@@ -5788,12 +5788,12 @@ snapshots:
 
   react@19.2.8: {}
 
-  read-excel-file@9.3.12:
+  read-excel-file@9.3.14:
     dependencies:
       fflate: 0.8.3
       saxen: 11.2.0
       unzipper-esm: 0.13.3
-      worker-f: 0.1.20
+      worker-f: 0.1.21
 
   reflect.getprototypeof@1.0.10:
     dependencies:
@@ -6310,7 +6310,7 @@ snapshots:
 
   word-wrap@1.2.5: {}
 
-  worker-f@0.1.20: {}
+  worker-f@0.1.21: {}
 
   yallist@3.1.1: {}
 
