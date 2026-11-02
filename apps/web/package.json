@@ -43,7 +43,7 @@
     "@types/react-dom": "^19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.3",
-    "postcss": "^8.5.31",
+    "postcss": "^8.5.32",
     "tailwindcss": "^4.3.3"
   }
 }
